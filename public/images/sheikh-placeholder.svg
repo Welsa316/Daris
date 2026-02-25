@@ -1,0 +1,11 @@
+<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Sheikh photo placeholder</title>
+  <desc id="desc">A soft abstract placeholder image indicating where to place a photo of the Sheikh.</desc>
+  <rect width="400" height="400" fill="#F5F1E8" />
+  <rect x="40" y="40" width="320" height="320" rx="40" fill="#1F4D3A" fill-opacity="0.08" />
+  <circle cx="200" cy="160" r="70" fill="#1F4D3A" fill-opacity="0.18" />
+  <path d="M110 295C124 250 157 224 200 224C243 224 276 250 290 295" stroke="#1F4D3A" stroke-opacity="0.18" stroke-width="18" stroke-linecap="round" />
+  <path d="M145 155C155 135 175 124 200 124C225 124 245 135 255 155" stroke="#C8A951" stroke-width="6" stroke-linecap="round" />
+  <rect x="120" y="300" width="160" height="4" rx="2" fill="#C8A951" fill-opacity="0.6" />
+</svg>
+

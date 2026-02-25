@@ -1,62 +1,64 @@
 <template>
   <form
-    :action="formAction"
-    method="POST"
-    class="space-y-4"
+    class="space-y-5"
     @submit.prevent="handleSubmit"
   >
     <div>
-      <label for="name" class="block text-sm font-medium text-slate-900 mb-1">
+      <label for="contact-name" class="block text-sm font-medium text-slate-900 mb-1.5">
         Name
       </label>
       <input
-        id="name"
+        id="contact-name"
         v-model="form.name"
         name="name"
         type="text"
         required
-        class="block w-full rounded-lg border border-emerald-900/15 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary focus:ring-1 focus:ring-primary"
+        autocomplete="name"
+        class="block w-full rounded-xl border border-primary/10 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-slate-400"
+        placeholder="Your full name"
       />
     </div>
 
     <div>
-      <label for="email" class="block text-sm font-medium text-slate-900 mb-1">
+      <label for="contact-email" class="block text-sm font-medium text-slate-900 mb-1.5">
         Email
       </label>
       <input
-        id="email"
+        id="contact-email"
         v-model="form.email"
         name="email"
         type="email"
         required
-        class="block w-full rounded-lg border border-emerald-900/15 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary focus:ring-1 focus:ring-primary"
+        autocomplete="email"
+        class="block w-full rounded-xl border border-primary/10 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-slate-400"
+        placeholder="you@example.com"
       />
     </div>
 
     <div>
-      <label for="message" class="block text-sm font-medium text-slate-900 mb-1">
+      <label for="contact-message" class="block text-sm font-medium text-slate-900 mb-1.5">
         Message
       </label>
       <textarea
-        id="message"
+        id="contact-message"
         v-model="form.message"
         name="message"
-        rows="4"
+        rows="5"
         required
-        class="block w-full rounded-lg border border-emerald-900/15 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary focus:ring-1 focus:ring-primary"
+        class="block w-full rounded-xl border border-primary/10 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-slate-400 resize-y"
         placeholder="Share your current level, goals, and preferred times."
       ></textarea>
     </div>
 
-    <p class="text-xs text-slate-500">
-      By submitting, your message will open in your default email client using a
-      <code>mailto:</code> link. You can optionally configure a form service
-      endpoint later.
+    <p class="text-xs text-slate-500 leading-relaxed">
+      By submitting, your message will open in your default email client via a
+      <code class="text-slate-600">mailto:</code> link. If a form service is
+      configured, it will be submitted directly instead.
     </p>
 
     <button
       type="submit"
-      class="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-semibold tracking-wide text-cream shadow-soft-lg hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-cream transition-colors"
+      class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-2.5 text-sm font-semibold tracking-wide text-cream shadow-soft transition-all duration-200 hover:bg-primary-800 hover:shadow-soft-md active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-cream"
     >
       Send message
     </button>
@@ -64,18 +66,14 @@
 </template>
 
 <script setup>
-import { reactive, computed } from 'vue';
-import { contactConfig } from '../../config/contactConfig';
+import { reactive } from 'vue';
+import { contactConfig } from '@/config/contactConfig';
 
 const form = reactive({
   name: '',
   email: '',
   message: ''
 });
-
-const formAction = computed(() =>
-  contactConfig.formEndpoint ? contactConfig.formEndpoint : undefined
-);
 
 const handleSubmit = () => {
   if (contactConfig.formEndpoint) {
@@ -104,4 +102,3 @@ const handleSubmit = () => {
   }
 };
 </script>
-
