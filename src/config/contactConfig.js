@@ -5,6 +5,6 @@ export const contactConfig = {
   // Replace with your contact email
   contactEmail: 'contact@daris-example.com',
   // Optional: Formspree or similar endpoint. Leave empty to use mailto.
-  formEndpoint: ''
+  formEndpoint: 'https://formspree.io/f/xnjbwqnj'
 };
 
