@@ -4,16 +4,16 @@
     :class="{ 'shadow-soft': scrolled }"
   >
     <nav
-      class="section-container flex items-center justify-between h-16"
+      class="section-container flex items-center justify-between h-20"
       aria-label="Main navigation"
     >
       <RouterLink to="/" class="flex items-center gap-3 group">
         <img
           src="/images/daris-logo.png"
           alt="Daris logo"
-          class="h-9 w-auto transition-transform duration-300 group-hover:scale-105"
-          width="36"
-          height="36"
+          class="h-14 w-auto transition-transform duration-300 group-hover:scale-105"
+          width="56"
+          height="56"
         />
         <span class="sr-only">Daris – Quran, Arabic & Fiqh guidance</span>
       </RouterLink>

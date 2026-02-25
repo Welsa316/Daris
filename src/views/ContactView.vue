@@ -4,8 +4,8 @@
     <section class="section-container pt-16 md:pt-20 pb-12">
       <SectionHeader
         eyebrow="Contact"
-        title="Get in touch with Daris"
-        description="Share your background, what you hope to study, and your timezone. You will receive a clear reply with suggested timings and next steps."
+        title="Get in touch"
+        description="Share your goals, timezone, and availability."
       />
     </section>
 
@@ -24,15 +24,10 @@
 
         <!-- Sidebar -->
         <aside class="space-y-6">
-          <!-- Direct contact -->
           <div class="rounded-2xl bg-white border border-primary/10 shadow-card p-6">
             <h3 class="text-xs font-semibold tracking-[0.16em] uppercase text-gold mb-4">
               Direct contact
             </h3>
-            <p class="text-sm text-slate-600 mb-4 leading-relaxed">
-              You can contact Daris directly via WhatsApp or email. English
-              support is available through our team to assist with your enquiry.
-            </p>
             <div class="space-y-3">
               <a
                 :href="whatsAppHref"
@@ -57,25 +52,16 @@
             </div>
           </div>
 
-          <!-- Timings and response -->
           <div class="rounded-2xl bg-primary/[0.03] border border-primary/10 shadow-card p-6 text-sm text-slate-600 leading-relaxed">
-            <h3 class="text-xs font-semibold tracking-[0.16em] uppercase text-gold mb-4">
-              Timings and response
+            <h3 class="text-xs font-semibold tracking-[0.16em] uppercase text-gold mb-3">
+              Response time
             </h3>
-            <p class="mb-3">
-              Daris serves students outside Egypt and welcomes enquiries from all
-              countries. When you write, please specify your city or timezone.
-            </p>
-            <p class="mb-3">
-              Responses are typically sent within
+            <p class="mb-2">
+              Please include your city or timezone. Responses within
               <span class="font-semibold text-slate-900">1&ndash;3 working days</span>.
-              If your message arrives close to busy study periods or holidays,
-              replies may take slightly longer, but every enquiry is read
-              carefully.
             </p>
             <p>
-              Together, you will look for a schedule that is sustainable for both
-              sides and that respects your other commitments.
+              Students welcome from all countries. We'll find a schedule that works for both sides.
             </p>
           </div>
         </aside>

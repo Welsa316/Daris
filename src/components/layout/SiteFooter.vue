@@ -18,9 +18,7 @@
             </div>
           </div>
           <p class="text-sm text-slate-600 max-w-sm leading-relaxed">
-            Calm, structured Quran, Arabic, and Fiqh guidance for students
-            around the world. Lessons are personalised, deliberate, and paced
-            to build lasting benefit.
+            Personalised Quran, Arabic, and Fiqh guidance for students worldwide.
           </p>
         </div>
 

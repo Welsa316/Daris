@@ -11,19 +11,17 @@
       <SectionHeader
         eyebrow="Programs"
         title="Three focused paths of study"
-        description="Choose where to begin, or combine programs with a schedule that reflects your current commitments."
       />
       <div class="grid gap-6 md:grid-cols-3">
         <ProgramCard
           title="Quran"
           tag="Tajwid · Memorisation · Recitation"
-          description="Develop steady, correct recitation with attention to tajwid, fluency, and if desired, memorisation with revision."
+          description="Correct recitation, tajwid, and structured memorisation with consistent revision."
           :bullets="[
-            'Foundations of tajwid and clarity of letters',
-            'Fluent recitation with consistent pacing',
-            'Structured memorisation plans with review'
+            'Tajwid and letter clarity',
+            'Fluent, paced recitation',
+            'Memorisation with review'
           ]"
-          note="Suitable for beginners through to students refining precision."
         >
           <template #icon>
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -34,13 +32,12 @@
         <ProgramCard
           title="Arabic"
           tag="Reading · Grammar · Support"
-          description="Build the tools to approach classical texts with confidence: reading, grammar foundations, and guided practice."
+          description="Reading fluency, grammar foundations, and guided practice with classical texts."
           :bullets="[
-            'Arabic reading fluency and pronunciation',
-            'Core grammar and sentence structure',
-            'Guided reading of selected texts'
+            'Reading fluency and pronunciation',
+            'Core grammar and structure',
+            'Guided reading practice'
           ]"
-          note="Conversational support is available if it serves your study goals."
         >
           <template #icon>
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -51,13 +48,12 @@
         <ProgramCard
           title="Fiqh"
           tag="Practical worship · Daily life"
-          description="Gain practical understanding of worship, purification, and everyday issues, with space for your real questions."
+          description="Practical understanding of worship and everyday rulings, with space for real questions."
           :bullets="[
-            'Purification, prayer, fasting, zakat basics',
-            'Applied scenarios from daily life',
-            'Space to ask considered, practical questions'
+            'Prayer, fasting, zakat basics',
+            'Applied daily-life scenarios',
+            'Considered, practical Q&amp;A'
           ]"
-          note="Focused on clarity and implementation rather than debate."
         >
           <template #icon>
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -77,20 +73,16 @@
         <SectionHeader
           eyebrow="About"
           title="Studying with Daris"
-          description="Lessons are calm, deliberate, and paced to build lasting benefit rather than quick impressions."
           :centered="false"
         />
-        <p class="text-sm sm:text-base text-slate-600 mb-4 leading-relaxed">
-          The Sheikh has taught students across different backgrounds and
-          timezones, with an emphasis on careful recitation, gradual
-          understanding, and consistent revision. English-speaking support is
-          available through the team to help clarify scheduling, expectations,
-          and any questions that arise.
+        <p class="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
+          Patient, one-to-one teaching with emphasis on careful recitation,
+          gradual understanding, and consistent revision. English support
+          available through our team.
         </p>
-        <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
-          The focus is not on marketing language or large numbers, but on steady,
-          attentive learning for each individual or small group.
-        </p>
+        <CTAButton :to="'/about'" variant="outline">
+          Learn more
+        </CTAButton>
       </div>
       <div class="flex justify-center">
         <figure class="relative w-64 h-72 rounded-2xl overflow-hidden border border-primary/10 shadow-card bg-white group">
@@ -100,7 +92,7 @@
             class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
           <figcaption class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-transparent text-xs text-cream px-4 py-4">
-            Replace this placeholder with the Sheikh's photo.
+            Replace with the Sheikh's photo.
           </figcaption>
         </figure>
       </div>
@@ -113,7 +105,7 @@
     <section class="section-container py-16 md:py-20">
       <SectionHeader
         eyebrow="How it works"
-        title="A simple, three-step process"
+        title="Three simple steps"
       />
       <div class="grid gap-6 md:grid-cols-3">
         <div
@@ -129,10 +121,10 @@
               Step {{ i + 1 }}
             </p>
           </div>
-          <h3 class="text-base font-semibold text-slate-900 mb-2">
+          <h3 class="text-base font-semibold text-slate-900 mb-1">
             {{ step.title }}
           </h3>
-          <p class="text-sm text-slate-600 leading-relaxed">
+          <p class="text-sm text-slate-600">
             {{ step.body }}
           </p>
         </div>
@@ -155,18 +147,16 @@
     <!-- Final CTA banner -->
     <section class="section-container py-16 md:py-20">
       <div class="relative overflow-hidden rounded-2xl bg-primary text-cream px-8 py-10 sm:px-10 sm:py-12">
-        <!-- Decorative elements -->
         <div class="absolute top-0 right-0 w-64 h-64 bg-gold/[0.06] rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" aria-hidden="true"></div>
         <div class="absolute bottom-0 left-0 w-48 h-48 bg-cream/[0.04] rounded-full translate-y-1/3 -translate-x-1/4 blur-2xl" aria-hidden="true"></div>
 
         <div class="relative flex flex-col md:flex-row items-start md:items-center md:justify-between gap-6">
           <div>
-            <h2 class="text-2xl sm:text-3xl font-bold mb-3 text-balance">
-              Ready to discuss a plan?
+            <h2 class="text-2xl sm:text-3xl font-bold mb-2 text-balance">
+              Ready to begin?
             </h2>
-            <p class="text-sm sm:text-base text-cream/85 max-w-xl leading-relaxed">
-              Share a brief note about your background and availability. We'll
-              reply with suggested timings and next steps.
+            <p class="text-sm sm:text-base text-cream/85 max-w-md">
+              Share your background and availability. We'll reply with next steps.
             </p>
           </div>
           <div class="flex flex-col sm:flex-row gap-3 flex-shrink-0">
@@ -211,53 +201,46 @@ const whatsAppHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
 const howItWorks = [
   {
     title: 'Contact',
-    body: 'Reach out via WhatsApp or email with your goals, timezone, and preferred days and times.'
+    body: 'Reach out with your goals, timezone, and preferred times.'
   },
   {
     title: 'Assessment',
-    body: 'Complete a short assessment where appropriate (for Quran or Arabic) so the Sheikh can see your current level.'
+    body: 'A short recitation or language check to gauge your level.'
   },
   {
     title: 'Schedule',
-    body: 'Agree on a plan, lesson length, and frequency. Pricing depends on this plan — contact for pricing.'
+    body: 'Agree on a plan and frequency. Contact for pricing.'
   }
 ];
 
 const faqItems = [
   {
-    question: 'Are the lessons fully online?',
-    answer:
-      'Yes. All lessons are conducted online using stable voice and video tools, so you can join from anywhere with a reliable connection.'
+    question: 'Are lessons fully online?',
+    answer: 'Yes. All lessons use stable video tools — join from anywhere with a reliable connection.'
   },
   {
     question: 'What ages do you teach?',
-    answer:
-      'Teaching is available for mature children, teenagers, and adults. For younger children, the focus is on gentle introduction and consistency, agreed with parents in advance.'
+    answer: 'Mature children, teenagers, and adults. Younger children welcome with parental agreement.'
   },
   {
     question: 'How does pricing work?',
-    answer:
-      'Pricing depends on lesson length, frequency, and whether you are studying individually or in a small group. There are no public price tables — please contact for pricing.'
+    answer: 'Pricing depends on lesson length, frequency, and format. Contact for details.'
   },
   {
     question: 'Which timezones do you support?',
-    answer:
-      'Students currently attend from multiple regions. We aim to find times that are sustainable for both sides and will share realistic options when you enquire.'
+    answer: 'Students attend from multiple regions. We find times that work for both sides.'
   },
   {
     question: 'Is there a trial lesson?',
-    answer:
-      'In many cases, the first lesson functions as both an assessment and a chance to see if the schedule and teaching style suit you.'
+    answer: 'The first lesson typically serves as both an assessment and a chance to see if the style suits you.'
   },
   {
     question: 'Do you provide materials?',
-    answer:
-      'Yes. Recommended mushaf formats, beginner texts, and selected resources are shared, and you will be guided on what to prepare for each lesson.'
+    answer: 'Yes. Recommended texts and resources are shared, with guidance on what to prepare.'
   },
   {
-    question: 'What language is used in lessons?',
-    answer:
-      'Arabic is primary where beneficial, especially for texts and recitation. English support is available through the team to help ensure understanding and clarity.'
+    question: 'What language is used?',
+    answer: 'Arabic is primary for texts and recitation. English support available through our team.'
   }
 ];
 </script>
