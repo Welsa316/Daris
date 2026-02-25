@@ -6,11 +6,11 @@
         <div class="md:col-span-2 space-y-4">
           <div class="flex items-center gap-3">
             <img
-              src="/images/daris-logo.png"
+              src="/src/assets/daris-logo.png"
               alt="Daris logo"
               class="h-10 w-auto"
-              width="40"
-              height="40"
+              width="483"
+              height="517"
             />
             <div>
               <p class="font-semibold text-slate-900 text-base">Daris</p>
