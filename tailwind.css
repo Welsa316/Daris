@@ -3,8 +3,32 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply font-sans bg-cream text-slate-900 antialiased;
   }
+
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
 }
 
+@layer components {
+  .section-container {
+    @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Start opacity-0 for entrance animations */
+.animate-on-load {
+  opacity: 0;
+}

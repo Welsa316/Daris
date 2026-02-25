@@ -1,91 +1,79 @@
 <template>
   <section class="relative overflow-hidden bg-cream">
-    <div class="absolute inset-y-0 right-0 w-1/2 pointer-events-none hidden lg:block">
+    <!-- Background decorations -->
+    <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
       <div
-        class="h-full w-full bg-subtle-pattern opacity-70"
+        class="absolute inset-y-0 right-0 w-1/2 bg-subtle-pattern opacity-60 hidden lg:block"
         style="background-size: 18px 18px"
-        aria-hidden="true"
       ></div>
+      <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/[0.03] blur-3xl"></div>
+      <div class="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-gold/[0.04] blur-3xl"></div>
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 grid gap-10 md:grid-cols-2 items-center">
-      <div class="space-y-6">
-        <p class="text-xs font-semibold tracking-[0.25em] uppercase text-gold">
-          Daris • دارس
-        </p>
-        <h1 class="text-3xl sm:text-4xl md:text-5xl font-semibold text-slate-900 leading-tight">
-          Calm, structured guidance in
-          <span class="text-primary">Quran, Arabic, and Fiqh</span>
-          for serious learners.
-        </h1>
-        <p class="text-sm sm:text-base text-slate-700 max-w-xl">
-          Daris is a focused, one-to-one and small-group teaching service led by a qualified Sheikh,
-          helping students outside Egypt build sound recitation, clear Arabic foundations, and
-          practical understanding of worship and daily practice.
+    <div class="section-container py-20 md:py-28 grid gap-12 md:grid-cols-2 items-center relative">
+      <!-- Text column -->
+      <div class="space-y-8">
+        <p class="text-xs font-semibold tracking-[0.25em] uppercase text-gold animate-on-load animate-fade-in-up">
+          Daris &bull; دارس
         </p>
 
-        <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-[1.1] text-balance animate-on-load animate-fade-in-up-delay">
+          <span class="text-primary">Quran, Arabic &amp; Fiqh</span>
+          guidance for serious learners.
+        </h1>
+
+        <p class="text-base sm:text-lg text-slate-600 max-w-md leading-relaxed animate-on-load animate-fade-in-up-delay-2">
+          One-to-one online lessons with a qualified Sheikh. Personalised, patient, and available worldwide.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-3 sm:items-center pt-2">
           <CTAButton :asLink="true" :href="whatsAppHref" :external="true">
             Contact on WhatsApp
           </CTAButton>
-          <RouterLink
-            to="/programs"
-            class="inline-flex items-center justify-center rounded-full border border-primary px-5 py-2 text-sm font-semibold text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-cream transition-colors"
-          >
+          <CTAButton :to="'/programs'" variant="outline">
             View programs
-          </RouterLink>
+          </CTAButton>
         </div>
-
-        <dl class="mt-6 grid grid-cols-2 gap-4 text-xs sm:text-sm text-slate-700">
-          <div>
-            <dt class="font-semibold text-slate-900">Online lessons worldwide</dt>
-            <dd>One-to-one or small groups, scheduled around your timezone.</dd>
-          </div>
-          <div>
-            <dt class="font-semibold text-slate-900">English support</dt>
-            <dd>English-speaking assistance is available through our team.</dd>
-          </div>
-        </dl>
       </div>
 
-      <div class="relative md:pl-8">
-        <div class="absolute -inset-4 rounded-3xl bg-primary/5 blur-2xl" aria-hidden="true"></div>
-        <div class="relative rounded-3xl bg-white shadow-soft-lg border border-emerald-900/5 p-6 space-y-6">
+      <!-- Card column -->
+      <div class="relative md:pl-6">
+        <div class="absolute -inset-4 rounded-3xl bg-primary/[0.03] blur-2xl" aria-hidden="true"></div>
+        <div class="relative rounded-2xl bg-white shadow-card border border-primary/5 p-6 space-y-5">
           <div class="flex items-center gap-3">
-            <div class="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <div class="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center">
               <img
-                src="/src/assets/daris-logo.png"
-                alt="Daris logo"
+                src="/images/daris-logo.png"
+                alt=""
                 class="h-8 w-8 object-contain"
+                width="32"
+                height="32"
               />
             </div>
             <div>
-              <p class="text-sm font-semibold text-slate-900">Start with a brief assessment</p>
-              <p class="text-xs text-slate-600">
-                Share your goals, level, and schedule. We’ll recommend a suitable path.
-              </p>
+              <p class="text-sm font-semibold text-slate-900">How to begin</p>
+              <p class="text-xs text-slate-500">Three simple steps.</p>
             </div>
           </div>
 
-          <ol class="space-y-4 text-xs text-slate-700">
-            <li class="flex gap-3">
-              <span class="h-6 w-6 rounded-full bg-primary text-cream flex items-center justify-center text-xs font-semibold mt-0.5">1</span>
-              <span>Contact via WhatsApp or email with your goals and availability.</span>
-            </li>
-            <li class="flex gap-3">
-              <span class="h-6 w-6 rounded-full bg-primary text-cream flex items-center justify-center text-xs font-semibold mt-0.5">2</span>
-              <span>Complete a short recitation or language assessment where relevant.</span>
-            </li>
-            <li class="flex gap-3">
-              <span class="h-6 w-6 rounded-full bg-primary text-cream flex items-center justify-center text-xs font-semibold mt-0.5">3</span>
-              <span>Agree a lesson plan and schedule that fits your week.</span>
+          <ol class="space-y-4 text-sm text-slate-600">
+            <li v-for="(step, i) in steps" :key="i" class="flex gap-3 items-start">
+              <span class="h-7 w-7 rounded-full bg-primary text-cream flex items-center justify-center text-xs font-bold flex-shrink-0">
+                {{ i + 1 }}
+              </span>
+              <div>
+                <p class="font-semibold text-slate-900">{{ step.title }}</p>
+                <p class="text-slate-500 text-xs">{{ step.sub }}</p>
+              </div>
             </li>
           </ol>
 
-          <p class="text-[11px] text-slate-500">
-            Pricing depends on your goals, lesson length, and frequency.
-            <span class="font-medium text-slate-700">Contact for pricing.</span>
-          </p>
+          <div class="pt-4 border-t border-primary/5">
+            <p class="text-xs text-slate-500">
+              Pricing depends on your goals and schedule.
+              <span class="font-semibold text-primary">Contact for pricing.</span>
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -93,14 +81,18 @@
 </template>
 
 <script setup>
-import { RouterLink } from 'vue-router';
-import CTAButton from '../common/CTAButton.vue';
-import { contactConfig } from '../../config/contactConfig';
+import CTAButton from '@/components/common/CTAButton.vue';
+import { contactConfig } from '@/config/contactConfig';
 
 const { whatsappNumber, whatsappMessage } = contactConfig;
 
 const whatsAppHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
   whatsappMessage
 )}`;
-</script>
 
+const steps = [
+  { title: 'Contact us', sub: 'Share your goals and availability.' },
+  { title: 'Brief assessment', sub: 'A short recitation or language check.' },
+  { title: 'Start lessons', sub: 'Agree a plan that fits your week.' }
+];
+</script>
