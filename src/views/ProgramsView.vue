@@ -17,34 +17,18 @@
           <!-- Quran -->
           <article class="rounded-2xl bg-white border border-primary/5 shadow-card overflow-hidden">
             <div class="h-1 bg-gradient-to-r from-gold/40 via-gold/60 to-gold/40"></div>
-            <div class="p-6 sm:p-7 text-sm sm:text-base text-slate-600 leading-relaxed">
+            <div class="p-6 sm:p-7 text-sm text-slate-600 leading-relaxed">
               <h2 class="text-lg sm:text-xl font-semibold text-slate-900 mb-1">Quran</h2>
               <p class="text-xs font-medium uppercase tracking-[0.18em] text-gold mb-4">
                 Tajwid · Memorisation · Recitation
               </p>
-              <p class="mb-4">
-                Steady, correct recitation for beginners through to students refining tajwid and building a memorisation routine.
-              </p>
-              <div class="grid sm:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <h3 class="text-sm font-semibold text-slate-900 mb-1">Who it's for</h3>
-                  <ul class="list-disc pl-5 space-y-0.5 text-sm">
-                    <li>Beginners learning to read</li>
-                    <li>Students needing tajwid correction</li>
-                    <li>Memorisation with revision</li>
-                  </ul>
-                </div>
-                <div>
-                  <h3 class="text-sm font-semibold text-slate-900 mb-1">What you'll cover</h3>
-                  <ul class="list-disc pl-5 space-y-0.5 text-sm">
-                    <li>Letter articulation and tajwid rules</li>
-                    <li>Fluent recitation practice</li>
-                    <li>Structured memorisation plans</li>
-                  </ul>
-                </div>
-              </div>
+              <ul class="list-disc pl-5 space-y-1 text-sm mb-3">
+                <li>Letter articulation and tajwid rules</li>
+                <li>Fluent, paced recitation</li>
+                <li>Memorisation with structured revision</li>
+              </ul>
               <p class="text-xs text-slate-500 pt-3 border-t border-primary/5">
-                One-to-one lessons with live recitation, feedback, and practice plans.
+                Beginners through to advanced. One-to-one with live feedback.
               </p>
             </div>
           </article>
@@ -52,34 +36,18 @@
           <!-- Arabic -->
           <article class="rounded-2xl bg-white border border-primary/5 shadow-card overflow-hidden">
             <div class="h-1 bg-gradient-to-r from-gold/40 via-gold/60 to-gold/40"></div>
-            <div class="p-6 sm:p-7 text-sm sm:text-base text-slate-600 leading-relaxed">
+            <div class="p-6 sm:p-7 text-sm text-slate-600 leading-relaxed">
               <h2 class="text-lg sm:text-xl font-semibold text-slate-900 mb-1">Arabic</h2>
               <p class="text-xs font-medium uppercase tracking-[0.18em] text-gold mb-4">
                 Reading · Grammar · Support
               </p>
-              <p class="mb-4">
-                Build confidence approaching classical texts through reading fluency, grammar foundations, and guided practice.
-              </p>
-              <div class="grid sm:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <h3 class="text-sm font-semibold text-slate-900 mb-1">Who it's for</h3>
-                  <ul class="list-disc pl-5 space-y-0.5 text-sm">
-                    <li>Readers needing fluency</li>
-                    <li>Beginners in formal grammar</li>
-                    <li>Students complementing other study</li>
-                  </ul>
-                </div>
-                <div>
-                  <h3 class="text-sm font-semibold text-slate-900 mb-1">What you'll cover</h3>
-                  <ul class="list-disc pl-5 space-y-0.5 text-sm">
-                    <li>Reading practice and vocabulary</li>
-                    <li>Core grammar with examples</li>
-                    <li>Optional conversational support</li>
-                  </ul>
-                </div>
-              </div>
+              <ul class="list-disc pl-5 space-y-1 text-sm mb-3">
+                <li>Reading fluency and vocabulary</li>
+                <li>Core grammar with examples</li>
+                <li>Guided reading practice</li>
+              </ul>
               <p class="text-xs text-slate-500 pt-3 border-t border-primary/5">
-                Reading aloud, explanation, and realistic homework.
+                Build confidence with classical texts at your pace.
               </p>
             </div>
           </article>
@@ -87,32 +55,16 @@
           <!-- Fiqh -->
           <article class="rounded-2xl bg-white border border-primary/5 shadow-card overflow-hidden">
             <div class="h-1 bg-gradient-to-r from-gold/40 via-gold/60 to-gold/40"></div>
-            <div class="p-6 sm:p-7 text-sm sm:text-base text-slate-600 leading-relaxed">
+            <div class="p-6 sm:p-7 text-sm text-slate-600 leading-relaxed">
               <h2 class="text-lg sm:text-xl font-semibold text-slate-900 mb-1">Fiqh</h2>
               <p class="text-xs font-medium uppercase tracking-[0.18em] text-gold mb-4">
                 Everyday worship · Applied understanding
               </p>
-              <p class="mb-4">
-                Clear, practical understanding of worship and daily matters with space for real questions.
-              </p>
-              <div class="grid sm:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <h3 class="text-sm font-semibold text-slate-900 mb-1">Who it's for</h3>
-                  <ul class="list-disc pl-5 space-y-0.5 text-sm">
-                    <li>Students beginning Fiqh</li>
-                    <li>Families wanting clarity</li>
-                    <li>Those seeking consistent guidance</li>
-                  </ul>
-                </div>
-                <div>
-                  <h3 class="text-sm font-semibold text-slate-900 mb-1">What you'll cover</h3>
-                  <ul class="list-disc pl-5 space-y-0.5 text-sm">
-                    <li>Prayer, fasting, zakat foundations</li>
-                    <li>Real-life application</li>
-                    <li>Practical case discussions</li>
-                  </ul>
-                </div>
-              </div>
+              <ul class="list-disc pl-5 space-y-1 text-sm mb-3">
+                <li>Prayer, fasting, zakat foundations</li>
+                <li>Real-life application</li>
+                <li>Practical Q&amp;A</li>
+              </ul>
               <p class="text-xs text-slate-500 pt-3 border-t border-primary/5">
                 Structured lessons with recognised texts. Questions welcomed.
               </p>
@@ -126,14 +78,9 @@
             <div class="absolute top-0 right-0 w-40 h-40 bg-gold/[0.08] rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" aria-hidden="true"></div>
             <div class="relative">
               <h3 class="text-lg font-semibold mb-2">Contact for pricing</h3>
-              <p class="text-sm text-cream/85 mb-5 leading-relaxed">
-                Pricing depends on lesson length, frequency, and format.
+              <p class="text-sm text-cream/85 mb-6 leading-relaxed">
+                Share your timezone, preferred program, and format.
               </p>
-              <ul class="text-sm text-cream/85 mb-6 space-y-1.5 list-disc pl-5">
-                <li>Your timezone and preferred days</li>
-                <li>Which program(s) interest you</li>
-                <li>One-to-one or small group</li>
-              </ul>
               <div class="flex flex-col gap-3">
                 <CTAButton :asLink="true" :href="whatsAppHref" :external="true" variant="cream">
                   Contact on WhatsApp

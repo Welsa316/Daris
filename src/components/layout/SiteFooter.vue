@@ -8,9 +8,9 @@
             <img
               src="/images/daris-logo.png"
               alt="Daris logo"
-              class="h-10 w-auto"
-              width="40"
-              height="40"
+              class="h-14 w-auto"
+              width="56"
+              height="56"
             />
             <div>
               <p class="font-semibold text-slate-900 text-base">Daris</p>
@@ -18,7 +18,7 @@
             </div>
           </div>
           <p class="text-sm text-slate-600 max-w-sm leading-relaxed">
-            Personalised Quran, Arabic, and Fiqh guidance for students worldwide.
+            Quran, Arabic & Fiqh — online worldwide.
           </p>
         </div>
 
@@ -45,7 +45,7 @@
             Contact
           </h3>
           <p class="text-sm text-slate-600 mb-3 leading-relaxed">
-            English support is available through our team.
+            English support available.
           </p>
           <div class="space-y-2">
             <a

@@ -16,7 +16,7 @@
         <ProgramCard
           title="Quran"
           tag="Tajwid · Memorisation · Recitation"
-          description="Correct recitation, tajwid, and structured memorisation with consistent revision."
+          description=""
           :bullets="[
             'Tajwid and letter clarity',
             'Fluent, paced recitation',
@@ -32,7 +32,7 @@
         <ProgramCard
           title="Arabic"
           tag="Reading · Grammar · Support"
-          description="Reading fluency, grammar foundations, and guided practice with classical texts."
+          description=""
           :bullets="[
             'Reading fluency and pronunciation',
             'Core grammar and structure',
@@ -48,11 +48,11 @@
         <ProgramCard
           title="Fiqh"
           tag="Practical worship · Daily life"
-          description="Practical understanding of worship and everyday rulings, with space for real questions."
+          description=""
           :bullets="[
             'Prayer, fasting, zakat basics',
             'Applied daily-life scenarios',
-            'Considered, practical Q&amp;A'
+            'Practical Q&amp;A'
           ]"
         >
           <template #icon>
@@ -76,9 +76,7 @@
           :centered="false"
         />
         <p class="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
-          Patient, one-to-one teaching with emphasis on careful recitation,
-          gradual understanding, and consistent revision. English support
-          available through our team.
+          Patient, one-to-one teaching. English support available.
         </p>
         <CTAButton :to="'/about'" variant="outline">
           Learn more
@@ -156,7 +154,7 @@
               Ready to begin?
             </h2>
             <p class="text-sm sm:text-base text-cream/85 max-w-md">
-              Share your background and availability. We'll reply with next steps.
+              Reach out and we'll guide you from there.
             </p>
           </div>
           <div class="flex flex-col sm:flex-row gap-3 flex-shrink-0">
@@ -201,46 +199,38 @@ const whatsAppHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
 const howItWorks = [
   {
     title: 'Contact',
-    body: 'Reach out with your goals, timezone, and preferred times.'
+    body: 'Share your goals and timezone.'
   },
   {
     title: 'Assessment',
-    body: 'A short recitation or language check to gauge your level.'
+    body: 'A short check to gauge your level.'
   },
   {
     title: 'Schedule',
-    body: 'Agree on a plan and frequency. Contact for pricing.'
+    body: 'Agree on a plan that works.'
   }
 ];
 
 const faqItems = [
   {
     question: 'Are lessons fully online?',
-    answer: 'Yes. All lessons use stable video tools — join from anywhere with a reliable connection.'
+    answer: 'Yes — join from anywhere with a reliable connection.'
   },
   {
     question: 'What ages do you teach?',
-    answer: 'Mature children, teenagers, and adults. Younger children welcome with parental agreement.'
+    answer: 'Children, teenagers, and adults.'
   },
   {
     question: 'How does pricing work?',
-    answer: 'Pricing depends on lesson length, frequency, and format. Contact for details.'
+    answer: 'Depends on length, frequency, and format. Contact us.'
   },
   {
-    question: 'Which timezones do you support?',
-    answer: 'Students attend from multiple regions. We find times that work for both sides.'
+    question: 'Which timezones?',
+    answer: 'All timezones. We find times that work.'
   },
   {
     question: 'Is there a trial lesson?',
-    answer: 'The first lesson typically serves as both an assessment and a chance to see if the style suits you.'
-  },
-  {
-    question: 'Do you provide materials?',
-    answer: 'Yes. Recommended texts and resources are shared, with guidance on what to prepare.'
-  },
-  {
-    question: 'What language is used?',
-    answer: 'Arabic is primary for texts and recitation. English support available through our team.'
+    answer: 'The first lesson serves as an assessment and introduction.'
   }
 ];
 </script>
