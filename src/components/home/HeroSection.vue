@@ -41,15 +41,6 @@
         <div class="absolute -inset-4 rounded-3xl bg-primary/[0.03] blur-2xl" aria-hidden="true"></div>
         <div class="relative rounded-2xl bg-white shadow-card border border-primary/5 p-6 space-y-5">
           <div class="flex items-center gap-3">
-            <div class="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center">
-              <img
-                src="/images/daris-logo.png"
-                alt=""
-                class="h-8 w-8 object-contain"
-                width="32"
-                height="32"
-              />
-            </div>
             <div>
               <p class="text-sm font-semibold text-slate-900">How to begin</p>
               <p class="text-xs text-slate-500">Three simple steps.</p>
