@@ -10,9 +10,9 @@
       <RouterLink to="/" class="flex items-center gap-3 group">
         <div class="h-20 md:h-24 flex items-center overflow-visible">
           <img
-              src="/images/daris-logo.png"
-              alt="Daris logo"
-              class="h-16 md:h-20 w-auto origin-left transition-transform duration-300 group-hover:scale-105"
+            src="/images/daris-icon.png"
+            alt="Daris logo"
+            class="h-12 sm:h-14 w-auto origin-left transition-transform duration-300 group-hover:scale-105"
           />
         </div>
         <span class="sr-only">Daris – Quran, Arabic & Fiqh guidance</span>

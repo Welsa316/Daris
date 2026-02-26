@@ -14,20 +14,12 @@
       <div class="grid gap-10 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] items-start">
         <div class="space-y-4 text-sm sm:text-base text-slate-600 leading-relaxed">
           <p>
-            The Sheikh behind Daris has taught Quran and Islamic studies across
-            different regions, with a focus on patience, clarity, and gradual
-            progress. Lessons build a reliable foundation students carry into
-            worship and study.
+            Patient, one-to-one teaching grounded in clarity and gradual progress.
+            English support available through our team.
           </p>
           <p>
-            Teaching is one-to-one or small-group, allowing time to listen
-            carefully and adapt pace and material. English support is available
-            through the team for communication and logistics.
-          </p>
-          <p>
-            No exaggerated claims — just steady companionship in learning:
-            reciting with care, revising consistently, and applying knowledge
-            to daily life.
+            Steady companionship in learning — reciting with care, revising consistently,
+            applying knowledge to daily life.
           </p>
         </div>
 
@@ -83,29 +75,18 @@
           <h3 class="text-base font-semibold text-slate-900 mb-3">
             Teaching philosophy
           </h3>
-          <p class="mb-3">
-            Sound knowledge connected with practice. Careful tajwid and
-            repetition for Quran, gradual grammar for Arabic, grounded rulings
-            for Fiqh.
-          </p>
           <p>
-            A realistic pace that fits your week. Regular, modest effort over
-            short bursts.
+            Knowledge connected with practice. A realistic pace that fits your week.
           </p>
         </div>
 
         <div class="rounded-2xl bg-primary/[0.03] border border-primary/10 shadow-card p-6 text-sm text-slate-600 leading-relaxed">
           <h3 class="text-base font-semibold text-slate-900 mb-3">
-            Languages and support
+            Languages & support
           </h3>
-          <p class="mb-3">
-            Arabic is used where beneficial, especially for texts and recitation.
-            English support is available through our team for scheduling,
-            questions, and clarification.
-          </p>
           <p>
-            Students welcome from any country. Timezones discussed carefully
-            during initial enquiry.
+            Arabic for texts and recitation. English support available.
+            Students welcome from any country.
           </p>
         </div>
       </div>
@@ -122,7 +103,7 @@
               Interested in studying with Daris?
             </h2>
             <p class="text-sm sm:text-base text-cream/85 max-w-md">
-              Send your background, goals, and timezone. We'll reply with next steps.
+              Reach out and we'll guide you from there.
             </p>
           </div>
           <div class="flex flex-col sm:flex-row gap-3 flex-shrink-0">

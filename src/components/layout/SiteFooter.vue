@@ -18,7 +18,7 @@
             </div>
           </div>
           <p class="text-sm text-slate-600 max-w-sm leading-relaxed">
-            Personalised Quran, Arabic, and Fiqh guidance for students worldwide.
+            Quran, Arabic & Fiqh — online worldwide.
           </p>
         </div>
 
@@ -45,7 +45,7 @@
             Contact
           </h3>
           <p class="text-sm text-slate-600 mb-3 leading-relaxed">
-            English support is available through our team.
+            English support available.
           </p>
           <div class="space-y-2">
             <a

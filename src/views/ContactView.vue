@@ -56,12 +56,10 @@
             <h3 class="text-xs font-semibold tracking-[0.16em] uppercase text-gold mb-3">
               Response time
             </h3>
-            <p class="mb-2">
-              Please include your city or timezone. Responses within
-              <span class="font-semibold text-slate-900">1&ndash;3 working days</span>.
-            </p>
             <p>
-              Students welcome from all countries. We'll find a schedule that works for both sides.
+              Responses within
+              <span class="font-semibold text-slate-900">1&ndash;3 working days</span>.
+              Include your timezone.
             </p>
           </div>
         </aside>
