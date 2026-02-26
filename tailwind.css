@@ -18,7 +18,15 @@
 
 @layer components {
   .section-container {
-    @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply max-w-6xl mx-auto px-5 sm:px-6 lg:px-8;
+  }
+
+  .section-narrow {
+    @apply max-w-4xl mx-auto px-5 sm:px-6 lg:px-8;
+  }
+
+  .heading-display {
+    @apply font-display font-semibold tracking-tight;
   }
 }
 
@@ -34,7 +42,24 @@
   padding-right: 1.25rem;
 }
 
+[dir="rtl"] .heading-display {
+  font-family: 'Noto Sans Arabic', 'Inter', system-ui, sans-serif;
+}
+
 /* Start opacity-0 for entrance animations */
 .animate-on-load {
   opacity: 0;
+}
+
+/* Hero geometric pattern */
+.hero-pattern {
+  background-image:
+    linear-gradient(30deg, rgba(200, 169, 81, 0.06) 12%, transparent 12.5%, transparent 87%, rgba(200, 169, 81, 0.06) 87.5%),
+    linear-gradient(150deg, rgba(200, 169, 81, 0.06) 12%, transparent 12.5%, transparent 87%, rgba(200, 169, 81, 0.06) 87.5%),
+    linear-gradient(30deg, rgba(200, 169, 81, 0.06) 12%, transparent 12.5%, transparent 87%, rgba(200, 169, 81, 0.06) 87.5%),
+    linear-gradient(150deg, rgba(200, 169, 81, 0.06) 12%, transparent 12.5%, transparent 87%, rgba(200, 169, 81, 0.06) 87.5%),
+    linear-gradient(60deg, rgba(200, 169, 81, 0.04) 25%, transparent 25.5%, transparent 75%, rgba(200, 169, 81, 0.04) 75%),
+    linear-gradient(60deg, rgba(200, 169, 81, 0.04) 25%, transparent 25.5%, transparent 75%, rgba(200, 169, 81, 0.04) 75%);
+  background-size: 80px 140px;
+  background-position: 0 0, 0 0, 40px 70px, 40px 70px, 0 0, 40px 70px;
 }
