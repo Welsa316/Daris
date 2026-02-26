@@ -40,7 +40,7 @@ module.exports = {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'ui-sans-serif', 'sans-serif']
+        sans: ['Inter', 'Noto Sans Arabic', 'system-ui', 'ui-sans-serif', 'sans-serif']
       },
       boxShadow: {
         soft: '0 2px 15px rgba(0,0,0,0.04)',

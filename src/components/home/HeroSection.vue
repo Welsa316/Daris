@@ -14,24 +14,24 @@
       <!-- Text column -->
       <div class="space-y-8">
         <p class="text-xs font-semibold tracking-[0.25em] uppercase text-gold animate-on-load animate-fade-in-up">
-          DARIS <span class="text-gold">&bull;</span> <span dir="rtl" class="text-primary">العِلْمُ مَنْهَجًا وَتَدَرُّجًا</span>
+          {{ $t('hero.eyebrow') }} <span class="text-gold">&bull;</span> <span dir="rtl" class="text-primary">العِلْمُ مَنْهَجًا وَتَدَرُّجًا</span>
         </p>
 
         <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-[1.1] text-balance animate-on-load animate-fade-in-up-delay">
-          <span class="text-primary">Quran, Arabic &amp; Fiqh</span>
-          guidance for serious learners.
+          <span class="text-primary">{{ $t('hero.titleHighlight') }}</span>
+          {{ $t('hero.titleRest') }}
         </h1>
 
         <p class="text-base sm:text-lg text-slate-600 max-w-md leading-relaxed animate-on-load animate-fade-in-up-delay-2">
-          One-to-one online lessons with a qualified Sheikh. Personalised, patient, and available worldwide.
+          {{ $t('hero.subtitle') }}
         </p>
 
         <div class="flex flex-col sm:flex-row gap-3 sm:items-center pt-2">
           <CTAButton :asLink="true" :href="whatsAppHref" :external="true">
-            Contact on WhatsApp
+            {{ $t('hero.ctaWhatsApp') }}
           </CTAButton>
           <CTAButton :to="'/programs'" variant="outline">
-            View programs
+            {{ $t('hero.ctaPrograms') }}
           </CTAButton>
         </div>
       </div>
@@ -42,8 +42,8 @@
         <div class="relative rounded-2xl bg-white shadow-card border border-primary/5 p-6 space-y-5">
           <div class="flex items-center gap-3">
             <div>
-              <p class="text-sm font-semibold text-slate-900">How to begin</p>
-              <p class="text-xs text-slate-500">Three simple steps.</p>
+              <p class="text-sm font-semibold text-slate-900">{{ $t('hero.cardTitle') }}</p>
+              <p class="text-xs text-slate-500">{{ $t('hero.cardSubtitle') }}</p>
             </div>
           </div>
 
@@ -61,8 +61,8 @@
 
           <div class="pt-4 border-t border-primary/5">
             <p class="text-xs text-slate-500">
-              Pricing depends on your goals and schedule.
-              <span class="font-semibold text-primary">Contact for pricing.</span>
+              {{ $t('hero.pricingNote') }}
+              <span class="font-semibold text-primary">{{ $t('hero.pricingCta') }}</span>
             </p>
           </div>
         </div>
@@ -72,18 +72,21 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import CTAButton from '@/components/common/CTAButton.vue';
 import { contactConfig } from '@/config/contactConfig';
 
+const { t } = useI18n();
 const { whatsappNumber, whatsappMessage } = contactConfig;
 
 const whatsAppHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
   whatsappMessage
 )}`;
 
-const steps = [
-  { title: 'Contact us', sub: 'Share your goals and availability.' },
-  { title: 'Brief assessment', sub: 'A short recitation or language check.' },
-  { title: 'Start lessons', sub: 'Agree a plan that fits your week.' }
-];
+const steps = computed(() => [
+  { title: t('hero.step1Title'), sub: t('hero.step1Sub') },
+  { title: t('hero.step2Title'), sub: t('hero.step2Sub') },
+  { title: t('hero.step3Title'), sub: t('hero.step3Sub') }
+]);
 </script>

@@ -5,7 +5,7 @@
   >
     <div>
       <label for="contact-name" class="block text-sm font-medium text-slate-900 mb-1.5">
-        Name
+        {{ $t('form.name') }}
       </label>
       <input
         id="contact-name"
@@ -15,13 +15,13 @@
         required
         autocomplete="name"
         class="block w-full rounded-xl border border-primary/10 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-slate-400"
-        placeholder="Your full name"
+        :placeholder="$t('form.namePlaceholder')"
       />
     </div>
 
     <div>
       <label for="contact-email" class="block text-sm font-medium text-slate-900 mb-1.5">
-        Email
+        {{ $t('form.email') }}
       </label>
       <input
         id="contact-email"
@@ -31,13 +31,13 @@
         required
         autocomplete="email"
         class="block w-full rounded-xl border border-primary/10 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-slate-400"
-        placeholder="you@example.com"
+        :placeholder="$t('form.emailPlaceholder')"
       />
     </div>
 
     <div>
       <label for="contact-message" class="block text-sm font-medium text-slate-900 mb-1.5">
-        Message
+        {{ $t('form.message') }}
       </label>
       <textarea
         id="contact-message"
@@ -46,21 +46,19 @@
         rows="5"
         required
         class="block w-full rounded-xl border border-primary/10 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-slate-400 resize-y"
-        placeholder="Share your current level, goals, and preferred times."
+        :placeholder="$t('form.messagePlaceholder')"
       ></textarea>
     </div>
 
     <p class="text-xs text-slate-500 leading-relaxed">
-      By submitting, your message will open in your default email client via a
-      <code class="text-slate-600">mailto:</code> link. If a form service is
-      configured, it will be submitted directly instead.
+      {{ $t('form.disclaimer') }}
     </p>
 
     <button
       type="submit"
       class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-2.5 text-sm font-semibold tracking-wide text-cream shadow-soft transition-all duration-200 hover:bg-primary-800 hover:shadow-soft-md active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-cream"
     >
-      Send message
+      {{ $t('form.submit') }}
     </button>
   </form>
 </template>
