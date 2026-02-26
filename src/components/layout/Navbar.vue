@@ -8,13 +8,13 @@
       aria-label="Main navigation"
     >
       <RouterLink to="/" class="flex items-center gap-3 group">
-        <img
-          src="/images/daris-icon.png"
-          alt="Daris logo"
-          class="h-12 sm:h-14 w-auto transition-transform duration-300 group-hover:scale-105"
-          width="56"
-          height="46"
-        />
+        <div class="h-20 md:h-24 flex items-center overflow-visible">
+          <img
+            src="/images/daris-icon.png"
+            alt="Daris logo"
+            class="h-12 sm:h-14 w-auto origin-left transition-transform duration-300 group-hover:scale-105"
+          />
+        </div>
         <span class="sr-only">Daris – Quran, Arabic & Fiqh guidance</span>
       </RouterLink>
 
@@ -120,7 +120,6 @@ const navItems = [
   { to: '/', label: 'Home' },
   { to: '/about', label: 'About' },
   { to: '/programs', label: 'Programs' },
-  { to: '/contact', label: 'Contact' }
 ];
 
 const handleScroll = () => {
