@@ -28,6 +28,12 @@
   }
 }
 
+/* RTL support */
+[dir="rtl"] .list-disc {
+  padding-left: 0;
+  padding-right: 1.25rem;
+}
+
 /* Start opacity-0 for entrance animations */
 .animate-on-load {
   opacity: 0;

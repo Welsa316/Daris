@@ -9,18 +9,18 @@
     <!-- Programs preview -->
     <section class="section-container py-16 md:py-20">
       <SectionHeader
-        eyebrow="Programs"
-        title="Three focused paths of study"
+        :eyebrow="$t('home.programsEyebrow')"
+        :title="$t('home.programsTitle')"
       />
       <div class="grid gap-6 md:grid-cols-3">
         <ProgramCard
-          title="Quran"
-          tag="Tajwid · Memorisation · Recitation"
+          :title="$t('home.quranTitle')"
+          :tag="$t('home.quranTag')"
           description=""
           :bullets="[
-            'Tajwid and letter clarity',
-            'Fluent, paced recitation',
-            'Memorisation with review'
+            $t('home.quranBullet1'),
+            $t('home.quranBullet2'),
+            $t('home.quranBullet3')
           ]"
         >
           <template #icon>
@@ -30,13 +30,13 @@
           </template>
         </ProgramCard>
         <ProgramCard
-          title="Arabic"
-          tag="Reading · Grammar · Support"
+          :title="$t('home.arabicTitle')"
+          :tag="$t('home.arabicTag')"
           description=""
           :bullets="[
-            'Reading fluency and pronunciation',
-            'Core grammar and structure',
-            'Guided reading practice'
+            $t('home.arabicBullet1'),
+            $t('home.arabicBullet2'),
+            $t('home.arabicBullet3')
           ]"
         >
           <template #icon>
@@ -46,13 +46,13 @@
           </template>
         </ProgramCard>
         <ProgramCard
-          title="Fiqh"
-          tag="Practical worship · Daily life"
+          :title="$t('home.fiqhTitle')"
+          :tag="$t('home.fiqhTag')"
           description=""
           :bullets="[
-            'Prayer, fasting, zakat basics',
-            'Applied daily-life scenarios',
-            'Practical Q&amp;A'
+            $t('home.fiqhBullet1'),
+            $t('home.fiqhBullet2'),
+            $t('home.fiqhBullet3')
           ]"
         >
           <template #icon>
@@ -71,15 +71,15 @@
     <section class="section-container pb-16 md:pb-20 grid gap-10 md:grid-cols-2 items-center">
       <div>
         <SectionHeader
-          eyebrow="About"
-          title="Studying with Daris"
+          :eyebrow="$t('home.aboutEyebrow')"
+          :title="$t('home.aboutTitle')"
           :centered="false"
         />
         <p class="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
-          Patient, one-to-one teaching. English support available.
+          {{ $t('home.aboutText') }}
         </p>
         <CTAButton :to="'/about'" variant="outline">
-          Learn more
+          {{ $t('home.learnMore') }}
         </CTAButton>
       </div>
       <div class="flex justify-center">
@@ -90,7 +90,7 @@
             class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
           <figcaption class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-transparent text-xs text-cream px-4 py-4">
-            Replace with the Sheikh's photo.
+            {{ $t('home.photoCaption') }}
           </figcaption>
         </figure>
       </div>
@@ -102,8 +102,8 @@
     <!-- How it works -->
     <section class="section-container py-16 md:py-20">
       <SectionHeader
-        eyebrow="How it works"
-        title="Three simple steps"
+        :eyebrow="$t('home.howEyebrow')"
+        :title="$t('home.howTitle')"
       />
       <div class="grid gap-6 md:grid-cols-3">
         <div
@@ -116,7 +116,7 @@
               {{ i + 1 }}
             </span>
             <p class="text-xs font-semibold tracking-[0.2em] uppercase text-gold">
-              Step {{ i + 1 }}
+              {{ $t('home.step') }} {{ i + 1 }}
             </p>
           </div>
           <h3 class="text-base font-semibold text-slate-900 mb-1">
@@ -133,8 +133,8 @@
     <section class="bg-white/50 border-y border-primary/5">
       <div class="section-container py-16 md:py-20">
         <SectionHeader
-          eyebrow="Questions"
-          title="Frequently asked questions"
+          :eyebrow="$t('home.faqEyebrow')"
+          :title="$t('home.faqTitle')"
         />
         <div class="max-w-3xl mx-auto">
           <FAQAccordion :items="faqItems" />
@@ -151,10 +151,10 @@
         <div class="relative flex flex-col md:flex-row items-start md:items-center md:justify-between gap-6">
           <div>
             <h2 class="text-2xl sm:text-3xl font-bold mb-2 text-balance">
-              Ready to begin?
+              {{ $t('home.ctaTitle') }}
             </h2>
             <p class="text-sm sm:text-base text-cream/85 max-w-md">
-              Reach out and we'll guide you from there.
+              {{ $t('home.ctaText') }}
             </p>
           </div>
           <div class="flex flex-col sm:flex-row gap-3 flex-shrink-0">
@@ -164,14 +164,14 @@
               :external="true"
               variant="cream"
             >
-              Contact on WhatsApp
+              {{ $t('home.ctaWhatsApp') }}
             </CTAButton>
             <CTAButton
               :asLink="true"
               :href="`mailto:${contactEmail}`"
               variant="outline"
             >
-              <span class="text-cream border-cream">Email Daris</span>
+              <span class="text-cream border-cream">{{ $t('home.ctaEmail') }}</span>
             </CTAButton>
           </div>
         </div>
@@ -181,6 +181,8 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import HeroSection from '@/components/home/HeroSection.vue';
 import TrustStrip from '@/components/home/TrustStrip.vue';
 import SectionHeader from '@/components/common/SectionHeader.vue';
@@ -190,47 +192,48 @@ import CTAButton from '@/components/common/CTAButton.vue';
 import GeometricDivider from '@/components/common/GeometricDivider.vue';
 import { contactConfig } from '@/config/contactConfig';
 
+const { t } = useI18n();
 const { whatsappNumber, whatsappMessage, contactEmail } = contactConfig;
 
 const whatsAppHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
   whatsappMessage
 )}`;
 
-const howItWorks = [
+const howItWorks = computed(() => [
   {
-    title: 'Contact',
-    body: 'Share your goals and timezone.'
+    title: t('home.howStep1Title'),
+    body: t('home.howStep1Body')
   },
   {
-    title: 'Assessment',
-    body: 'A short check to gauge your level.'
+    title: t('home.howStep2Title'),
+    body: t('home.howStep2Body')
   },
   {
-    title: 'Schedule',
-    body: 'Agree on a plan that works.'
+    title: t('home.howStep3Title'),
+    body: t('home.howStep3Body')
   }
-];
+]);
 
-const faqItems = [
+const faqItems = computed(() => [
   {
-    question: 'Are lessons fully online?',
-    answer: 'Yes — join from anywhere with a reliable connection.'
+    question: t('home.faq1Q'),
+    answer: t('home.faq1A')
   },
   {
-    question: 'What ages do you teach?',
-    answer: 'Children, teenagers, and adults.'
+    question: t('home.faq2Q'),
+    answer: t('home.faq2A')
   },
   {
-    question: 'How does pricing work?',
-    answer: 'Depends on length, frequency, and format. Contact us.'
+    question: t('home.faq3Q'),
+    answer: t('home.faq3A')
   },
   {
-    question: 'Which timezones?',
-    answer: 'All timezones. We find times that work.'
+    question: t('home.faq4Q'),
+    answer: t('home.faq4A')
   },
   {
-    question: 'Is there a trial lesson?',
-    answer: 'The first lesson serves as an assessment and introduction.'
+    question: t('home.faq5Q'),
+    answer: t('home.faq5A')
   }
-];
+]);
 </script>

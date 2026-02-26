@@ -15,7 +15,7 @@
             class="h-12 sm:h-14 w-auto origin-left transition-transform duration-300 group-hover:scale-105"
           />
         </div>
-        <span class="sr-only">Daris – Quran, Arabic & Fiqh guidance</span>
+        <span class="sr-only">{{ $t('nav.srBrand') }}</span>
       </RouterLink>
 
       <button
@@ -25,7 +25,7 @@
         aria-controls="primary-navigation"
         @click="isOpen = !isOpen"
       >
-        <span class="sr-only">Toggle navigation</span>
+        <span class="sr-only">{{ $t('nav.toggleNav') }}</span>
         <svg
           class="h-6 w-6 transition-transform duration-200"
           :class="{ 'rotate-90': isOpen }"
@@ -62,13 +62,14 @@
           class="relative text-slate-700 hover:text-primary transition-colors duration-200 after:absolute after:bottom-[-2px] after:left-0 after:h-[2px] after:w-0 after:bg-gold after:transition-all after:duration-300 hover:after:w-full"
           active-class="text-primary after:!w-full"
         >
-          {{ item.label }}
+          {{ $t(item.labelKey) }}
         </RouterLink>
+        <LanguageSwitcher />
         <RouterLink
           to="/contact"
-          class="ml-2 inline-flex items-center rounded-full bg-primary px-5 py-2 text-sm font-semibold text-cream shadow-soft hover:bg-primary-800 hover:shadow-soft-md active:scale-[0.97] transition-all duration-200"
+          class="inline-flex items-center rounded-full bg-primary px-5 py-2 text-sm font-semibold text-cream shadow-soft hover:bg-primary-800 hover:shadow-soft-md active:scale-[0.97] transition-all duration-200 ltr:ml-2 rtl:mr-2"
         >
-          Contact
+          {{ $t('nav.contact') }}
         </RouterLink>
       </div>
     </nav>
@@ -94,14 +95,17 @@
             active-class="bg-primary/5 text-primary"
             @click="isOpen = false"
           >
-            {{ item.label }}
+            {{ $t(item.labelKey) }}
           </RouterLink>
+          <div class="px-3 py-2.5">
+            <LanguageSwitcher />
+          </div>
           <RouterLink
             to="/contact"
             class="mt-2 flex items-center justify-center w-full rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-cream shadow-soft hover:bg-primary-800 transition-colors duration-200"
             @click="isOpen = false"
           >
-            Contact
+            {{ $t('nav.contact') }}
           </RouterLink>
         </div>
       </div>
@@ -112,14 +116,15 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { RouterLink } from 'vue-router';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 
 const isOpen = ref(false);
 const scrolled = ref(false);
 
 const navItems = [
-  { to: '/', label: 'Home' },
-  { to: '/about', label: 'About' },
-  { to: '/programs', label: 'Programs' },
+  { to: '/', labelKey: 'nav.home' },
+  { to: '/about', labelKey: 'nav.about' },
+  { to: '/programs', labelKey: 'nav.programs' },
 ];
 
 const handleScroll = () => {

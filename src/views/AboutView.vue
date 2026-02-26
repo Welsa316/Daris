@@ -3,9 +3,9 @@
     <!-- Header -->
     <section class="section-container pt-16 md:pt-20 pb-12">
       <SectionHeader
-        eyebrow="About"
-        title="About Daris"
-        description="Calm, structured teaching for students worldwide."
+        :eyebrow="$t('about.eyebrow')"
+        :title="$t('about.title')"
+        :description="$t('about.description')"
       />
     </section>
 
@@ -14,12 +14,10 @@
       <div class="grid gap-10 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] items-start">
         <div class="space-y-4 text-sm sm:text-base text-slate-600 leading-relaxed">
           <p>
-            Patient, one-to-one teaching grounded in clarity and gradual progress.
-            English support available through our team.
+            {{ $t('about.text1') }}
           </p>
           <p>
-            Steady companionship in learning — reciting with care, revising consistently,
-            applying knowledge to daily life.
+            {{ $t('about.text2') }}
           </p>
         </div>
 
@@ -27,38 +25,38 @@
           <figure class="relative w-full max-w-xs mx-auto rounded-2xl overflow-hidden border border-primary/10 shadow-card bg-white group">
             <img
               src="/images/sheikh-placeholder.svg"
-              alt="Placeholder for Sheikh's photograph"
+              :alt="$t('about.photoAlt')"
               class="h-64 w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             <figcaption class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-transparent text-xs text-cream px-4 py-4">
-              Replace with an appropriate photo.
+              {{ $t('about.photoCaption') }}
             </figcaption>
           </figure>
 
           <div class="rounded-2xl bg-white border border-primary/10 shadow-card p-5 text-sm text-slate-600">
             <h3 class="text-xs font-semibold tracking-[0.16em] uppercase text-gold mb-4">
-              Credentials
+              {{ $t('about.credentialsTitle') }}
             </h3>
             <ul class="space-y-2.5">
               <li class="flex gap-2.5">
                 <span class="mt-2 h-1 w-4 rounded-full bg-gold/70 flex-shrink-0" aria-hidden="true"></span>
-                <span>Years of teaching: <em class="text-slate-400">[X years]</em></span>
+                <span>{{ $t('about.credTeaching') }} <em class="text-slate-400">{{ $t('about.credTeachingVal') }}</em></span>
               </li>
               <li class="flex gap-2.5">
                 <span class="mt-2 h-1 w-4 rounded-full bg-gold/70 flex-shrink-0" aria-hidden="true"></span>
-                <span>Quranic studies: <em class="text-slate-400">[Institution]</em></span>
+                <span>{{ $t('about.credQuran') }} <em class="text-slate-400">{{ $t('about.credQuranVal') }}</em></span>
               </li>
               <li class="flex gap-2.5">
                 <span class="mt-2 h-1 w-4 rounded-full bg-gold/70 flex-shrink-0" aria-hidden="true"></span>
-                <span>Fiqh studies: <em class="text-slate-400">[Madhhab / details]</em></span>
+                <span>{{ $t('about.credFiqh') }} <em class="text-slate-400">{{ $t('about.credFiqhVal') }}</em></span>
               </li>
               <li class="flex gap-2.5">
                 <span class="mt-2 h-1 w-4 rounded-full bg-gold/70 flex-shrink-0" aria-hidden="true"></span>
-                <span>Arabic studies: <em class="text-slate-400">[Programmes]</em></span>
+                <span>{{ $t('about.credArabic') }} <em class="text-slate-400">{{ $t('about.credArabicVal') }}</em></span>
               </li>
               <li class="flex gap-2.5">
                 <span class="mt-2 h-1 w-4 rounded-full bg-gold/70 flex-shrink-0" aria-hidden="true"></span>
-                <span>Certifications: <em class="text-slate-400">[List]</em></span>
+                <span>{{ $t('about.credCerts') }} <em class="text-slate-400">{{ $t('about.credCertsVal') }}</em></span>
               </li>
             </ul>
           </div>
@@ -73,20 +71,19 @@
       <div class="grid gap-8 md:grid-cols-2">
         <div class="rounded-2xl bg-white border border-primary/10 shadow-card p-6 text-sm text-slate-600 leading-relaxed">
           <h3 class="text-base font-semibold text-slate-900 mb-3">
-            Teaching philosophy
+            {{ $t('about.philosophyTitle') }}
           </h3>
           <p>
-            Knowledge connected with practice. A realistic pace that fits your week.
+            {{ $t('about.philosophyText') }}
           </p>
         </div>
 
         <div class="rounded-2xl bg-primary/[0.03] border border-primary/10 shadow-card p-6 text-sm text-slate-600 leading-relaxed">
           <h3 class="text-base font-semibold text-slate-900 mb-3">
-            Languages & support
+            {{ $t('about.langTitle') }}
           </h3>
           <p>
-            Arabic for texts and recitation. English support available.
-            Students welcome from any country.
+            {{ $t('about.langText') }}
           </p>
         </div>
       </div>
@@ -100,10 +97,10 @@
         <div class="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
             <h2 class="text-xl sm:text-2xl font-bold mb-2">
-              Interested in studying with Daris?
+              {{ $t('about.ctaTitle') }}
             </h2>
             <p class="text-sm sm:text-base text-cream/85 max-w-md">
-              Reach out and we'll guide you from there.
+              {{ $t('about.ctaText') }}
             </p>
           </div>
           <div class="flex flex-col sm:flex-row gap-3 flex-shrink-0">
@@ -113,14 +110,14 @@
               :external="true"
               variant="cream"
             >
-              Contact on WhatsApp
+              {{ $t('about.ctaWhatsApp') }}
             </CTAButton>
             <CTAButton
               :asLink="true"
               :href="`mailto:${contactEmail}`"
               variant="outline"
             >
-              <span class="text-cream">Email Daris</span>
+              <span class="text-cream">{{ $t('about.ctaEmail') }}</span>
             </CTAButton>
           </div>
         </div>
