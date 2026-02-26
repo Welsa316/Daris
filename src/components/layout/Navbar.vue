@@ -9,11 +9,11 @@
     >
       <RouterLink to="/" class="flex items-center gap-3 group">
         <img
-          src="/images/daris-logo.png"
+          src="/images/daris-icon.png"
           alt="Daris logo"
-          class="h-16 sm:h-20 w-auto transition-transform duration-300 group-hover:scale-105"
-          width="80"
-          height="80"
+          class="h-12 sm:h-14 w-auto transition-transform duration-300 group-hover:scale-105"
+          width="56"
+          height="46"
         />
         <span class="sr-only">Daris – Quran, Arabic & Fiqh guidance</span>
       </RouterLink>

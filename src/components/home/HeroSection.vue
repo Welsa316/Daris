@@ -11,16 +11,19 @@
     </div>
 
     <div class="section-container relative py-16 md:py-24 flex flex-col items-center text-center">
-      <!-- Giant logo -->
-      <div class="mb-8 md:mb-10 animate-on-load animate-fade-in">
+      <!-- Giant icon -->
+      <div class="mb-6 md:mb-8 animate-on-load animate-fade-in">
         <img
-          src="/images/daris-logo.png"
+          src="/images/daris-icon.png"
           alt="Daris – دارس"
           class="h-48 sm:h-56 md:h-72 lg:h-80 w-auto mx-auto drop-shadow-lg"
           width="320"
-          height="320"
+          height="264"
         />
       </div>
+
+      <!-- Arabic tagline -->
+      <p dir="rtl" lang="ar" class="text-xl sm:text-2xl md:text-3xl font-semibold text-primary mb-6 md:mb-8 animate-on-load animate-fade-in">الع<span class="text-gold">ِ</span>لم<span class="text-gold">ُ</span> م<span class="text-gold">َ</span>نه<span class="text-gold">َ</span>ج<span class="text-gold">ً</span>ا وت<span class="text-gold">َ</span>در<span class="text-gold">ُّ</span>ج<span class="text-gold">ً</span>ا</p>
 
       <!-- Minimal text -->
       <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 leading-[1.1] text-balance max-w-3xl animate-on-load animate-fade-in-up-delay">
