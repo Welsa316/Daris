@@ -1,7 +1,7 @@
 <template>
   <header
-    class="sticky top-0 z-40 bg-cream/90 backdrop-blur-md border-b border-primary/5 transition-shadow duration-300"
-    :class="{ 'shadow-soft': scrolled }"
+    class="sticky top-0 z-40 bg-cream/90 backdrop-blur-md border-b border-primary/5 transition-all duration-300"
+    :class="{ 'shadow-card': scrolled }"
   >
     <nav
       class="section-container flex items-center justify-between h-24"
@@ -67,7 +67,7 @@
         <LanguageSwitcher />
         <RouterLink
           to="/contact"
-          class="inline-flex items-center rounded-full bg-primary px-5 py-2 text-sm font-semibold text-cream shadow-soft hover:bg-primary-800 hover:shadow-soft-md active:scale-[0.97] transition-all duration-200 ltr:ml-2 rtl:mr-2"
+          class="inline-flex items-center rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-cream shadow-soft hover:bg-primary-800 hover:shadow-soft-md active:scale-[0.97] transition-all duration-200 ltr:ml-2 rtl:mr-2"
         >
           {{ $t('nav.contact') }}
         </RouterLink>

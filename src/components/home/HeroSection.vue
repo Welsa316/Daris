@@ -1,92 +1,64 @@
 <template>
-  <section class="relative overflow-hidden bg-cream">
-    <!-- Background decorations -->
-    <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
-      <div
-        class="absolute inset-y-0 right-0 w-1/2 bg-subtle-pattern opacity-60 hidden lg:block"
-        style="background-size: 18px 18px"
-      ></div>
-      <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/[0.03] blur-3xl"></div>
-      <div class="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-gold/[0.04] blur-3xl"></div>
-    </div>
+  <section class="relative overflow-hidden bg-primary min-h-[85vh] flex items-center">
+    <!-- Pattern overlay -->
+    <div class="absolute inset-0 hero-pattern opacity-80" aria-hidden="true"></div>
+    <!-- Gradient overlay for depth -->
+    <div class="absolute inset-0 bg-gradient-to-b from-primary-950/40 via-transparent to-primary-950/60" aria-hidden="true"></div>
+    <!-- Decorative glow -->
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-gold/[0.05] blur-[100px]" aria-hidden="true"></div>
 
-    <div class="section-container py-20 md:py-28 grid gap-12 md:grid-cols-2 items-center relative">
-      <!-- Text column -->
-      <div class="space-y-8">
-        <p class="text-xs font-semibold tracking-[0.25em] uppercase text-gold animate-on-load animate-fade-in-up">
-          {{ $t('hero.eyebrow') }} <span class="text-gold">&bull;</span> <span dir="rtl" class="text-primary">العِلْمُ مَنْهَجًا وَتَدَرُّجًا</span>
-        </p>
+    <div class="section-container relative py-24 md:py-32 text-center">
+      <!-- Eyebrow -->
+      <p class="text-gold/90 text-xs font-semibold tracking-[0.3em] uppercase mb-6 animate-on-load animate-fade-in-up">
+        {{ $t('hero.eyebrow') }} <span class="mx-2 text-gold/40">&bull;</span>
+        <span dir="rtl" class="font-display text-sm text-cream/60">العِلْمُ مَنْهَجًا وَتَدَرُّجًا</span>
+      </p>
 
-        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-[1.1] text-balance animate-on-load animate-fade-in-up-delay">
-          <span class="text-primary">{{ $t('hero.titleHighlight') }}</span>
-          {{ $t('hero.titleRest') }}
-        </h1>
+      <!-- Main heading -->
+      <h1 class="heading-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-cream leading-[1.1] mb-6 max-w-4xl mx-auto text-balance animate-on-load animate-fade-in-up-delay">
+        {{ $t('hero.titleHighlight') }}
+      </h1>
 
-        <p class="text-base sm:text-lg text-slate-600 max-w-md leading-relaxed animate-on-load animate-fade-in-up-delay-2">
-          {{ $t('hero.subtitle') }}
-        </p>
+      <!-- Subtitle -->
+      <p class="text-base sm:text-lg text-cream/70 max-w-xl mx-auto leading-relaxed mb-10 animate-on-load animate-fade-in-up-delay-2">
+        {{ $t('hero.subtitle') }}
+      </p>
 
-        <div class="flex flex-col sm:flex-row gap-3 sm:items-center pt-2">
-          <CTAButton :asLink="true" :href="whatsAppHref" :external="true">
-            {{ $t('hero.ctaWhatsApp') }}
-          </CTAButton>
-          <CTAButton :to="'/programs'" variant="outline">
-            {{ $t('hero.ctaPrograms') }}
-          </CTAButton>
-        </div>
+      <!-- CTA -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center animate-on-load animate-fade-in-up-delay-3">
+        <a
+          :href="whatsAppHref"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2.5 rounded-full bg-gold px-8 py-3.5 text-sm font-semibold text-primary-950 shadow-lg hover:bg-gold-300 hover:shadow-xl active:scale-[0.97] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+        >
+          {{ $t('hero.ctaWhatsApp') }}
+        </a>
+        <RouterLink
+          to="/programs"
+          class="inline-flex items-center gap-2 rounded-full border border-cream/20 px-7 py-3 text-sm font-medium text-cream/90 hover:bg-cream/10 hover:border-cream/30 transition-all duration-200"
+        >
+          {{ $t('hero.ctaPrograms') }}
+          <svg class="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+        </RouterLink>
       </div>
 
-      <!-- Card column -->
-      <div class="relative md:pl-6">
-        <div class="absolute -inset-4 rounded-3xl bg-primary/[0.03] blur-2xl" aria-hidden="true"></div>
-        <div class="relative rounded-2xl bg-white shadow-card border border-primary/5 p-6 space-y-5">
-          <div class="flex items-center gap-3">
-            <div>
-              <p class="text-sm font-semibold text-slate-900">{{ $t('hero.cardTitle') }}</p>
-              <p class="text-xs text-slate-500">{{ $t('hero.cardSubtitle') }}</p>
-            </div>
-          </div>
-
-          <ol class="space-y-4 text-sm text-slate-600">
-            <li v-for="(step, i) in steps" :key="i" class="flex gap-3 items-start">
-              <span class="h-7 w-7 rounded-full bg-primary text-cream flex items-center justify-center text-xs font-bold flex-shrink-0">
-                {{ i + 1 }}
-              </span>
-              <div>
-                <p class="font-semibold text-slate-900">{{ step.title }}</p>
-                <p class="text-slate-500 text-xs">{{ step.sub }}</p>
-              </div>
-            </li>
-          </ol>
-
-          <div class="pt-4 border-t border-primary/5">
-            <p class="text-xs text-slate-500">
-              {{ $t('hero.pricingNote') }}
-              <span class="font-semibold text-primary">{{ $t('hero.pricingCta') }}</span>
-            </p>
-          </div>
-        </div>
+      <!-- Scroll indicator -->
+      <div class="mt-16 md:mt-24 flex flex-col items-center gap-2 text-cream/30" aria-hidden="true">
+        <span class="text-[10px] tracking-[0.2em] uppercase">{{ $t('hero.scroll') }}</span>
+        <svg class="h-5 w-5 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" /></svg>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { useI18n } from 'vue-i18n';
-import CTAButton from '@/components/common/CTAButton.vue';
+import { RouterLink } from 'vue-router';
 import { contactConfig } from '@/config/contactConfig';
 
-const { t } = useI18n();
 const { whatsappNumber, whatsappMessage } = contactConfig;
 
 const whatsAppHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
   whatsappMessage
 )}`;
-
-const steps = computed(() => [
-  { title: t('hero.step1Title'), sub: t('hero.step1Sub') },
-  { title: t('hero.step2Title'), sub: t('hero.step2Sub') },
-  { title: t('hero.step3Title'), sub: t('hero.step3Sub') }
-]);
 </script>

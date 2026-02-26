@@ -1,17 +1,17 @@
 <template>
-  <div :class="['max-w-2xl mb-10', centered ? 'mx-auto text-center' : '']">
+  <div :class="['mb-12 md:mb-16', centered ? 'max-w-2xl mx-auto text-center' : 'max-w-2xl']">
     <p
       v-if="eyebrow"
-      class="text-xs font-semibold tracking-[0.2em] uppercase text-gold mb-2"
+      class="text-xs font-semibold tracking-[0.2em] uppercase text-gold mb-3"
     >
       {{ eyebrow }}
     </p>
-    <h2 class="text-2xl sm:text-3xl font-semibold text-slate-900 mb-3 text-balance leading-snug">
+    <h2 class="heading-display text-3xl sm:text-4xl text-slate-900 mb-4 text-balance leading-[1.15]">
       {{ title }}
     </h2>
     <p
       v-if="description"
-      class="text-sm sm:text-base text-slate-600 leading-relaxed"
+      class="text-base text-slate-500 leading-relaxed"
     >
       {{ description }}
     </p>
@@ -20,21 +20,9 @@
 
 <script setup>
 defineProps({
-  title: {
-    type: String,
-    required: true
-  },
-  eyebrow: {
-    type: String,
-    default: ''
-  },
-  description: {
-    type: String,
-    default: ''
-  },
-  centered: {
-    type: Boolean,
-    default: true
-  }
+  title: { type: String, required: true },
+  eyebrow: { type: String, default: '' },
+  description: { type: String, default: '' },
+  centered: { type: Boolean, default: true }
 });
 </script>

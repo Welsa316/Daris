@@ -40,16 +40,15 @@ module.exports = {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'Noto Sans Arabic', 'system-ui', 'ui-sans-serif', 'sans-serif']
+        sans: ['Inter', 'Noto Sans Arabic', 'system-ui', 'ui-sans-serif', 'sans-serif'],
+        display: ['Playfair Display', 'Noto Sans Arabic', 'Georgia', 'serif']
       },
       boxShadow: {
         soft: '0 2px 15px rgba(0,0,0,0.04)',
         'soft-md': '0 8px 30px rgba(0,0,0,0.06)',
         'soft-lg': '0 18px 45px rgba(0,0,0,0.08)',
-        'soft-xl': '0 25px 60px rgba(0,0,0,0.1)',
-        card: '0 1px 3px rgba(0,0,0,0.04), 0 6px 16px rgba(0,0,0,0.04)',
-        'card-hover':
-          '0 4px 12px rgba(0,0,0,0.06), 0 12px 28px rgba(0,0,0,0.08)'
+        card: '0 1px 3px rgba(0,0,0,0.03), 0 8px 24px rgba(0,0,0,0.04)',
+        'card-hover': '0 4px 12px rgba(0,0,0,0.06), 0 16px 40px rgba(0,0,0,0.08)'
       },
       backgroundImage: {
         'subtle-pattern':
@@ -57,11 +56,11 @@ module.exports = {
       },
       animation: {
         'fade-in': 'fadeIn 0.6s ease-out forwards',
-        'fade-in-up': 'fadeInUp 0.7s ease-out forwards',
-        'fade-in-up-delay': 'fadeInUp 0.7s ease-out 0.15s forwards',
-        'fade-in-up-delay-2': 'fadeInUp 0.7s ease-out 0.3s forwards',
-        'pulse-soft':
-          'pulseSoft 2.5s ease-in-out infinite'
+        'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
+        'fade-in-up-delay': 'fadeInUp 0.8s ease-out 0.15s forwards',
+        'fade-in-up-delay-2': 'fadeInUp 0.8s ease-out 0.3s forwards',
+        'fade-in-up-delay-3': 'fadeInUp 0.8s ease-out 0.45s forwards',
+        'pulse-soft': 'pulseSoft 2.5s ease-in-out infinite'
       },
       keyframes: {
         fadeIn: {
@@ -69,7 +68,7 @@ module.exports = {
           '100%': { opacity: '1' }
         },
         fadeInUp: {
-          '0%': { opacity: '0', transform: 'translateY(24px)' },
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' }
         },
         pulseSoft: {
