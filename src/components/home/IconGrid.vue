@@ -1,21 +1,24 @@
 <template>
-  <section class="bg-white py-24 md:py-32">
-    <div class="section-container">
-      <div class="grid gap-12 md:grid-cols-3">
+  <section class="bg-white py-24 md:py-36">
+    <div class="section-wide">
+      <div class="grid md:grid-cols-3 gap-0">
         <div
-          v-for="item in items"
+          v-for="(item, i) in items"
           :key="item.titleKey"
-          class="text-center"
+          class="relative px-8 md:px-12 py-10 md:py-0"
+          :class="i < items.length - 1 ? 'md:border-r md:rtl:border-r-0 md:rtl:border-l border-slate-200/60' : ''"
         >
+          <!-- Gold accent line -->
+          <div class="w-8 h-[2px] bg-gold/50 mb-8" aria-hidden="true"></div>
           <div
-            class="mx-auto mb-6 h-16 w-16 rounded-2xl bg-primary/[0.06] flex items-center justify-center text-primary"
+            class="mb-5 text-primary"
             aria-hidden="true"
             v-html="item.icon"
           ></div>
-          <h3 class="heading-display text-2xl text-slate-900 mb-3">
+          <h3 class="heading-display text-xl text-slate-900 mb-3">
             {{ $t(item.titleKey) }}
           </h3>
-          <p class="text-sm text-slate-500 leading-relaxed max-w-xs mx-auto">
+          <p class="text-sm text-slate-500 leading-relaxed">
             {{ $t(item.bodyKey) }}
           </p>
         </div>
