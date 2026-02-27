@@ -3,9 +3,6 @@
     <!-- 1. Hero — brand-first, split-screen editorial -->
     <ImmersiveHero />
 
-    <!-- 2. Icon Grid — minimal, hairline-divided columns -->
-    <IconGrid />
-
     <!-- 3. Quran — reverent, warm, centered, frosted backdrop -->
     <ImmersiveQuran />
 
@@ -24,8 +21,9 @@
     <!-- 6. Authority Stats -->
     <AuthorityStats />
 
-    <!-- 7. Testimonials — editorial, hairlines -->
+    <!-- 7. Testimonials — editorial, hairlines (commented out for future use)
     <TestimonialSection />
+    -->
 
     <!-- 8. Final CTA — cinematic close -->
     <BoldCTA />
@@ -35,12 +33,11 @@
 <script setup>
 import { useScrollReveal } from '@/composables/useScrollReveal';
 import ImmersiveHero from '@/components/home/ImmersiveHero.vue';
-import IconGrid from '@/components/home/IconGrid.vue';
 import ImmersiveQuran from '@/components/home/ImmersiveQuran.vue';
 import ImmersiveArabic from '@/components/home/ImmersiveArabic.vue';
 import ImmersiveFiqh from '@/components/home/ImmersiveFiqh.vue';
 import AuthorityStats from '@/components/home/AuthorityStats.vue';
-import TestimonialSection from '@/components/home/TestimonialSection.vue';
+// import TestimonialSection from '@/components/home/TestimonialSection.vue';
 import BoldCTA from '@/components/home/BoldCTA.vue';
 
 useScrollReveal();
