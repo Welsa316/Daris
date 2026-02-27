@@ -1,11 +1,12 @@
 <template>
-  <!-- Why Daris — cinematic credibility statement.
-       Image bleeds from left into dark background via gradient.
-       Text, credential, and stats layer over the dark side.
-       One unified editorial frame, not image + boxes. -->
-  <section class="relative overflow-hidden bg-primary-950 min-h-[60vh] md:min-h-[70vh]">
-    <!-- Image — left half, full bleed, portrait orientation -->
-    <div class="absolute inset-0 md:right-[45%]" aria-hidden="true">
+  <!-- Why Daris — cinematic credibility on warm neutral base.
+       Breaks the dark-green-on-dark-green monotony.
+       Image left with green gradient. Right side: warm ivory.
+       Creates Dark → Light → Dark rhythm in the page flow. -->
+  <section class="relative overflow-hidden bg-cream-50 min-h-[55vh] md:min-h-[70vh]">
+
+    <!-- Image — left portion, full bleed vertically -->
+    <div class="absolute inset-0 md:right-[40%]" aria-hidden="true">
       <img
         src="/images/islamic-study.png"
         :alt="$t('home.credibilityImageAlt')"
@@ -13,62 +14,72 @@
       />
     </div>
 
-    <!-- Gradient overlays — fuse image into dark background -->
-    <!-- Right-to-left fade: image dissolves into primary-950 -->
-    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-primary-950/60 to-primary-950" aria-hidden="true"></div>
-    <!-- Bottom fade for grounding -->
-    <div class="absolute inset-0 bg-gradient-to-t from-primary-950/40 via-transparent to-transparent" aria-hidden="true"></div>
-    <!-- Grain for cinematic texture -->
-    <div class="absolute inset-0 grain-texture opacity-40" aria-hidden="true"></div>
-    <!-- Subtle gold top border -->
-    <div class="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold/15 to-transparent" aria-hidden="true"></div>
+    <!-- Gradient overlays — image → dark green band → cream -->
+    <!-- Mobile: vertical fade to cream so text reads over image -->
+    <div
+      class="absolute inset-0 md:hidden bg-gradient-to-b from-transparent via-cream-50/60 to-cream-50"
+      aria-hidden="true"
+    ></div>
+    <!-- Desktop: horizontal — cinematic green stays on image, cream breathes on right -->
+    <div
+      class="absolute inset-0 hidden md:block"
+      style="background: linear-gradient(to right, transparent 15%, rgba(12,32,25,0.88) 42%, #FDFCF9 58%)"
+      aria-hidden="true"
+    ></div>
 
-    <!-- Content — right-aligned, layered over the dark gradient -->
-    <div class="section-wide relative flex items-center min-h-[60vh] md:min-h-[70vh] py-16 md:py-24">
-      <div class="w-full md:w-[55%] md:ml-auto">
+    <!-- Grain — lighter for the warm side -->
+    <div class="absolute inset-0 grain-texture opacity-20" aria-hidden="true"></div>
 
-        <!-- Heading -->
+    <!-- Subtle gold accent at section edges -->
+    <div class="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" aria-hidden="true"></div>
+    <div class="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold/12 to-transparent" aria-hidden="true"></div>
+
+    <!-- Content — right side, on warm neutral background -->
+    <div class="section-wide relative flex items-end md:items-center min-h-[55vh] md:min-h-[70vh] py-14 md:py-24">
+      <div class="w-full md:w-[50%] md:ml-auto">
+
+        <!-- Heading — dark text on cream -->
         <h2
-          class="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-cream leading-[1.05] mb-6"
+          class="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-slate-900 leading-[1.05] mb-6"
           data-reveal="cinematic"
         >
           {{ $t('home.credibilityTitle') }}
         </h2>
 
-        <!-- Al-Azhar credential — anchored, not a floating card -->
+        <!-- Al-Azhar credential — anchored, grounded, not a card -->
         <div class="mb-12 md:mb-16" data-reveal data-reveal-delay="100">
           <div class="w-10 h-[2px] bg-gold/50 mb-4" aria-hidden="true"></div>
-          <p class="text-sm font-semibold text-gold/80 mb-1">
+          <p class="text-sm font-semibold text-primary-700 mb-1">
             {{ $t('home.azharTitle') }}
           </p>
-          <p class="text-sm text-cream/35 leading-relaxed max-w-sm">
+          <p class="text-sm text-slate-500 leading-relaxed max-w-sm">
             {{ $t('home.azharBody') }}
           </p>
         </div>
 
-        <!-- Stats — typographic, not cards -->
+        <!-- Stats — typographic rhythm, not cards -->
         <div
-          class="flex flex-wrap gap-x-8 md:gap-x-12 gap-y-6"
+          class="flex flex-wrap gap-x-8 md:gap-x-10 gap-y-6"
           data-reveal
           data-reveal-delay="200"
         >
           <div
             v-for="(stat, i) in stats"
             :key="stat.labelKey"
-            class="flex items-start gap-x-8 md:gap-x-12"
+            class="flex items-start gap-x-8 md:gap-x-10"
           >
             <div>
-              <p class="heading-display text-3xl md:text-4xl text-gold font-bold leading-none mb-1">
+              <p class="heading-display text-3xl md:text-4xl text-primary font-bold leading-none mb-1">
                 {{ $t(stat.valueKey) }}
               </p>
-              <p class="text-[10px] text-cream/30 tracking-[0.2em] uppercase">
+              <p class="text-[10px] text-slate-400 tracking-[0.2em] uppercase">
                 {{ $t(stat.labelKey) }}
               </p>
             </div>
-            <!-- Hairline divider between stats (not after last) -->
+            <!-- Hairline divider — warm tone -->
             <div
               v-if="i < stats.length - 1"
-              class="hidden md:block w-px h-10 bg-cream/10 self-center"
+              class="hidden md:block w-px h-10 bg-primary/10 self-center"
               aria-hidden="true"
             ></div>
           </div>
