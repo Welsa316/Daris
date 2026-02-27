@@ -1,25 +1,37 @@
 <template>
   <header
-    class="sticky top-0 z-40 bg-cream/90 backdrop-blur-md border-b border-primary/5 transition-all duration-300"
-    :class="{ 'shadow-card': scrolled }"
+    class="fixed top-0 inset-x-0 z-40 transition-all duration-500"
+    :class="scrolled ? 'bg-white/95 backdrop-blur-md shadow-card' : 'bg-transparent'"
   >
     <nav
-      class="section-container flex items-center justify-between h-24"
+      class="section-container flex items-center justify-between h-20"
       aria-label="Main navigation"
     >
-      <RouterLink to="/" class="flex items-center gap-3 group">
-        <div class="h-20 md:h-24 flex items-center overflow-visible">
+      <!-- Logo — fades in on scroll -->
+      <RouterLink
+        to="/"
+        class="flex items-center gap-3 group transition-all duration-500"
+        :class="scrolled ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'"
+      >
+        <div class="h-16 md:h-20 flex items-center overflow-visible">
           <img
             src="/images/daris-icon.png"
             alt="Daris logo"
-            class="h-12 sm:h-14 w-auto origin-left transition-transform duration-300 group-hover:scale-105"
+            class="h-10 sm:h-12 w-auto origin-left transition-transform duration-300 group-hover:scale-105"
           />
         </div>
         <span class="sr-only">{{ $t('nav.srBrand') }}</span>
       </RouterLink>
 
+      <!-- Spacer when logo is hidden — keeps nav items positioned correctly -->
+      <div v-if="!scrolled" class="w-12" aria-hidden="true"></div>
+
+      <!-- Mobile hamburger -->
       <button
-        class="md:hidden inline-flex items-center justify-center rounded-lg p-2 text-slate-700 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-cream transition-colors"
+        class="md:hidden inline-flex items-center justify-center rounded-lg p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+        :class="scrolled
+          ? 'text-slate-700 hover:bg-primary/5 focus-visible:ring-primary focus-visible:ring-offset-white'
+          : 'text-cream/80 hover:bg-white/10 focus-visible:ring-gold focus-visible:ring-offset-primary-950'"
         type="button"
         :aria-expanded="isOpen ? 'true' : 'false'"
         aria-controls="primary-navigation"
@@ -51,6 +63,7 @@
         </svg>
       </button>
 
+      <!-- Desktop nav -->
       <div
         id="primary-navigation"
         class="hidden md:flex md:items-center md:gap-8 text-sm font-medium"
@@ -59,21 +72,30 @@
           v-for="item in navItems"
           :key="item.to"
           :to="item.to"
-          class="relative text-slate-700 hover:text-primary transition-colors duration-200 after:absolute after:bottom-[-2px] after:left-0 after:h-[2px] after:w-0 after:bg-gold after:transition-all after:duration-300 hover:after:w-full"
-          active-class="text-primary after:!w-full"
+          class="relative transition-colors duration-300 after:absolute after:bottom-[-2px] after:left-0 after:h-[2px] after:w-0 after:bg-gold after:transition-all after:duration-300 hover:after:w-full"
+          :class="scrolled
+            ? 'text-primary/70 hover:text-primary'
+            : 'text-cream/70 hover:text-cream'"
+          :active-class="scrolled ? 'text-primary after:!w-full' : 'text-cream after:!w-full'"
         >
           {{ $t(item.labelKey) }}
         </RouterLink>
-        <LanguageSwitcher />
+
+        <LanguageSwitcher :dark="!scrolled" />
+
         <RouterLink
           to="/contact"
-          class="inline-flex items-center rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-cream shadow-soft hover:bg-primary-800 hover:shadow-soft-md active:scale-[0.97] transition-all duration-200 ltr:ml-2 rtl:mr-2"
+          class="inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold active:scale-[0.97] transition-all duration-300 ltr:ml-2 rtl:mr-2"
+          :class="scrolled
+            ? 'bg-primary text-cream shadow-soft hover:bg-primary-800 hover:shadow-soft-md'
+            : 'bg-gold text-primary-950 shadow-lg hover:bg-gold-300 hover:shadow-xl'"
         >
           {{ $t('nav.contact') }}
         </RouterLink>
       </div>
     </nav>
 
+    <!-- Mobile dropdown -->
     <transition
       enter-active-class="transition duration-200 ease-out"
       enter-from-class="opacity-0 -translate-y-2"
@@ -84,25 +106,32 @@
     >
       <div
         v-if="isOpen"
-        class="md:hidden border-t border-primary/5 bg-cream/98 backdrop-blur-md"
+        class="md:hidden border-t backdrop-blur-md"
+        :class="scrolled ? 'border-primary/5 bg-white/98' : 'border-white/10 bg-primary-950/95'"
       >
         <div class="section-container py-4 space-y-1 text-sm font-medium">
           <RouterLink
             v-for="item in navItems"
             :key="item.to"
             :to="item.to"
-            class="block px-3 py-2.5 rounded-lg text-slate-700 hover:bg-primary/5 hover:text-primary transition-colors duration-200"
-            active-class="bg-primary/5 text-primary"
+            class="block px-3 py-2.5 rounded-lg transition-colors duration-200"
+            :class="scrolled
+              ? 'text-slate-700 hover:bg-primary/5 hover:text-primary'
+              : 'text-cream/80 hover:bg-white/10 hover:text-cream'"
+            :active-class="scrolled ? 'bg-primary/5 text-primary' : 'bg-white/10 text-cream'"
             @click="isOpen = false"
           >
             {{ $t(item.labelKey) }}
           </RouterLink>
           <div class="px-3 py-2.5">
-            <LanguageSwitcher />
+            <LanguageSwitcher :dark="!scrolled" />
           </div>
           <RouterLink
             to="/contact"
-            class="mt-2 flex items-center justify-center w-full rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-cream shadow-soft hover:bg-primary-800 transition-colors duration-200"
+            class="mt-2 flex items-center justify-center w-full rounded-full px-4 py-2.5 text-sm font-semibold transition-colors duration-200"
+            :class="scrolled
+              ? 'bg-primary text-cream shadow-soft hover:bg-primary-800'
+              : 'bg-gold text-primary-950 hover:bg-gold-300'"
             @click="isOpen = false"
           >
             {{ $t('nav.contact') }}
@@ -128,11 +157,12 @@ const navItems = [
 ];
 
 const handleScroll = () => {
-  scrolled.value = window.scrollY > 10;
+  scrolled.value = window.scrollY > 60;
 };
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true });
+  handleScroll();
 });
 
 onUnmounted(() => {

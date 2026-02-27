@@ -1,7 +1,10 @@
 <template>
   <button
     type="button"
-    class="inline-flex items-center gap-1.5 rounded-full border border-primary/10 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-primary/5 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-cream"
+    class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+    :class="dark
+      ? 'border-white/15 text-cream/70 hover:bg-white/10 focus-visible:ring-gold focus-visible:ring-offset-primary-950'
+      : 'border-primary/10 text-slate-700 hover:bg-primary/5 focus-visible:ring-primary focus-visible:ring-offset-cream'"
     :aria-label="currentLocale === 'en' ? 'Switch to Arabic' : 'التبديل إلى الإنجليزية'"
     @click="toggleLocale"
   >
@@ -16,6 +19,10 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { setLocale } from '@/i18n';
+
+defineProps({
+  dark: { type: Boolean, default: false }
+});
 
 const { locale } = useI18n();
 
