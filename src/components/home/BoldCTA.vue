@@ -1,9 +1,9 @@
 <template>
-  <section class="relative overflow-hidden bg-primary-950 z-10">
+  <section class="relative overflow-hidden bg-primary-950">
     <!-- Subtle radial glow — faint gold, off-center -->
     <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full bg-gold/[0.03] blur-[160px]" aria-hidden="true"></div>
 
-    <div class="section-wide relative pt-52 md:pt-64 pb-40 md:pb-52 text-center">
+    <div class="section-wide relative py-40 md:py-52 text-center">
       <!-- Thin gold rule — compositional anchor -->
       <div class="w-12 h-px bg-gold/40 mx-auto mb-12" data-reveal aria-hidden="true"></div>
 
