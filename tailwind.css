@@ -50,12 +50,32 @@
   font-family: 'Noto Sans Arabic', 'Inter', system-ui, sans-serif;
 }
 
-/* Start opacity-0 for entrance animations */
+/* Start opacity-0 for entrance animations (legacy) */
 .animate-on-load {
   opacity: 0;
 }
 
-/* Hero geometric pattern */
+/* Hero entrance — staggered reveal on page load.
+   Uses a fast-out easing for a snappy, editorial feel. */
+.hero-entrance {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: heroReveal 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.hero-entrance-1 { animation-delay: 0.1s; }
+.hero-entrance-2 { animation-delay: 0.25s; }
+.hero-entrance-3 { animation-delay: 0.45s; }
+.hero-entrance-4 { animation-delay: 0.65s; }
+.hero-entrance-5 { animation-delay: 0.85s; }
+
+@keyframes heroReveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hero geometric pattern (retained for legacy, unused in new hero) */
 .hero-pattern {
   background-image:
     linear-gradient(30deg, rgba(200, 169, 81, 0.06) 12%, transparent 12.5%, transparent 87%, rgba(200, 169, 81, 0.06) 87.5%),
