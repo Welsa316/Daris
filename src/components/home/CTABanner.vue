@@ -1,7 +1,7 @@
 <template>
   <section class="relative overflow-hidden bg-primary py-24 md:py-32">
-    <div class="absolute inset-0 hero-pattern opacity-50" aria-hidden="true"></div>
     <div class="absolute inset-0 bg-gradient-to-b from-primary-950/20 to-primary-900/30" aria-hidden="true"></div>
+    <div class="absolute inset-0 grain-texture" aria-hidden="true"></div>
 
     <div class="section-container relative text-center">
       <h2 class="heading-display text-3xl sm:text-4xl md:text-5xl text-cream mb-6 text-balance">

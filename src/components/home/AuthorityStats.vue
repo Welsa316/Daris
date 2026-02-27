@@ -10,7 +10,13 @@
 
     <div class="section-wide relative py-20 md:py-28">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-y-12 gap-x-8">
-        <div v-for="(stat, i) in stats" :key="stat.labelKey" class="text-center md:text-left">
+        <div
+          v-for="(stat, i) in stats"
+          :key="stat.labelKey"
+          class="text-center md:text-left"
+          data-reveal="fade"
+          :data-reveal-delay="i * 120"
+        >
           <p class="heading-display text-5xl md:text-6xl text-gold font-bold mb-3 leading-none">
             {{ $t(stat.valueKey) }}
           </p>

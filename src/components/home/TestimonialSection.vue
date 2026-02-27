@@ -2,7 +2,7 @@
   <section class="bg-cream-50 py-24 md:py-36">
     <div class="section-wide">
       <!-- Eyebrow + heading — left aligned -->
-      <div class="mb-16 md:mb-20 max-w-lg">
+      <div class="mb-16 md:mb-20 max-w-lg" data-reveal>
         <p class="text-[11px] font-semibold tracking-[0.3em] uppercase text-gold mb-3">
           {{ $t('home.testimonialsEyebrow') }}
         </p>
@@ -18,6 +18,8 @@
           :key="i"
           class="relative px-8 md:px-10 py-8 md:py-0"
           :class="i < testimonials.length - 1 ? 'md:border-r md:rtl:border-r-0 md:rtl:border-l border-slate-200/60' : ''"
+          data-reveal
+          :data-reveal-delay="i * 120"
         >
           <!-- Decorative quote mark -->
           <svg class="h-8 w-8 text-gold/25 mb-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

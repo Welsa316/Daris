@@ -1,7 +1,7 @@
 <template>
   <section class="relative overflow-hidden bg-primary min-h-[90vh] flex items-center">
     <!-- Pattern overlay -->
-    <div class="absolute inset-0 hero-pattern opacity-60" aria-hidden="true"></div>
+    <div class="absolute inset-0 grain-texture" aria-hidden="true"></div>
     <!-- Gradient depth -->
     <div class="absolute inset-0 bg-gradient-to-b from-primary-950/50 via-transparent to-primary-950/70" aria-hidden="true"></div>
     <!-- Decorative glow -->
