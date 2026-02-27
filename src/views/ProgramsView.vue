@@ -30,7 +30,7 @@
          Enhanced card design with scroll-reveal and
          stronger visual hierarchy.
          ═══════════════════════════════════════════ -->
-    <section class="bg-white py-20 md:py-32">
+    <section class="bg-cream py-20 md:py-32">
       <div class="section-wide">
         <div class="grid gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)] items-start">
           <!-- Program cards -->

@@ -8,7 +8,7 @@
     />
 
     <!-- Main layout -->
-    <section class="bg-white py-20 md:py-28">
+    <section class="bg-cream py-20 md:py-28">
       <div class="section-narrow">
         <div class="grid gap-12 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] items-start">
           <!-- Contact form -->
