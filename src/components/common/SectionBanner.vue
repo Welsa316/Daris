@@ -1,5 +1,5 @@
 <template>
-  <section class="relative overflow-hidden bg-primary py-20 md:py-24">
+  <section class="relative overflow-hidden bg-primary pt-32 md:pt-36 pb-20 md:pb-24">
     <!-- Subtle depth — no pattern, clean surface -->
     <div class="absolute inset-0 bg-gradient-to-b from-primary-950/20 to-primary-900/40" aria-hidden="true"></div>
     <div class="absolute inset-0 grain-texture" aria-hidden="true"></div>

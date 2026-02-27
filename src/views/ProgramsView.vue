@@ -1,39 +1,71 @@
 <template>
   <div>
-    <!-- Page banner -->
-    <SectionBanner
-      :eyebrow="$t('programs.eyebrow')"
-      :title="$t('programs.title')"
-      :description="$t('programs.description')"
-    />
+    <!-- ═══════════════════════════════════════════
+         SECTION 1: Editorial Hero
+         Matches About page register — dark surface,
+         large serif headline, no generic banner.
+         ═══════════════════════════════════════════ -->
+    <section class="relative overflow-hidden bg-primary-950 pt-36 md:pt-44 pb-24 md:pb-32">
+      <div class="absolute inset-0 grain-texture" aria-hidden="true"></div>
+      <div class="absolute top-1/2 ltr:right-1/4 rtl:left-1/4 -translate-y-1/2 w-[600px] h-[350px] rounded-full bg-gold/[0.02] blur-[130px]" aria-hidden="true"></div>
+      <div class="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" aria-hidden="true"></div>
 
-    <!-- Programs -->
-    <section class="bg-white py-20 md:py-28">
-      <div class="section-container">
-        <div class="grid gap-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)] items-start">
+      <div class="section-wide relative">
+        <div class="max-w-3xl">
+          <p class="text-gold/50 text-[10px] font-semibold tracking-[0.45em] uppercase mb-8 hero-entrance hero-entrance-1">
+            {{ $t('programs.eyebrow') }}
+          </p>
+          <h1 class="font-display text-4xl sm:text-5xl md:text-6xl text-cream leading-[1.08] mb-6 hero-entrance hero-entrance-2">
+            {{ $t('programs.title') }}
+          </h1>
+          <p class="text-lg text-cream/40 leading-relaxed max-w-xl hero-entrance hero-entrance-3">
+            {{ $t('programs.description') }}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SECTION 2: Program Cards + Sidebar
+         Enhanced card design with scroll-reveal and
+         stronger visual hierarchy.
+         ═══════════════════════════════════════════ -->
+    <section class="bg-white py-20 md:py-32">
+      <div class="section-wide">
+        <div class="grid gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)] items-start">
           <!-- Program cards -->
-          <div class="space-y-8">
-            <article v-for="program in programs" :key="program.titleKey" class="rounded-2xl bg-cream shadow-card overflow-hidden">
-              <!-- Visual header -->
-              <div class="relative h-28 bg-gradient-to-br from-primary via-primary-800 to-primary-950 flex items-center overflow-hidden">
+          <div class="space-y-10">
+            <article
+              v-for="(program, i) in programs"
+              :key="program.titleKey"
+              class="rounded-2xl bg-cream-50 border border-cream-200/60 overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300"
+              data-reveal
+              :data-reveal-delay="i * 100"
+            >
+              <!-- Visual header — deeper gradient, more presence -->
+              <div class="relative h-32 bg-gradient-to-br from-primary-800 via-primary to-primary-950 flex items-center overflow-hidden">
                 <div class="absolute inset-0 grain-texture" aria-hidden="true"></div>
-                <div class="relative px-7 flex items-center gap-4">
-                  <span class="h-11 w-11 rounded-xl bg-cream/15 backdrop-blur-sm flex items-center justify-center text-cream/90" v-html="program.icon" aria-hidden="true"></span>
+                <!-- Subtle lateral glow -->
+                <div class="absolute top-0 ltr:right-0 rtl:left-0 w-1/2 h-full bg-gradient-to-l from-gold/[0.04] to-transparent ltr:block rtl:hidden" aria-hidden="true"></div>
+                <div class="absolute top-0 ltr:left-0 rtl:right-0 w-1/2 h-full bg-gradient-to-r from-gold/[0.04] to-transparent rtl:block ltr:hidden" aria-hidden="true"></div>
+
+                <div class="relative px-8 flex items-center gap-4">
+                  <span class="h-12 w-12 rounded-xl bg-cream/10 backdrop-blur-sm flex items-center justify-center text-cream/80" v-html="program.icon" aria-hidden="true"></span>
                   <div>
-                    <h2 class="text-xl font-semibold text-cream">{{ $t(program.titleKey) }}</h2>
-                    <p class="text-xs text-cream/60 font-medium uppercase tracking-wider">{{ $t(program.tagKey) }}</p>
+                    <h2 class="text-xl font-display font-semibold text-cream">{{ $t(program.titleKey) }}</h2>
+                    <p class="text-[10px] text-cream/50 font-semibold uppercase tracking-[0.2em] mt-0.5">{{ $t(program.tagKey) }}</p>
                   </div>
                 </div>
               </div>
 
-              <div class="p-7 text-sm text-slate-600 leading-relaxed">
-                <ul class="space-y-2.5 mb-4">
-                  <li v-for="bk in program.bulletKeys" :key="bk" class="flex gap-2.5 items-start">
-                    <span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-gold/60 flex-shrink-0" aria-hidden="true"></span>
+              <div class="p-8 text-sm text-slate-600 leading-relaxed">
+                <ul class="space-y-3 mb-5">
+                  <li v-for="bk in program.bulletKeys" :key="bk" class="flex gap-3 items-start">
+                    <span class="mt-1.5 h-1 w-1 rounded-full bg-gold/50 flex-shrink-0" aria-hidden="true"></span>
                     <span>{{ $t(bk) }}</span>
                   </li>
                 </ul>
-                <p class="text-xs text-slate-400 pt-4 border-t border-slate-200/60">
+                <p class="text-xs text-slate-400 pt-5 border-t border-slate-200/40 leading-relaxed">
                   {{ $t(program.noteKey) }}
                 </p>
               </div>
@@ -41,13 +73,21 @@
           </div>
 
           <!-- Sidebar -->
-          <aside class="space-y-6 lg:sticky lg:top-28">
-            <!-- Pricing CTA -->
-            <div class="relative overflow-hidden rounded-2xl bg-primary text-cream p-7">
+          <aside class="space-y-8 lg:sticky lg:top-28">
+            <!-- Pricing CTA — deeper, more cinematic -->
+            <div
+              class="relative overflow-hidden rounded-2xl bg-primary-950 text-cream p-8"
+              data-reveal
+              data-reveal-delay="200"
+            >
               <div class="absolute inset-0 grain-texture" aria-hidden="true"></div>
+              <div class="absolute top-0 ltr:right-0 rtl:left-0 w-2/3 h-full bg-gradient-to-l from-gold/[0.03] to-transparent ltr:block rtl:hidden" aria-hidden="true"></div>
+              <div class="absolute top-0 ltr:left-0 rtl:right-0 w-2/3 h-full bg-gradient-to-r from-gold/[0.03] to-transparent rtl:block ltr:hidden" aria-hidden="true"></div>
+
               <div class="relative">
-                <h3 class="text-lg font-semibold mb-2">{{ $t('programs.pricingTitle') }}</h3>
-                <p class="text-sm text-cream/70 mb-6 leading-relaxed">
+                <div class="w-8 h-px bg-gold/40 mb-6" aria-hidden="true"></div>
+                <h3 class="font-display text-xl font-semibold mb-3">{{ $t('programs.pricingTitle') }}</h3>
+                <p class="text-sm text-cream/40 mb-8 leading-relaxed">
                   {{ $t('programs.pricingText') }}
                 </p>
                 <div class="flex flex-col gap-3">
@@ -62,13 +102,17 @@
             </div>
 
             <!-- Logistics -->
-            <div class="rounded-2xl bg-cream shadow-card p-6 text-sm text-slate-600">
-              <h3 class="text-xs font-semibold tracking-[0.16em] uppercase text-gold mb-4">
+            <div
+              class="rounded-2xl bg-cream-50 border border-cream-200/60 p-7 text-sm text-slate-600"
+              data-reveal
+              data-reveal-delay="300"
+            >
+              <h3 class="text-[10px] font-semibold tracking-[0.3em] uppercase text-gold mb-5">
                 {{ $t('programs.logisticsTitle') }}
               </h3>
-              <ul class="space-y-3">
-                <li v-for="lk in logisticKeys" :key="lk" class="flex gap-2.5 items-start">
-                  <span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-gold/60 flex-shrink-0" aria-hidden="true"></span>
+              <ul class="space-y-3.5">
+                <li v-for="lk in logisticKeys" :key="lk" class="flex gap-3 items-start">
+                  <span class="mt-1.5 h-1 w-1 rounded-full bg-gold/50 flex-shrink-0" aria-hidden="true"></span>
                   <span>{{ $t(lk) }}</span>
                 </li>
               </ul>
@@ -81,7 +125,7 @@
 </template>
 
 <script setup>
-import SectionBanner from '@/components/common/SectionBanner.vue';
+import { useScrollReveal } from '@/composables/useScrollReveal';
 import CTAButton from '@/components/common/CTAButton.vue';
 import { contactConfig } from '@/config/contactConfig';
 
@@ -121,4 +165,6 @@ const logisticKeys = [
   'programs.logistic3',
   'programs.logistic4'
 ];
+
+useScrollReveal();
 </script>
