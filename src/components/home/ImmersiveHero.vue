@@ -7,6 +7,13 @@
 
       <!-- ─── LEFT: text column ─── -->
       <div class="relative z-10 flex items-center order-2 md:order-1">
+        <!-- Islamic geometric pattern — left column background texture -->
+        <div
+          class="absolute inset-0 opacity-[0.04] hidden md:block"
+          :style="patternStyle"
+          aria-hidden="true"
+        ></div>
+
         <!-- Gold spine -->
         <div
           class="absolute top-0 bottom-0 ltr:left-8 ltr:md:left-14 rtl:right-8 rtl:md:right-14 w-px bg-gradient-to-b from-transparent via-gold/30 to-transparent"
@@ -97,6 +104,16 @@ import LanternsOverlay from '@/components/hero/LanternsOverlay.vue';
 import { contactConfig } from '@/config/contactConfig';
 
 const { whatsappNumber, whatsappMessage } = contactConfig;
+
+// Islamic geometric star pattern — same motif as credibility section.
+// On dark bg at low opacity for subtle texture on the text column.
+const patternSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'><g fill='none' stroke='%23C8A951' stroke-width='0.5'><polygon points='40,8 46.5,26 64,18 53.5,33.5 72,40 53.5,46.5 64,62 46.5,54 40,72 33.5,54 16,62 26.5,46.5 8,40 26.5,33.5 16,18 33.5,26'/><polygon points='40,20 50,26.5 56,40 50,53.5 40,60 30,53.5 24,40 30,26.5'/><polygon points='0,0 6.5,14 0,18 -6.5,14'/><polygon points='80,0 86.5,14 80,18 73.5,14'/><polygon points='0,80 6.5,66 0,62 -6.5,66'/><polygon points='80,80 86.5,66 80,62 73.5,66'/><line x1='0' y1='40' x2='8' y2='40'/><line x1='72' y1='40' x2='80' y2='40'/><line x1='40' y1='0' x2='40' y2='8'/><line x1='40' y1='72' x2='40' y2='80'/></g></svg>`;
+
+const patternStyle = {
+  backgroundImage: `url("data:image/svg+xml,${patternSvg}")`,
+  backgroundSize: '80px 80px',
+  backgroundRepeat: 'repeat'
+};
 
 const whatsAppHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
   whatsappMessage
