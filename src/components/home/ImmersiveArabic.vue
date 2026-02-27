@@ -6,8 +6,8 @@
     <!-- Photograph — ancient Arabic manuscript with gold illuminated calligraphy -->
     <div class="absolute inset-0">
       <img
-        src="https://images.pexels.com/photos/35609785/pexels-photo-35609785.jpeg?auto=compress&cs=tinysrgb&w=1920"
-        alt="Intricate Islamic geometric ceiling design with Arabic calligraphy and gold accents"
+        src="/images/arabic-calligraphy.png"
+        alt="Arabic calligraphy in gold ink on warm parchment"
         class="w-full h-full object-cover"
         loading="lazy"
       />
