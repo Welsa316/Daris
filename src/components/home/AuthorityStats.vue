@@ -1,47 +1,50 @@
 <template>
-  <!-- Credibility — white background contrasts with dark Fiqh section above.
-       Asymmetric editorial layout with depth and character. -->
+  <!-- Why Daris — white background contrasts with dark Fiqh section above.
+       Asymmetric editorial layout. Image replaces body paragraph.
+       Scholarly desk image brief: cinematic, old Islamic books, warm light,
+       wooden desk, notebook, manuscript. Replace Unsplash URL if needed. -->
   <section class="relative bg-white overflow-hidden">
     <!-- Subtle diagonal decorative element for depth -->
-    <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-bl from-cream-50/80 to-transparent" aria-hidden="true"></div>
+    <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-bl from-cream-50/60 to-transparent" aria-hidden="true"></div>
     <!-- Fine top border accent -->
     <div class="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold/15 to-transparent" aria-hidden="true"></div>
 
     <div class="section-wide relative py-20 md:py-28">
-      <!-- Asymmetric grid: wide left column + narrow right column -->
-      <div class="grid md:grid-cols-[1.4fr_1fr] gap-16 md:gap-20 items-start">
+      <!-- Asymmetric grid: wide left (image) + narrow right (stats) -->
+      <div class="grid md:grid-cols-[1.3fr_1fr] gap-12 md:gap-16 items-start">
 
-        <!-- Left column — headline credential + Al-Azhar callout -->
+        <!-- Left column — heading, image, and Al-Azhar credential -->
         <div>
-          <p
-            class="text-[10px] font-semibold tracking-[0.4em] uppercase text-gold mb-5"
-            data-reveal
-          >
-            {{ $t('home.credibilityEyebrow') }}
-          </p>
-
+          <!-- "Why Daris" — big heading, not a small eyebrow -->
           <h2
-            class="font-display text-3xl sm:text-4xl md:text-[2.75rem] text-slate-900 leading-[1.15] mb-6"
+            class="font-display text-4xl sm:text-5xl md:text-6xl text-slate-900 leading-[1.08] mb-8"
             data-reveal="cinematic"
           >
             {{ $t('home.credibilityTitle') }}
           </h2>
 
-          <p
-            class="text-base text-slate-500 leading-relaxed max-w-lg mb-10"
+          <!-- Scholarly desk image — cinematic, warm, institutional -->
+          <div
+            class="relative overflow-hidden rounded-2xl mb-8 shadow-soft-lg"
             data-reveal
             data-reveal-delay="100"
           >
-            {{ $t('home.credibilityBody') }}
-          </p>
+            <img
+              src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=80"
+              :alt="$t('home.credibilityImageAlt')"
+              class="w-full h-64 sm:h-72 md:h-80 object-cover"
+              loading="lazy"
+            />
+            <!-- Subtle warm overlay to harmonise with palette -->
+            <div class="absolute inset-0 bg-gradient-to-t from-primary-950/10 via-transparent to-transparent" aria-hidden="true"></div>
+          </div>
 
-          <!-- Al-Azhar callout — distinct, offset card with subtle depth -->
+          <!-- Al-Azhar callout — offset card with subtle depth -->
           <div
-            class="relative ml-0 md:ml-6 p-6 md:p-8 rounded-2xl bg-cream-50 border border-cream-200/60 shadow-soft"
+            class="relative ml-0 md:ml-8 p-6 md:p-8 rounded-2xl bg-cream-50 border border-cream-200/60 shadow-soft"
             data-reveal
-            data-reveal-delay="200"
+            data-reveal-delay="250"
           >
-            <!-- Decorative gold corner accent -->
             <div class="absolute top-0 left-6 w-10 h-[3px] bg-gold/40 rounded-full" aria-hidden="true"></div>
             <p class="text-sm font-semibold text-primary-700 mt-2 mb-1.5">
               {{ $t('home.azharTitle') }}
@@ -53,8 +56,8 @@
         </div>
 
         <!-- Right column — staggered stat cards with varied sizing -->
-        <div class="space-y-5 md:pt-14" data-reveal data-reveal-delay="150">
-          <!-- Top stat — large, hero number -->
+        <div class="space-y-5 md:pt-20" data-reveal data-reveal-delay="150">
+          <!-- Top stat — large, hero number on dark card -->
           <div class="p-6 rounded-xl bg-primary-950 text-white">
             <p class="heading-display text-4xl md:text-5xl text-gold font-bold leading-none mb-2">
               {{ $t('home.stat1Value') }}
