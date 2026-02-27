@@ -1,9 +1,8 @@
 <template>
-  <!-- Why Daris — photo-as-card on bright patterned surface.
-       Layout: white/cream bg with low-opacity Islamic geometric pattern.
-       Single centred card where the photo IS the surface — text overlaid
-       on the image with a dark gradient for readability.
-       Floating Al-Azhar badge on card edge.
+  <!-- Why Daris — photo-as-card anchored right on bright patterned surface.
+       White bg with Islamic geometric pattern overlay.
+       Photo card is the surface with text overlaid on the image.
+       Card is right-aligned, narrower, with badge on edge.
        Stats staggered 2-col inside the card. -->
 
   <!-- Top transition band -->
@@ -11,22 +10,22 @@
 
   <section class="relative overflow-hidden bg-white py-20 md:py-28 lg:py-32">
 
-    <!-- ── Islamic geometric pattern overlay (bright on white) ── -->
+    <!-- ── Islamic geometric pattern overlay (gold on white, bright) ── -->
     <div
       class="absolute inset-0 opacity-[0.045]"
       :style="patternStyle"
       aria-hidden="true"
     ></div>
 
-    <!-- Soft gold radial glow centred behind the card -->
+    <!-- Soft gold radial glow — shifted right to back the card -->
     <div
-      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] rounded-full bg-gold/[0.07] blur-[140px]"
+      class="absolute top-1/2 left-2/3 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] rounded-full bg-gold/[0.06] blur-[140px]"
       aria-hidden="true"
     ></div>
 
-    <!-- ── Card ── -->
-    <div class="relative z-10 section-container">
-      <div class="relative max-w-5xl mx-auto">
+    <!-- ── Card — right-anchored ── -->
+    <div class="relative z-10 section-wide">
+      <div class="relative max-w-4xl ml-auto">
 
         <!-- ── Floating credential badge ──
              Anchored to card top-left, overlapping edge. -->
@@ -50,17 +49,17 @@
         <!-- ── Photo card — image is the surface ── -->
         <div class="relative rounded-2xl md:rounded-3xl shadow-2xl shadow-black/20 overflow-hidden ring-1 ring-black/[0.06]">
 
-          <!-- Background photo -->
+          <!-- Background photo — object-top to show the subject properly -->
           <img
             src="/images/islamic-study.png"
             :alt="$t('home.credibilityImageAlt')"
-            class="absolute inset-0 w-full h-full object-cover object-center"
+            class="absolute inset-0 w-full h-full object-cover object-top"
             loading="lazy"
           />
 
           <!-- Dark overlay gradient for text readability -->
           <div
-            class="absolute inset-0 bg-gradient-to-b from-black/40 via-black/55 to-black/70"
+            class="absolute inset-0 bg-gradient-to-b from-black/35 via-black/50 to-black/65"
             aria-hidden="true"
           ></div>
 
@@ -68,11 +67,11 @@
           <div class="absolute inset-0 grain-texture opacity-35" aria-hidden="true"></div>
 
           <!-- ── Content overlaid on the photo ── -->
-          <div class="relative z-10 px-7 sm:px-10 md:px-14 lg:px-20 pt-16 pb-12 md:pt-20 md:pb-16 lg:pt-24 lg:pb-20">
+          <div class="relative z-10 px-7 sm:px-10 md:px-14 lg:px-16 pt-16 pb-12 md:pt-20 md:pb-16 lg:pt-24 lg:pb-20">
 
             <!-- Heading -->
             <h2
-              class="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-cream leading-[1.08] mb-12 md:mb-16 max-w-xl"
+              class="font-display text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] text-cream leading-[1.08] mb-12 md:mb-16 max-w-md"
               data-reveal="cinematic"
             >
               {{ $t('home.credibilityTitle') }}
@@ -80,7 +79,7 @@
 
             <!-- Stats — staggered 2-column -->
             <div
-              class="grid grid-cols-2 gap-x-8 md:gap-x-14 max-w-lg"
+              class="grid grid-cols-2 gap-x-8 md:gap-x-12 max-w-md"
               data-reveal
               data-reveal-delay="150"
             >
