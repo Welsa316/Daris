@@ -30,7 +30,7 @@
             data-reveal-delay="100"
           >
             <img
-              src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=80"
+              src="/images/islamic-study.png"
               :alt="$t('home.credibilityImageAlt')"
               class="w-full h-64 sm:h-72 md:h-80 object-cover"
               loading="lazy"
