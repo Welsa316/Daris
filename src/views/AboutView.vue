@@ -38,7 +38,7 @@
          Two-column editorial. Generous whitespace.
          Text left, photo + credentials right.
          ═══════════════════════════════════════════ -->
-    <section class="bg-white py-24 md:py-36">
+    <section class="bg-cream py-24 md:py-36">
       <div class="section-wide">
         <div class="grid gap-16 md:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)] items-start">
           <!-- Left: narrative text -->

@@ -1,5 +1,5 @@
 <template>
-  <section class="bg-cream-50 py-24 md:py-36">
+  <section class="bg-cream py-24 md:py-36">
     <div class="section-wide">
       <!-- Eyebrow + heading — left aligned -->
       <div class="mb-16 md:mb-20 max-w-lg" data-reveal>
