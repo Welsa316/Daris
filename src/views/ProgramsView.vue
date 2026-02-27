@@ -16,7 +16,7 @@
             <article v-for="program in programs" :key="program.titleKey" class="rounded-2xl bg-cream shadow-card overflow-hidden">
               <!-- Visual header -->
               <div class="relative h-28 bg-gradient-to-br from-primary via-primary-800 to-primary-950 flex items-center overflow-hidden">
-                <div class="absolute inset-0 hero-pattern opacity-40" aria-hidden="true"></div>
+                <div class="absolute inset-0 grain-texture" aria-hidden="true"></div>
                 <div class="relative px-7 flex items-center gap-4">
                   <span class="h-11 w-11 rounded-xl bg-cream/15 backdrop-blur-sm flex items-center justify-center text-cream/90" v-html="program.icon" aria-hidden="true"></span>
                   <div>
@@ -44,7 +44,7 @@
           <aside class="space-y-6 lg:sticky lg:top-28">
             <!-- Pricing CTA -->
             <div class="relative overflow-hidden rounded-2xl bg-primary text-cream p-7">
-              <div class="absolute inset-0 hero-pattern opacity-30" aria-hidden="true"></div>
+              <div class="absolute inset-0 grain-texture" aria-hidden="true"></div>
               <div class="relative">
                 <h3 class="text-lg font-semibold mb-2">{{ $t('programs.pricingTitle') }}</h3>
                 <p class="text-sm text-cream/70 mb-6 leading-relaxed">

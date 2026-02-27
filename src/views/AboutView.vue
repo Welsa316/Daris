@@ -89,8 +89,8 @@
 
     <!-- CTA banner -->
     <section class="relative overflow-hidden bg-primary py-20 md:py-24">
-      <div class="absolute inset-0 hero-pattern opacity-50" aria-hidden="true"></div>
       <div class="absolute inset-0 bg-gradient-to-b from-primary-950/20 to-primary-900/30" aria-hidden="true"></div>
+      <div class="absolute inset-0 grain-texture" aria-hidden="true"></div>
 
       <div class="section-container relative text-center">
         <h2 class="heading-display text-2xl sm:text-3xl text-cream mb-4 text-balance">

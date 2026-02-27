@@ -4,7 +4,7 @@
   >
     <!-- Visual header band -->
     <div class="relative h-32 bg-gradient-to-br from-primary via-primary-800 to-primary-950 flex items-center justify-center overflow-hidden">
-      <div class="absolute inset-0 hero-pattern opacity-40" aria-hidden="true"></div>
+      <div class="absolute inset-0 grain-texture" aria-hidden="true"></div>
       <div class="relative flex flex-col items-center gap-2">
         <span
           class="h-12 w-12 rounded-xl bg-cream/15 backdrop-blur-sm flex items-center justify-center text-cream/90"

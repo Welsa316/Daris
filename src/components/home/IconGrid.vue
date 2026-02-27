@@ -5,13 +5,15 @@
         <div
           v-for="(item, i) in items"
           :key="item.titleKey"
-          class="relative px-8 md:px-12 py-10 md:py-0"
+          class="group relative px-8 md:px-12 py-10 md:py-0 transition-transform duration-300 hover:-translate-y-1"
           :class="i < items.length - 1 ? 'md:border-r md:rtl:border-r-0 md:rtl:border-l border-slate-200/60' : ''"
+          data-reveal
+          :data-reveal-delay="i * 100"
         >
           <!-- Gold accent line -->
           <div class="w-8 h-[2px] bg-gold/50 mb-8" aria-hidden="true"></div>
           <div
-            class="mb-5 text-primary"
+            class="mb-5 text-primary transition-transform duration-300 group-hover:scale-105"
             aria-hidden="true"
             v-html="item.icon"
           ></div>

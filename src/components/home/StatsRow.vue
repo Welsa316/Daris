@@ -1,6 +1,6 @@
 <template>
   <section class="relative overflow-hidden bg-primary">
-    <div class="absolute inset-0 hero-pattern opacity-40" aria-hidden="true"></div>
+    <div class="absolute inset-0 grain-texture" aria-hidden="true"></div>
     <div class="absolute inset-0 bg-gradient-to-b from-primary-950/30 to-primary-900/40" aria-hidden="true"></div>
 
     <div class="section-container relative py-20 md:py-28">
