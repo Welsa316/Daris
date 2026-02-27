@@ -1,12 +1,14 @@
 <template>
-  <!-- Why Daris — cinematic credibility on warm neutral base.
-       Breaks the dark-green-on-dark-green monotony.
-       Image left with green gradient. Right side: warm ivory.
-       Creates Dark → Light → Dark rhythm in the page flow. -->
+  <!-- Why Daris — cinematic credibility with structural tension.
+       Breaks rectangular monotony through:
+       1. Diagonal bottom edge (angled transition into BoldCTA)
+       2. Cascading left edge (heading indented → stats flush)
+       3. Staggered stat baselines
+       4. Image depth layering under content zone -->
   <section class="relative overflow-hidden bg-cream-50 min-h-[55vh] md:min-h-[70vh]">
 
-    <!-- Image — left portion, full bleed vertically -->
-    <div class="absolute inset-0 md:right-[40%]" aria-hidden="true">
+    <!-- Image — extends into content zone for depth layering -->
+    <div class="absolute inset-0 md:right-[30%]" aria-hidden="true">
       <img
         src="/images/islamic-study.png"
         :alt="$t('home.credibilityImageAlt')"
@@ -14,40 +16,51 @@
       />
     </div>
 
-    <!-- Gradient overlays — image → dark green band → cream -->
-    <!-- Mobile: vertical fade to cream so text reads over image -->
+    <!-- Gradient overlays -->
+    <!-- Mobile: vertical fade to cream -->
     <div
       class="absolute inset-0 md:hidden bg-gradient-to-b from-transparent via-cream-50/60 to-cream-50"
       aria-hidden="true"
     ></div>
-    <!-- Desktop: horizontal — cinematic green stays on image, cream breathes on right -->
+    <!-- Desktop: image → dark band → semi-transparent cream (depth) → opaque cream -->
     <div
       class="absolute inset-0 hidden md:block"
-      style="background: linear-gradient(to right, transparent 15%, rgba(12,32,25,0.88) 42%, #FDFCF9 58%)"
+      style="background: linear-gradient(to right, transparent 12%, rgba(12,32,25,0.9) 36%, rgba(253,252,249,0.92) 52%, #FDFCF9 68%)"
       aria-hidden="true"
     ></div>
 
-    <!-- Grain — lighter for the warm side -->
+    <!-- Grain — subtle on light base -->
     <div class="absolute inset-0 grain-texture opacity-20" aria-hidden="true"></div>
 
-    <!-- Subtle gold accent at section edges -->
+    <!-- Gold accent top edge -->
     <div class="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" aria-hidden="true"></div>
-    <div class="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold/12 to-transparent" aria-hidden="true"></div>
 
-    <!-- Content — right side, on warm neutral background -->
-    <div class="section-wide relative flex items-end md:items-center min-h-[55vh] md:min-h-[70vh] py-14 md:py-24">
-      <div class="w-full md:w-[50%] md:ml-auto">
+    <!-- Angled bottom — dark triangle breaks rectangular boundary.
+         Matches BoldCTA color so the next section "rises" diagonally into this one. -->
+    <div
+      class="hidden md:block absolute bottom-0 inset-x-0 z-[1] pointer-events-none"
+      aria-hidden="true"
+    >
+      <div
+        class="h-16 bg-primary-950"
+        style="clip-path: polygon(0 100%, 100% 0, 100% 100%)"
+      ></div>
+    </div>
 
-        <!-- Heading — dark text on cream -->
+    <!-- Content — cascading alignment creates asymmetric composition -->
+    <div class="section-wide relative z-10 flex items-end md:items-center min-h-[55vh] md:min-h-[70vh] py-14 md:pt-24 md:pb-36">
+      <div class="w-full md:w-[55%] md:ml-auto">
+
+        <!-- Heading — most indented, narrow measure, away from image -->
         <h2
-          class="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-slate-900 leading-[1.05] mb-6"
+          class="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-slate-900 leading-[1.05] mb-6 md:pl-8"
           data-reveal="cinematic"
         >
           {{ $t('home.credibilityTitle') }}
         </h2>
 
-        <!-- Al-Azhar credential — anchored, grounded, not a card -->
-        <div class="mb-12 md:mb-16" data-reveal data-reveal-delay="100">
+        <!-- Credential — mid-indent, bridges heading and stats -->
+        <div class="mb-12 md:mb-16 md:pl-4" data-reveal data-reveal-delay="100">
           <div class="w-10 h-[2px] bg-gold/50 mb-4" aria-hidden="true"></div>
           <p class="text-sm font-semibold text-primary-700 mb-1">
             {{ $t('home.azharTitle') }}
@@ -57,31 +70,23 @@
           </p>
         </div>
 
-        <!-- Stats — typographic rhythm, not cards -->
+        <!-- Stats — flush left (widest reach toward image), staggered baselines -->
         <div
-          class="flex flex-wrap gap-x-8 md:gap-x-10 gap-y-6"
+          class="flex flex-wrap gap-x-8 md:gap-x-12 gap-y-6"
           data-reveal
           data-reveal-delay="200"
         >
           <div
             v-for="(stat, i) in stats"
             :key="stat.labelKey"
-            class="flex items-start gap-x-8 md:gap-x-10"
+            :class="['transition-transform', statOffsets[i]]"
           >
-            <div>
-              <p class="heading-display text-3xl md:text-4xl text-primary font-bold leading-none mb-1">
-                {{ $t(stat.valueKey) }}
-              </p>
-              <p class="text-[10px] text-slate-400 tracking-[0.2em] uppercase">
-                {{ $t(stat.labelKey) }}
-              </p>
-            </div>
-            <!-- Hairline divider — warm tone -->
-            <div
-              v-if="i < stats.length - 1"
-              class="hidden md:block w-px h-10 bg-primary/10 self-center"
-              aria-hidden="true"
-            ></div>
+            <p class="heading-display text-3xl md:text-4xl text-primary font-bold leading-none mb-1">
+              {{ $t(stat.valueKey) }}
+            </p>
+            <p class="text-[10px] text-slate-400 tracking-[0.2em] uppercase">
+              {{ $t(stat.labelKey) }}
+            </p>
           </div>
         </div>
 
@@ -96,5 +101,13 @@ const stats = [
   { valueKey: 'home.stat2Value', labelKey: 'home.stat2Label' },
   { valueKey: 'home.stat3Value', labelKey: 'home.stat3Label' },
   { valueKey: 'home.stat4Value', labelKey: 'home.stat4Label' }
+];
+
+// Staggered vertical offsets — breaks mechanical horizontal alignment
+const statOffsets = [
+  '',                   // baseline
+  'md:translate-y-2',   // 8px lower
+  'md:-translate-y-1',  // 4px higher
+  'md:translate-y-3'    // 12px lowest — anchors the cascade
 ];
 </script>
