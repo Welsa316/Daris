@@ -1,18 +1,17 @@
 <template>
-  <!-- Why Daris — photo-as-card anchored right on bright patterned surface.
-       White bg with Islamic geometric pattern overlay.
-       Photo card is the surface with text overlaid on the image.
-       Card is right-aligned, narrower, with badge on edge.
-       Stats staggered 2-col inside the card. -->
+  <!-- Why Daris — photo-as-card anchored right on cream patterned surface.
+       Cream bg (site default) with Islamic geometric pattern (darker stroke
+       so it reads on cream). Same motif as hero but colour-shifted.
+       Photo card right-aligned, narrower, badge on edge. -->
 
   <!-- Top transition band -->
   <div class="h-10 md:h-14 bg-cream-50" aria-hidden="true"></div>
 
-  <section class="relative overflow-hidden bg-white py-20 md:py-28 lg:py-32">
+  <section class="relative overflow-hidden bg-cream py-20 md:py-28 lg:py-32">
 
-    <!-- ── Islamic geometric pattern overlay (gold on white, bright) ── -->
+    <!-- ── Islamic geometric pattern overlay (primary-700 stroke on cream) ── -->
     <div
-      class="absolute inset-0 opacity-[0.045]"
+      class="absolute inset-0 opacity-[0.06]"
       :style="patternStyle"
       aria-hidden="true"
     ></div>
@@ -129,9 +128,9 @@ const stats = [
   { valueKey: 'home.stat4Value', labelKey: 'home.stat4Label' }
 ];
 
-// Islamic geometric star pattern — 8-pointed star tessellation.
-// Gold strokes on white = bright, airy. Tiles at 80×80.
-const patternSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'><g fill='none' stroke='%23C8A951' stroke-width='0.5'><polygon points='40,8 46.5,26 64,18 53.5,33.5 72,40 53.5,46.5 64,62 46.5,54 40,72 33.5,54 16,62 26.5,46.5 8,40 26.5,33.5 16,18 33.5,26'/><polygon points='40,20 50,26.5 56,40 50,53.5 40,60 30,53.5 24,40 30,26.5'/><polygon points='0,0 6.5,14 0,18 -6.5,14'/><polygon points='80,0 86.5,14 80,18 73.5,14'/><polygon points='0,80 6.5,66 0,62 -6.5,66'/><polygon points='80,80 86.5,66 80,62 73.5,66'/><line x1='0' y1='40' x2='8' y2='40'/><line x1='72' y1='40' x2='80' y2='40'/><line x1='40' y1='0' x2='40' y2='8'/><line x1='40' y1='72' x2='40' y2='80'/></g></svg>`;
+// Same Islamic geometric star pattern as hero, but with primary-700
+// (#1F4D3A) stroke so it reads on cream background.
+const patternSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'><g fill='none' stroke='%231F4D3A' stroke-width='0.5'><polygon points='40,8 46.5,26 64,18 53.5,33.5 72,40 53.5,46.5 64,62 46.5,54 40,72 33.5,54 16,62 26.5,46.5 8,40 26.5,33.5 16,18 33.5,26'/><polygon points='40,20 50,26.5 56,40 50,53.5 40,60 30,53.5 24,40 30,26.5'/><polygon points='0,0 6.5,14 0,18 -6.5,14'/><polygon points='80,0 86.5,14 80,18 73.5,14'/><polygon points='0,80 6.5,66 0,62 -6.5,66'/><polygon points='80,80 86.5,66 80,62 73.5,66'/><line x1='0' y1='40' x2='8' y2='40'/><line x1='72' y1='40' x2='80' y2='40'/><line x1='40' y1='0' x2='40' y2='8'/><line x1='40' y1='72' x2='40' y2='80'/></g></svg>`;
 
 const patternStyle = {
   backgroundImage: `url("data:image/svg+xml,${patternSvg}")`,

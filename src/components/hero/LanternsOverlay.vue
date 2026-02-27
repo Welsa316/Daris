@@ -1,173 +1,163 @@
 <template>
   <!-- Ramadan fanoos lanterns — top-left corner of hero.
-       Two traditional fanoos shapes at different heights/sizes.
-       Bell/onion silhouette with geometric glass cutouts.
-       Brighter than before, soft glow, gentle sway animation.
-       Purely decorative, pointer-events-none, behind hero text. -->
+       Classic Egyptian fanoos shape: hexagonal body with flat sides,
+       dome cap, crescent on top, gothic arch windows, pointed finial.
+       Static (no sway). Ornamental background jewelry. -->
   <div
     class="absolute inset-0 z-[2] pointer-events-none overflow-hidden hidden md:block"
     aria-hidden="true"
   >
     <!-- Fanoos A — higher, smaller -->
-    <div class="absolute top-0 ltr:left-[5%] rtl:right-[5%] lg:ltr:left-[7%] lg:rtl:right-[7%] lantern-sway-a">
+    <div class="absolute top-0 ltr:left-[5%] rtl:right-[5%] lg:ltr:left-[7%] lg:rtl:right-[7%]">
       <svg
-        width="48"
-        height="170"
-        viewBox="0 0 48 170"
+        width="52"
+        height="168"
+        viewBox="0 0 52 168"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        class="opacity-[0.32] drop-shadow-[0_6px_20px_rgba(200,169,81,0.2)]"
+        class="opacity-[0.38] drop-shadow-[0_4px_16px_rgba(200,169,81,0.2)]"
       >
         <defs>
-          <linearGradient id="fanGlA" x1="24" y1="40" x2="24" y2="140" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#C8A951" stop-opacity="0.35"/>
-            <stop offset="0.5" stop-color="#C8A951" stop-opacity="0.15"/>
-            <stop offset="1" stop-color="#C8A951" stop-opacity="0.05"/>
+          <linearGradient id="fgA" x1="26" y1="52" x2="26" y2="140" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#C8A951" stop-opacity="0.3"/>
+            <stop offset="1" stop-color="#C8A951" stop-opacity="0.06"/>
           </linearGradient>
-          <radialGradient id="fanInnerA" cx="24" cy="80" r="20" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#F5F1E8" stop-opacity="0.08"/>
-            <stop offset="1" stop-color="#F5F1E8" stop-opacity="0"/>
-          </radialGradient>
         </defs>
         <!-- Chain -->
-        <line x1="24" y1="0" x2="24" y2="32" stroke="#C8A951" stroke-width="0.8" stroke-dasharray="2 3"/>
-        <!-- Ring -->
-        <circle cx="24" cy="5" r="3.5" fill="none" stroke="#C8A951" stroke-width="0.7" stroke-opacity="0.5"/>
-        <!-- Top dome / onion cap -->
+        <line x1="26" y1="0" x2="26" y2="28" stroke="#C8A951" stroke-width="0.8" stroke-dasharray="2 3"/>
+        <!-- Ring at top -->
+        <circle cx="26" cy="4" r="3" fill="none" stroke="#C8A951" stroke-width="0.7" stroke-opacity="0.5"/>
+        <!-- Dome cap -->
         <path
-          d="M20 32 Q20 26, 24 24 Q28 26, 28 32"
-          fill="#C8A951" fill-opacity="0.2"
+          d="M18 52 Q18 38, 26 32 Q34 38, 34 52"
+          fill="#C8A951" fill-opacity="0.15"
           stroke="#C8A951" stroke-width="0.6" stroke-opacity="0.5"
         />
-        <!-- Flat cap band -->
-        <rect x="17" y="32" width="14" height="4" rx="1" fill="#C8A951" fill-opacity="0.25" stroke="#C8A951" stroke-width="0.5" stroke-opacity="0.4"/>
-        <!-- Body — classic fanoos bell shape: wide at top-mid, tapers to base -->
+        <!-- Crescent on dome -->
         <path
-          d="M17 36 C13 50, 10 65, 12 85 C13 100, 16 110, 19 118 L29 118 C32 110, 35 100, 36 85 C38 65, 35 50, 31 36 Z"
-          fill="url(#fanGlA)"
+          d="M25 37 Q27 35, 28 37 Q27 36, 25 37"
+          fill="#C8A951" fill-opacity="0.5"
+          stroke="#C8A951" stroke-width="0.4" stroke-opacity="0.5"
+        />
+        <!-- Small star next to crescent -->
+        <polygon points="30,36 30.5,37.2 31.8,37.2 30.8,38 31.2,39.2 30,38.4 28.8,39.2 29.2,38 28.2,37.2 29.5,37.2" fill="#C8A951" fill-opacity="0.4"/>
+        <!-- Cap band — flat horizontal bar -->
+        <rect x="15" y="52" width="22" height="4" rx="0.5" fill="#C8A951" fill-opacity="0.22" stroke="#C8A951" stroke-width="0.5" stroke-opacity="0.4"/>
+        <!-- Body — hexagonal front face (flat-sided, not bell-curved) -->
+        <path
+          d="M15 56 L11 62 L11 120 L15 128 L37 128 L41 120 L41 62 L37 56 Z"
+          fill="url(#fgA)"
           stroke="#C8A951"
           stroke-width="0.6"
           stroke-opacity="0.45"
         />
-        <!-- Inner glow -->
-        <ellipse cx="24" cy="78" rx="10" ry="22" fill="url(#fanInnerA)"/>
-        <!-- Glass panel divider lines — vertical -->
-        <line x1="24" y1="40" x2="24" y2="115" stroke="#C8A951" stroke-width="0.4" stroke-opacity="0.3"/>
-        <line x1="17" y1="55" x2="17" y2="105" stroke="#C8A951" stroke-width="0.3" stroke-opacity="0.15"/>
-        <line x1="31" y1="55" x2="31" y2="105" stroke="#C8A951" stroke-width="0.3" stroke-opacity="0.15"/>
-        <!-- Glass panel divider lines — horizontal bands -->
-        <line x1="14" y1="58" x2="34" y2="58" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.2"/>
-        <line x1="12" y1="78" x2="36" y2="78" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.2"/>
-        <line x1="14" y1="98" x2="34" y2="98" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.2"/>
-        <!-- Star cutout — top panel -->
-        <polygon points="24,46 26,52 32,52 27,56 29,62 24,58 19,62 21,56 16,52 22,52" fill="none" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.3"/>
-        <!-- Diamond cutout — middle panel -->
-        <polygon points="24,64 29,78 24,92 19,78" fill="none" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.25"/>
-        <!-- Small diamond — bottom panel -->
-        <polygon points="24,100 27,108 24,115 21,108" fill="none" stroke="#C8A951" stroke-width="0.3" stroke-opacity="0.2"/>
+        <!-- Side facets to imply hexagonal 3D form -->
+        <path d="M15 56 L18 58 L18 126 L15 128" fill="none" stroke="#C8A951" stroke-width="0.3" stroke-opacity="0.2"/>
+        <path d="M37 56 L34 58 L34 126 L37 128" fill="none" stroke="#C8A951" stroke-width="0.3" stroke-opacity="0.2"/>
+        <!-- Gothic arch window — front face, upper -->
+        <path
+          d="M20 72 L20 96 Q20 100, 26 68 Q32 100, 32 96 L32 72 Q32 64, 26 60 Q20 64, 20 72 Z"
+          fill="none"
+          stroke="#C8A951"
+          stroke-width="0.5"
+          stroke-opacity="0.35"
+        />
+        <!-- Simplified arch — cleaner pointed arch -->
+        <path
+          d="M21 100 L21 78 Q21 66, 26 62 Q31 66, 31 78 L31 100"
+          fill="none"
+          stroke="#C8A951"
+          stroke-width="0.45"
+          stroke-opacity="0.35"
+        />
+        <!-- Horizontal bands -->
+        <line x1="13" y1="72" x2="39" y2="72" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.2"/>
+        <line x1="12" y1="100" x2="40" y2="100" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.2"/>
+        <!-- Lower panel — small diamond -->
+        <polygon points="26,104 30,112 26,120 22,112" fill="none" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.25"/>
         <!-- Base band -->
-        <rect x="18" y="118" width="12" height="3" rx="0.5" fill="#C8A951" fill-opacity="0.2" stroke="#C8A951" stroke-width="0.5" stroke-opacity="0.35"/>
-        <!-- Bottom finial — pointed drop -->
-        <path d="M22 121 L24 132 L26 121" fill="none" stroke="#C8A951" stroke-width="0.6" stroke-opacity="0.35"/>
-        <circle cx="24" cy="134" r="1.5" fill="#C8A951" fill-opacity="0.25"/>
+        <rect x="14" y="128" width="24" height="4" rx="0.5" fill="#C8A951" fill-opacity="0.18" stroke="#C8A951" stroke-width="0.5" stroke-opacity="0.35"/>
+        <!-- Bottom finial — tapered point -->
+        <path d="M22 132 L26 148 L30 132" fill="none" stroke="#C8A951" stroke-width="0.6" stroke-opacity="0.35"/>
+        <circle cx="26" cy="150" r="1.8" fill="#C8A951" fill-opacity="0.25"/>
       </svg>
     </div>
 
-    <!-- Fanoos B — lower, larger -->
-    <div class="absolute top-0 ltr:left-[13%] rtl:right-[13%] lg:ltr:left-[15%] lg:rtl:right-[15%] lantern-sway-b">
+    <!-- Fanoos B — lower, slightly larger -->
+    <div class="absolute top-0 ltr:left-[13%] rtl:right-[13%] lg:ltr:left-[15%] lg:rtl:right-[15%]">
       <svg
-        width="58"
+        width="62"
         height="210"
-        viewBox="0 0 58 210"
+        viewBox="0 0 62 210"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        class="opacity-[0.26] drop-shadow-[0_8px_24px_rgba(200,169,81,0.18)]"
+        class="opacity-[0.30] drop-shadow-[0_6px_20px_rgba(200,169,81,0.16)]"
       >
         <defs>
-          <linearGradient id="fanGlB" x1="29" y1="52" x2="29" y2="170" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#C8A951" stop-opacity="0.3"/>
-            <stop offset="0.5" stop-color="#C8A951" stop-opacity="0.12"/>
-            <stop offset="1" stop-color="#C8A951" stop-opacity="0.04"/>
+          <linearGradient id="fgB" x1="31" y1="62" x2="31" y2="168" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#C8A951" stop-opacity="0.25"/>
+            <stop offset="1" stop-color="#C8A951" stop-opacity="0.05"/>
           </linearGradient>
-          <radialGradient id="fanInnerB" cx="29" cy="100" r="24" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#F5F1E8" stop-opacity="0.07"/>
-            <stop offset="1" stop-color="#F5F1E8" stop-opacity="0"/>
-          </radialGradient>
         </defs>
         <!-- Chain -->
-        <line x1="29" y1="0" x2="29" y2="42" stroke="#C8A951" stroke-width="0.8" stroke-dasharray="2 3"/>
+        <line x1="31" y1="0" x2="31" y2="36" stroke="#C8A951" stroke-width="0.8" stroke-dasharray="2 3"/>
         <!-- Ring -->
-        <circle cx="29" cy="5" r="4" fill="none" stroke="#C8A951" stroke-width="0.7" stroke-opacity="0.45"/>
-        <!-- Crescent accent on ring -->
-        <path d="M27 3 Q29 1, 31 3 Q29 2.5, 27 3" fill="#C8A951" fill-opacity="0.3"/>
-        <!-- Top dome — taller onion shape -->
+        <circle cx="31" cy="5" r="4" fill="none" stroke="#C8A951" stroke-width="0.7" stroke-opacity="0.45"/>
+        <!-- Dome cap — taller -->
         <path
-          d="M24 42 Q22 34, 29 30 Q36 34, 34 42"
-          fill="#C8A951" fill-opacity="0.18"
+          d="M21 62 Q21 44, 31 36 Q41 44, 41 62"
+          fill="#C8A951" fill-opacity="0.12"
           stroke="#C8A951" stroke-width="0.6" stroke-opacity="0.45"
         />
-        <!-- Cap band -->
-        <rect x="20" y="42" width="18" height="5" rx="1" fill="#C8A951" fill-opacity="0.22" stroke="#C8A951" stroke-width="0.5" stroke-opacity="0.4"/>
-        <!-- Body — wider bell fanoos -->
+        <!-- Crescent on dome -->
         <path
-          d="M20 47 C15 62, 11 82, 13 105 C14 125, 18 140, 22 150 L36 150 C40 140, 44 125, 45 105 C47 82, 43 62, 38 47 Z"
-          fill="url(#fanGlB)"
+          d="M29.5 44 Q32 41, 33.5 44 Q32 42.5, 29.5 44"
+          fill="#C8A951" fill-opacity="0.45"
+          stroke="#C8A951" stroke-width="0.4" stroke-opacity="0.45"
+        />
+        <!-- Star -->
+        <polygon points="36,43 36.6,44.5 38.2,44.5 37,45.5 37.4,47 36,46 34.6,47 35,45.5 33.8,44.5 35.4,44.5" fill="#C8A951" fill-opacity="0.35"/>
+        <!-- Cap band -->
+        <rect x="17" y="62" width="28" height="5" rx="0.5" fill="#C8A951" fill-opacity="0.2" stroke="#C8A951" stroke-width="0.5" stroke-opacity="0.38"/>
+        <!-- Body — hexagonal front face -->
+        <path
+          d="M17 67 L12 74 L12 148 L17 156 L45 156 L50 148 L50 74 L45 67 Z"
+          fill="url(#fgB)"
           stroke="#C8A951"
           stroke-width="0.6"
           stroke-opacity="0.4"
         />
-        <!-- Inner glow -->
-        <ellipse cx="29" cy="100" rx="13" ry="28" fill="url(#fanInnerB)"/>
-        <!-- Glass panel dividers — vertical -->
-        <line x1="29" y1="52" x2="29" y2="147" stroke="#C8A951" stroke-width="0.4" stroke-opacity="0.25"/>
-        <line x1="20" y1="65" x2="20" y2="135" stroke="#C8A951" stroke-width="0.3" stroke-opacity="0.12"/>
-        <line x1="38" y1="65" x2="38" y2="135" stroke="#C8A951" stroke-width="0.3" stroke-opacity="0.12"/>
-        <!-- Glass panel dividers — horizontal -->
-        <line x1="15" y1="70" x2="43" y2="70" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.18"/>
-        <line x1="13" y1="95" x2="45" y2="95" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.18"/>
-        <line x1="15" y1="120" x2="43" y2="120" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.18"/>
-        <!-- Star cutout — top panel -->
-        <polygon points="29,56 31.5,63 38,63 33,67 35,74 29,70 23,74 25,67 20,63 26.5,63" fill="none" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.28"/>
-        <!-- Large diamond — middle panel -->
-        <polygon points="29,78 35,97 29,116 23,97" fill="none" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.22"/>
-        <!-- Inner diamond -->
-        <polygon points="29,86 32,97 29,108 26,97" fill="none" stroke="#C8A951" stroke-width="0.25" stroke-opacity="0.15"/>
-        <!-- Small diamond — bottom panel -->
-        <polygon points="29,123 33,134 29,144 25,134" fill="none" stroke="#C8A951" stroke-width="0.3" stroke-opacity="0.18"/>
+        <!-- Side facets -->
+        <path d="M17 67 L21 70 L21 153 L17 156" fill="none" stroke="#C8A951" stroke-width="0.3" stroke-opacity="0.18"/>
+        <path d="M45 67 L41 70 L41 153 L45 156" fill="none" stroke="#C8A951" stroke-width="0.3" stroke-opacity="0.18"/>
+        <!-- Gothic arch window — taller -->
+        <path
+          d="M24 124 L24 92 Q24 78, 31 72 Q38 78, 38 92 L38 124"
+          fill="none"
+          stroke="#C8A951"
+          stroke-width="0.5"
+          stroke-opacity="0.32"
+        />
+        <!-- Inner arch -->
+        <path
+          d="M27 120 L27 96 Q27 84, 31 80 Q35 84, 35 96 L35 120"
+          fill="none"
+          stroke="#C8A951"
+          stroke-width="0.35"
+          stroke-opacity="0.2"
+        />
+        <!-- Horizontal bands -->
+        <line x1="14" y1="86" x2="48" y2="86" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.18"/>
+        <line x1="13" y1="124" x2="49" y2="124" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.18"/>
+        <!-- Lower panel — diamond -->
+        <polygon points="31,128 36,140 31,150 26,140" fill="none" stroke="#C8A951" stroke-width="0.35" stroke-opacity="0.22"/>
         <!-- Base band -->
-        <rect x="21" y="150" width="16" height="4" rx="0.5" fill="#C8A951" fill-opacity="0.18" stroke="#C8A951" stroke-width="0.5" stroke-opacity="0.3"/>
+        <rect x="16" y="156" width="30" height="5" rx="0.5" fill="#C8A951" fill-opacity="0.16" stroke="#C8A951" stroke-width="0.5" stroke-opacity="0.3"/>
         <!-- Bottom finial -->
-        <path d="M26 154 L29 168 L32 154" fill="none" stroke="#C8A951" stroke-width="0.6" stroke-opacity="0.3"/>
-        <circle cx="29" cy="170" r="2" fill="#C8A951" fill-opacity="0.22"/>
-        <line x1="29" y1="172" x2="29" y2="177" stroke="#C8A951" stroke-width="0.5" stroke-opacity="0.15"/>
+        <path d="M26 161 L31 180 L36 161" fill="none" stroke="#C8A951" stroke-width="0.6" stroke-opacity="0.3"/>
+        <circle cx="31" cy="182" r="2" fill="#C8A951" fill-opacity="0.2"/>
+        <line x1="31" y1="184" x2="31" y2="190" stroke="#C8A951" stroke-width="0.5" stroke-opacity="0.15"/>
       </svg>
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Fanoos sway — gentle pendulum, transform-origin at chain top */
-.lantern-sway-a {
-  transform-origin: top center;
-  animation: lantern-sway 9s ease-in-out infinite alternate;
-}
-
-.lantern-sway-b {
-  transform-origin: top center;
-  animation: lantern-sway 11s ease-in-out infinite alternate-reverse;
-  animation-delay: -3s;
-}
-
-@keyframes lantern-sway {
-  0%   { transform: rotate(-2deg); }
-  100% { transform: rotate(2deg); }
-}
-
-/* Respect reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .lantern-sway-a,
-  .lantern-sway-b {
-    animation: none;
-  }
-}
-</style>
