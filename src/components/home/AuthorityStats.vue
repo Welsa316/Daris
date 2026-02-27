@@ -19,13 +19,13 @@
       />
     </div>
 
-    <!-- Gradient overlays — image → dark green band → cream -->
-    <!-- Mobile: vertical fade to cream so text reads over image -->
+    <!-- Gradient overlays -->
+    <!-- Mobile: vertical fade to cream -->
     <div
       class="absolute inset-0 -bottom-20 md:hidden bg-gradient-to-b from-transparent via-cream-50/60 to-cream-50"
       aria-hidden="true"
     ></div>
-    <!-- Desktop: horizontal — cinematic green stays on image, cream breathes on right -->
+    <!-- Desktop: image → dark band → semi-transparent cream (depth) → opaque cream -->
     <div
       class="absolute inset-0 -bottom-20 hidden md:block"
       style="background: linear-gradient(to right, transparent 15%, rgba(12,32,25,0.88) 42%, #FDFCF9 58%)"
@@ -50,8 +50,8 @@
           {{ $t('home.credibilityTitle') }}
         </h2>
 
-        <!-- Al-Azhar credential — anchored, grounded, not a card -->
-        <div class="mb-12 md:mb-16" data-reveal data-reveal-delay="100">
+        <!-- Credential — mid-indent, bridges heading and stats -->
+        <div class="mb-12 md:mb-16 md:pl-4" data-reveal data-reveal-delay="100">
           <div class="w-10 h-[2px] bg-gold/50 mb-4" aria-hidden="true"></div>
           <p class="text-sm font-semibold text-primary-700 mb-1">
             {{ $t('home.azharTitle') }}
@@ -93,5 +93,13 @@ const stats = [
   { valueKey: 'home.stat2Value', labelKey: 'home.stat2Label' },
   { valueKey: 'home.stat3Value', labelKey: 'home.stat3Label' },
   { valueKey: 'home.stat4Value', labelKey: 'home.stat4Label' }
+];
+
+// Staggered vertical offsets — breaks mechanical horizontal alignment
+const statOffsets = [
+  '',                   // baseline
+  'md:translate-y-2',   // 8px lower
+  'md:-translate-y-1',  // 4px higher
+  'md:translate-y-3'    // 12px lowest — anchors the cascade
 ];
 </script>
