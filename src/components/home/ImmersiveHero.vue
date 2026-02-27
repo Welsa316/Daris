@@ -40,7 +40,7 @@
           </p>
 
           <!-- CTA cluster -->
-          <div class="hero-entrance hero-entrance-4 flex flex-col sm:flex-row items-start gap-4 mb-10">
+          <div class="hero-entrance hero-entrance-4 flex flex-col sm:flex-row items-center gap-4 mb-10">
             <a
               :href="whatsAppHref"
               target="_blank"
