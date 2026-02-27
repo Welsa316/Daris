@@ -1,38 +1,33 @@
 <template>
   <div>
-    <!-- 1. Immersive Hero — cinematic, left-aligned, dramatic (pattern lives here only) -->
+    <!-- 1. Hero — brand-first, split-screen editorial -->
     <ImmersiveHero />
 
     <!-- 2. Icon Grid — minimal, hairline-divided columns -->
     <IconGrid />
 
-    <!-- 3. Immersive Quran — full-width photography, cinematic break -->
+    <!-- 3. Quran — reverent, warm, centered, frosted backdrop -->
     <ImmersiveQuran />
 
-    <!-- 4. Split: Arabic — reversed, solid beige left, text right -->
-    <SplitSection
-      eyebrowKey="home.splitArabicEyebrow"
-      titleKey="home.splitArabicTitle"
-      bodyKey="home.splitArabicBody"
-      :reversed="true"
-      surface="light"
-    />
+    <!-- Breathing space — clean gradient divider -->
+    <div class="h-px bg-gradient-to-r from-transparent via-slate-200/60 to-transparent" aria-hidden="true"></div>
 
-    <!-- 5. Split: Fiqh — solid deep green left, text right -->
-    <SplitSection
-      eyebrowKey="home.splitFiqhEyebrow"
-      titleKey="home.splitFiqhTitle"
-      bodyKey="home.splitFiqhBody"
-      surface="deep"
-    />
+    <!-- 4. Arabic — scholarly, asymmetric left-aligned, calligraphy -->
+    <ImmersiveArabic />
 
-    <!-- 6. Authority Stats — horizontal gradient, grain, gold numbers -->
+    <!-- Breathing space -->
+    <div class="h-px bg-gradient-to-r from-transparent via-slate-200/60 to-transparent" aria-hidden="true"></div>
+
+    <!-- 5. Fiqh — grounded, lower-third panel, mosque interior -->
+    <ImmersiveFiqh />
+
+    <!-- 6. Authority Stats -->
     <AuthorityStats />
 
-    <!-- 7. Testimonials — editorial, hairlines, no cards -->
+    <!-- 7. Testimonials — editorial, hairlines -->
     <TestimonialSection />
 
-    <!-- 8. Dramatic Final CTA — cinematic closing statement -->
+    <!-- 8. Final CTA — cinematic close -->
     <BoldCTA />
   </div>
 </template>
@@ -42,7 +37,8 @@ import { useScrollReveal } from '@/composables/useScrollReveal';
 import ImmersiveHero from '@/components/home/ImmersiveHero.vue';
 import IconGrid from '@/components/home/IconGrid.vue';
 import ImmersiveQuran from '@/components/home/ImmersiveQuran.vue';
-import SplitSection from '@/components/home/SplitSection.vue';
+import ImmersiveArabic from '@/components/home/ImmersiveArabic.vue';
+import ImmersiveFiqh from '@/components/home/ImmersiveFiqh.vue';
 import AuthorityStats from '@/components/home/AuthorityStats.vue';
 import TestimonialSection from '@/components/home/TestimonialSection.vue';
 import BoldCTA from '@/components/home/BoldCTA.vue';
