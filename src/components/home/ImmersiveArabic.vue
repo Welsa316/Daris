@@ -1,23 +1,22 @@
 <template>
   <!-- ARABIC — Scholarly & Refined
-       Asymmetric left-aligned text. Cooler neutral tones. Image focal
-       point offset to the right. Smaller headline than Quran section.
-       Intellectual restraint. -->
+       Asymmetric left-aligned text. Ancient calligraphy manuscript
+       background. Cooler neutral tones with gold ink warmth. -->
   <section class="relative overflow-hidden min-h-[70vh] md:min-h-[80vh] flex items-center">
-    <!-- Photograph — classical Arabic calligraphy or manuscript, neutral warm tones -->
+    <!-- Photograph — ancient Arabic manuscript with gold illuminated calligraphy -->
     <div class="absolute inset-0">
       <img
-        src="https://images.unsplash.com/photo-1579187707643-35646d22b596?auto=format&fit=crop&w=1920&q=80"
-        alt="Classical Arabic calligraphy manuscript with elegant script in warm neutral tones"
+        src="https://images.unsplash.com/photo-k0Z7EnXb1mU?auto=format&fit=crop&w=1920&q=80"
+        alt="Ancient Arabic manuscript with gold illuminated calligraphy on aged parchment"
         class="w-full h-full object-cover"
         loading="lazy"
       />
     </div>
-    <!-- Lateral gradient — heavier on the left to cradle text, lighter on right to show image -->
-    <div class="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/15 ltr:block rtl:hidden" aria-hidden="true"></div>
-    <div class="absolute inset-0 bg-gradient-to-l from-black/75 via-black/40 to-black/15 rtl:block ltr:hidden" aria-hidden="true"></div>
+    <!-- Lateral gradient — heavier on the left to cradle text, lighter on right to show calligraphy -->
+    <div class="absolute inset-0 bg-gradient-to-r from-primary-950/90 via-primary-950/55 to-primary-950/20 ltr:block rtl:hidden" aria-hidden="true"></div>
+    <div class="absolute inset-0 bg-gradient-to-l from-primary-950/90 via-primary-950/55 to-primary-950/20 rtl:block ltr:hidden" aria-hidden="true"></div>
     <!-- Soft bottom gradient -->
-    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/30" aria-hidden="true"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-primary-950/20 via-transparent to-primary-950/40" aria-hidden="true"></div>
     <!-- Grain — lighter than Quran for tonal variety -->
     <div class="absolute inset-0 grain-texture opacity-30" aria-hidden="true"></div>
 
@@ -25,7 +24,7 @@
     <div class="section-wide relative py-24 md:py-36">
       <div class="max-w-lg ltr:mr-auto rtl:ml-auto">
         <p
-          class="text-[10px] font-semibold tracking-[0.4em] uppercase text-cream/50 mb-5"
+          class="text-[10px] font-semibold tracking-[0.4em] uppercase text-gold/60 mb-5"
           data-reveal
         >
           {{ $t('home.splitArabicEyebrow') }}
@@ -40,7 +39,7 @@
         </h2>
 
         <!-- Thin rule — asymmetric, aligned left, not centered -->
-        <div class="w-8 h-px bg-cream/20 mb-6" data-reveal aria-hidden="true"></div>
+        <div class="w-8 h-px bg-gold/30 mb-6" data-reveal aria-hidden="true"></div>
 
         <p
           class="text-base text-cream/40 leading-relaxed max-w-sm mb-10"
