@@ -1,5 +1,8 @@
 <template>
   <section class="relative min-h-screen bg-primary-950 overflow-hidden">
+    <!-- Ornamental lanterns — decorative, behind content -->
+    <LanternsOverlay />
+
     <div class="grid grid-cols-1 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] min-h-screen">
 
       <!-- ─── LEFT: text column ─── -->
@@ -90,6 +93,7 @@
 
 <script setup>
 import { RouterLink } from 'vue-router';
+import LanternsOverlay from '@/components/hero/LanternsOverlay.vue';
 import { contactConfig } from '@/config/contactConfig';
 
 const { whatsappNumber, whatsappMessage } = contactConfig;
