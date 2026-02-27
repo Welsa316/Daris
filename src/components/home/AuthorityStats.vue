@@ -29,8 +29,12 @@
             data-reveal
             data-reveal-delay="100"
           >
+            <!-- Scholarly desk scene: vintage lamp illuminating old books, deep shadows, warm tones.
+                 Alt options if this doesn't fit:
+                 - Open book lot (Tomasso): photo-1457369804613-52c61a468e7d
+                 - Pencil on book (Sankowski): photo-1456513080510-7bf3a84b82f8 -->
             <img
-              src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=80"
+              src="https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=1200&q=80"
               :alt="$t('home.credibilityImageAlt')"
               class="w-full h-64 sm:h-72 md:h-80 object-cover"
               loading="lazy"
