@@ -1,12 +1,17 @@
 <template>
-  <!-- Why Daris — cinematic credibility on warm neutral base.
-       Breaks the dark-green-on-dark-green monotony.
-       Image left with green gradient. Right side: warm ivory.
-       Creates Dark → Light → Dark rhythm in the page flow. -->
-  <section class="relative overflow-hidden bg-cream-50 min-h-[55vh] md:min-h-[70vh]">
+  <!-- Why Daris — cinematic credibility with structural tension.
+       Breaks the rectangular band pattern through:
+       1. Image bleeds past section bottom into BoldCTA
+       2. Heading encroaches into gradient zone (layering)
+       3. Stats stagger diagonally (asymmetry)
+       Creates Dark → Light → Dark rhythm with dissolved boundaries. -->
+  <section
+    class="relative bg-cream-50 min-h-[55vh] md:min-h-[70vh] mb-[-5rem]"
+    style="overflow: clip; overflow-y: visible;"
+  >
 
-    <!-- Image — left portion, full bleed vertically -->
-    <div class="absolute inset-0 md:right-[40%]" aria-hidden="true">
+    <!-- Image — left portion, bleeds 5rem past section bottom -->
+    <div class="absolute inset-0 md:right-[40%] -bottom-20" aria-hidden="true">
       <img
         src="/images/islamic-study.png"
         :alt="$t('home.credibilityImageAlt')"
@@ -17,30 +22,29 @@
     <!-- Gradient overlays — image → dark green band → cream -->
     <!-- Mobile: vertical fade to cream so text reads over image -->
     <div
-      class="absolute inset-0 md:hidden bg-gradient-to-b from-transparent via-cream-50/60 to-cream-50"
+      class="absolute inset-0 -bottom-20 md:hidden bg-gradient-to-b from-transparent via-cream-50/60 to-cream-50"
       aria-hidden="true"
     ></div>
     <!-- Desktop: horizontal — cinematic green stays on image, cream breathes on right -->
     <div
-      class="absolute inset-0 hidden md:block"
+      class="absolute inset-0 -bottom-20 hidden md:block"
       style="background: linear-gradient(to right, transparent 15%, rgba(12,32,25,0.88) 42%, #FDFCF9 58%)"
       aria-hidden="true"
     ></div>
 
     <!-- Grain — lighter for the warm side -->
-    <div class="absolute inset-0 grain-texture opacity-20" aria-hidden="true"></div>
+    <div class="absolute inset-0 -bottom-20 grain-texture opacity-20" aria-hidden="true"></div>
 
-    <!-- Subtle gold accent at section edges -->
+    <!-- Subtle gold accent at top edge only — bottom edge is broken -->
     <div class="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" aria-hidden="true"></div>
-    <div class="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold/12 to-transparent" aria-hidden="true"></div>
 
-    <!-- Content — right side, on warm neutral background -->
+    <!-- Content — shifted left to overlap gradient zone -->
     <div class="section-wide relative flex items-end md:items-center min-h-[55vh] md:min-h-[70vh] py-14 md:py-24">
-      <div class="w-full md:w-[50%] md:ml-auto">
+      <div class="w-full md:w-[55%] md:ml-auto">
 
-        <!-- Heading — dark text on cream -->
+        <!-- Heading — encroaches into the gradient zone for layering -->
         <h2
-          class="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-slate-900 leading-[1.05] mb-6"
+          class="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-slate-900 leading-[1.05] mb-6 md:-translate-x-8 lg:-translate-x-12"
           data-reveal="cinematic"
         >
           {{ $t('home.credibilityTitle') }}
@@ -57,31 +61,24 @@
           </p>
         </div>
 
-        <!-- Stats — typographic rhythm, not cards -->
+        <!-- Stats — staggered 2×2 grid, right column offset down -->
         <div
-          class="flex flex-wrap gap-x-8 md:gap-x-10 gap-y-6"
+          class="grid grid-cols-2 gap-x-8 md:gap-x-10 gap-y-6"
           data-reveal
           data-reveal-delay="200"
         >
-          <div
-            v-for="(stat, i) in stats"
-            :key="stat.labelKey"
-            class="flex items-start gap-x-8 md:gap-x-10"
+          <div v-for="(stat, i) in stats" :key="stat.labelKey"
+            :class="[
+              'flex flex-col',
+              i % 2 === 1 ? 'md:translate-y-5' : ''
+            ]"
           >
-            <div>
-              <p class="heading-display text-3xl md:text-4xl text-primary font-bold leading-none mb-1">
-                {{ $t(stat.valueKey) }}
-              </p>
-              <p class="text-[10px] text-slate-400 tracking-[0.2em] uppercase">
-                {{ $t(stat.labelKey) }}
-              </p>
-            </div>
-            <!-- Hairline divider — warm tone -->
-            <div
-              v-if="i < stats.length - 1"
-              class="hidden md:block w-px h-10 bg-primary/10 self-center"
-              aria-hidden="true"
-            ></div>
+            <p class="heading-display text-3xl md:text-4xl text-primary font-bold leading-none mb-1">
+              {{ $t(stat.valueKey) }}
+            </p>
+            <p class="text-[10px] text-slate-400 tracking-[0.2em] uppercase">
+              {{ $t(stat.labelKey) }}
+            </p>
           </div>
         </div>
 
