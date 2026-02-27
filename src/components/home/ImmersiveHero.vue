@@ -12,9 +12,14 @@
 
         <div class="relative px-12 md:px-20 lg:px-28 py-20 md:py-0 max-w-xl ltr:ml-auto rtl:mr-auto">
           <!-- Brand name — the dominant element -->
-          <h1 class="hero-entrance hero-entrance-1 font-display text-gold text-5xl sm:text-6xl md:text-6xl lg:text-7xl tracking-tight leading-none mb-6">
+          <h1 class="hero-entrance hero-entrance-1 font-display text-gold text-5xl sm:text-6xl md:text-6xl lg:text-7xl tracking-tight leading-none mb-4">
             {{ $t('hero.eyebrow') }}
           </h1>
+
+          <!-- Arabic motto — brand soul -->
+          <p class="hero-entrance hero-entrance-1 font-display text-cream/25 text-lg sm:text-xl md:text-2xl leading-relaxed mb-6" dir="rtl" lang="ar">
+            {{ $t('hero.motto') }}
+          </p>
 
           <!-- Thin gold rule — separates brand from offering -->
           <div class="hero-entrance hero-entrance-2 w-10 h-px bg-gold/40 mb-8" aria-hidden="true"></div>
