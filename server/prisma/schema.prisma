@@ -177,3 +177,33 @@ model StudentCountCache {
 
   @@map("student_count_cache")
 }
+
+model AvailabilitySlot {
+  id        String   @id @default(uuid()) @db.Uuid
+  dayOfWeek Int      @map("day_of_week") // 0=Sunday, 1=Monday ... 6=Saturday
+  startHour Int      @map("start_hour")  // 0-23
+  startMin  Int      @default(0) @map("start_min") // 0-59
+  endHour   Int      @map("end_hour")    // 0-23
+  endMin    Int      @default(0) @map("end_min")    // 0-59
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([dayOfWeek])
+  @@map("availability_slots")
+}
+
+model AvailabilityOverride {
+  id        String   @id @default(uuid()) @db.Uuid
+  date      DateTime @db.Date // the specific date to override
+  available Boolean  @default(false) // false = day off, true = extra availability
+  startHour Int?     @map("start_hour") // only used if available=true
+  startMin  Int?     @default(0) @map("start_min")
+  endHour   Int?     @map("end_hour")
+  endMin    Int?     @default(0) @map("end_min")
+  reason    String?  @db.VarChar(200) // e.g. "Holiday", "Travel"
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([date])
+  @@map("availability_overrides")
+}

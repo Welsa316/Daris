@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate, verifyTokenVersion } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
 import { validate } from '../middleware/validate.js';
-import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, announcementSchema, paginationSchema, messageStudentSchema } from '../validators/adminSchemas.js';
+import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema } from '../validators/adminSchemas.js';
 import { getPendingEnrollments, approveEnrollment, rejectEnrollment, getRejectedApplicants, suspendStudent, removeStudent } from '../services/enrollmentService.js';
 import { prisma } from '../config/database.js';
 import { sendClassCancelledEmail } from '../services/emailService.js';
@@ -580,6 +580,164 @@ router.post('/students/:id/message', validate(messageStudentSchema), async (req,
     next(error);
   }
 });
+
+// --- Availability Management ---
+
+router.get('/availability', async (req, res, next) => {
+  try {
+    const [slots, overrides] = await Promise.all([
+      prisma.availabilitySlot.findMany({ orderBy: [{ dayOfWeek: 'asc' }, { startHour: 'asc' }, { startMin: 'asc' }] }),
+      prisma.availabilityOverride.findMany({ orderBy: { date: 'asc' } }),
+    ]);
+    res.json({ slots, overrides });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Replace all availability slots (full save)
+router.put('/availability/slots', validate(availabilitySlotsSchema), async (req, res, next) => {
+  try {
+    const { slots } = req.body;
+
+    // Delete all existing slots and re-create
+    await prisma.availabilitySlot.deleteMany();
+
+    if (slots.length > 0) {
+      await prisma.availabilitySlot.createMany({
+        data: slots.map((s) => ({
+          dayOfWeek: s.dayOfWeek,
+          startHour: s.startHour,
+          startMin: s.startMin || 0,
+          endHour: s.endHour,
+          endMin: s.endMin || 0,
+        })),
+      });
+    }
+
+    auditLog('AVAILABILITY_UPDATED', { adminId: req.user.id, slotCount: slots.length });
+
+    const updated = await prisma.availabilitySlot.findMany({ orderBy: [{ dayOfWeek: 'asc' }, { startHour: 'asc' }] });
+    res.json({ slots: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/availability/overrides', validate(availabilityOverrideSchema), async (req, res, next) => {
+  try {
+    const { date, available, startHour, startMin, endHour, endMin, reason } = req.body;
+
+    const override = await prisma.availabilityOverride.upsert({
+      where: { date: new Date(date) },
+      create: { date: new Date(date), available, startHour, startMin, endHour, endMin, reason },
+      update: { available, startHour, startMin, endHour, endMin, reason },
+    });
+
+    auditLog('AVAILABILITY_OVERRIDE_SET', { adminId: req.user.id, date, available });
+
+    res.json({ override });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/availability/overrides/:id', async (req, res, next) => {
+  try {
+    await prisma.availabilityOverride.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// --- Get available booking slots for a specific week ---
+router.get('/availability/open-slots', async (req, res, next) => {
+  try {
+    const { weekStart } = req.query; // ISO date string for Monday of the week
+    const start = weekStart ? new Date(weekStart) : getMonday(new Date());
+    const end = new Date(start.getTime() + 7 * 86400000);
+
+    // Get recurring availability
+    const slots = await prisma.availabilitySlot.findMany({ orderBy: [{ dayOfWeek: 'asc' }, { startHour: 'asc' }] });
+
+    // Get overrides for this week
+    const overrides = await prisma.availabilityOverride.findMany({
+      where: { date: { gte: start, lt: end } },
+    });
+
+    // Get booked classes for this week
+    const bookedClasses = await prisma.classSession.findMany({
+      where: {
+        startTime: { gte: start, lt: end },
+        cancelled: false,
+      },
+      select: { startTime: true, endTime: true },
+    });
+
+    // Build open 1-hour slots
+    const openSlots = [];
+    for (let d = 0; d < 7; d++) {
+      const date = new Date(start.getTime() + d * 86400000);
+      const dayOfWeek = date.getDay();
+      const dateStr = date.toISOString().split('T')[0];
+
+      // Check for override on this date
+      const override = overrides.find((o) => o.date.toISOString().split('T')[0] === dateStr);
+
+      let daySlots = [];
+      if (override) {
+        if (!override.available) continue; // Day off
+        if (override.startHour != null && override.endHour != null) {
+          daySlots = [{ startHour: override.startHour, startMin: override.startMin || 0, endHour: override.endHour, endMin: override.endMin || 0 }];
+        }
+      } else {
+        daySlots = slots.filter((s) => s.dayOfWeek === dayOfWeek);
+      }
+
+      // Generate 1-hour slots within each availability window
+      for (const slot of daySlots) {
+        const slotStartMin = slot.startHour * 60 + (slot.startMin || 0);
+        const slotEndMin = slot.endHour * 60 + (slot.endMin || 0);
+
+        for (let min = slotStartMin; min + 60 <= slotEndMin; min += 60) {
+          const hour = Math.floor(min / 60);
+          const minute = min % 60;
+          const slotStart = new Date(date);
+          slotStart.setUTCHours(hour, minute, 0, 0);
+          const slotEnd = new Date(slotStart.getTime() + 3600000);
+
+          // Check if this slot overlaps with any booked class
+          const isBooked = bookedClasses.some((cls) => {
+            return slotStart < new Date(cls.endTime) && slotEnd > new Date(cls.startTime);
+          });
+
+          if (!isBooked && slotStart > new Date()) {
+            openSlots.push({
+              date: dateStr,
+              dayOfWeek,
+              startTime: slotStart.toISOString(),
+              endTime: slotEnd.toISOString(),
+            });
+          }
+        }
+      }
+    }
+
+    res.json({ openSlots });
+  } catch (error) {
+    next(error);
+  }
+});
+
+function getMonday(d) {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  date.setDate(diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
 
 // --- Audit Logs ---
 router.get('/audit-logs', validate(paginationSchema, 'query'), async (req, res, next) => {
