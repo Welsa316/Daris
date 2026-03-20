@@ -31,6 +31,15 @@ router.get('/enrollment-status', async (req, res, next) => {
       return res.status(404).json({ error: t('student.notFound', lang) });
     }
 
+    // If email is verified but role is still 'pending', fix the inconsistency
+    if (user.emailVerified && user.role === 'pending') {
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { role: 'pending_review' },
+      });
+      user.role = 'pending_review';
+    }
+
     let status;
     let message;
     switch (user.role) {
