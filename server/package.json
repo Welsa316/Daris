@@ -1,0 +1,35 @@
+{
+  "name": "daris-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "db:generate": "npx prisma generate",
+    "db:migrate": "npx prisma migrate dev",
+    "db:migrate:prod": "npx prisma migrate deploy",
+    "db:seed": "node prisma/seed.js",
+    "db:studio": "npx prisma studio",
+    "create-admin": "node src/scripts/createAdmin.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.4.0",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "express-rate-limit": "^7.5.0",
+    "uuid": "^11.0.0",
+    "zod": "^3.24.0",
+    "winston": "^3.17.0",
+    "nodemailer": "^6.9.0",
+    "csrf-csrf": "^3.0.0",
+    "hpp": "^0.2.3"
+  },
+  "devDependencies": {
+    "prisma": "^6.4.0"
+  }
+}

@@ -83,6 +83,41 @@
 
         <LanguageSwitcher :dark="!scrolled" />
 
+        <!-- Auth links -->
+        <template v-if="isAuthenticated">
+          <RouterLink
+            v-if="isAdmin"
+            to="/admin"
+            class="relative transition-colors duration-300"
+            :class="scrolled ? 'text-primary/70 hover:text-primary' : 'text-cream/70 hover:text-cream'"
+          >
+            {{ $t('auth.adminPanel') }}
+          </RouterLink>
+          <RouterLink
+            v-else-if="isEnrolled"
+            to="/dashboard"
+            class="relative transition-colors duration-300"
+            :class="scrolled ? 'text-primary/70 hover:text-primary' : 'text-cream/70 hover:text-cream'"
+          >
+            {{ $t('auth.myDashboard') }}
+          </RouterLink>
+          <button
+            @click="logout"
+            class="relative transition-colors duration-300 text-sm"
+            :class="scrolled ? 'text-primary/50 hover:text-primary' : 'text-cream/50 hover:text-cream'"
+          >
+            {{ $t('auth.logout') }}
+          </button>
+        </template>
+        <RouterLink
+          v-else
+          to="/login"
+          class="relative transition-colors duration-300"
+          :class="scrolled ? 'text-primary/70 hover:text-primary' : 'text-cream/70 hover:text-cream'"
+        >
+          {{ $t('auth.login') }}
+        </RouterLink>
+
         <RouterLink
           to="/contact"
           class="inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold active:scale-[0.97] transition-all duration-300 ltr:ml-2 rtl:mr-2"
@@ -126,6 +161,44 @@
           <div class="px-3 py-2.5">
             <LanguageSwitcher :dark="!scrolled" />
           </div>
+          <!-- Mobile auth links -->
+          <template v-if="isAuthenticated">
+            <RouterLink
+              v-if="isAdmin"
+              to="/admin"
+              class="block px-3 py-2.5 rounded-lg transition-colors duration-200"
+              :class="scrolled ? 'text-slate-700 hover:bg-primary/5' : 'text-cream/80 hover:bg-white/10'"
+              @click="isOpen = false"
+            >
+              {{ $t('auth.adminPanel') }}
+            </RouterLink>
+            <RouterLink
+              v-else-if="isEnrolled"
+              to="/dashboard"
+              class="block px-3 py-2.5 rounded-lg transition-colors duration-200"
+              :class="scrolled ? 'text-slate-700 hover:bg-primary/5' : 'text-cream/80 hover:bg-white/10'"
+              @click="isOpen = false"
+            >
+              {{ $t('auth.myDashboard') }}
+            </RouterLink>
+            <button
+              @click="logout(); isOpen = false"
+              class="block w-full text-left px-3 py-2.5 rounded-lg transition-colors duration-200"
+              :class="scrolled ? 'text-slate-400 hover:bg-primary/5' : 'text-cream/50 hover:bg-white/10'"
+            >
+              {{ $t('auth.logout') }}
+            </button>
+          </template>
+          <RouterLink
+            v-else
+            to="/login"
+            class="block px-3 py-2.5 rounded-lg transition-colors duration-200"
+            :class="scrolled ? 'text-slate-700 hover:bg-primary/5' : 'text-cream/80 hover:bg-white/10'"
+            @click="isOpen = false"
+          >
+            {{ $t('auth.login') }}
+          </RouterLink>
+
           <RouterLink
             to="/contact"
             class="mt-2 flex items-center justify-center w-full rounded-full px-4 py-2.5 text-sm font-semibold transition-colors duration-200"
@@ -146,6 +219,9 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
+import { useAuth } from '@/composables/useAuth.js';
+
+const { isAuthenticated, isAdmin, isEnrolled, logout } = useAuth();
 
 const isOpen = ref(false);
 const scrolled = ref(false);
