@@ -102,24 +102,79 @@
       </div>
 
       <!-- Scheduling -->
-      <div v-if="activeTab === 'scheduling'" class="bg-white rounded-2xl shadow-card p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-bold text-primary">{{ $t('admin.classes') }}</h2>
-          <button @click="showCreateClass = true" class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition">
-            {{ $t('admin.createClass') }}
-          </button>
-        </div>
-        <div v-if="!classes.length" class="text-slate-400 text-sm py-8 text-center">{{ $t('admin.noClasses') }}</div>
-        <div v-else class="space-y-3">
-          <div v-for="cls in classes" :key="cls.id" class="border border-slate-100 rounded-xl p-4" :class="cls.cancelled ? 'opacity-50' : ''">
-            <div class="flex items-start justify-between">
-              <div>
-                <h3 class="font-semibold text-primary">{{ cls.title }} <span v-if="cls.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span></h3>
-                <p class="text-sm text-slate-500">{{ new Date(cls.startTime).toLocaleString() }} - {{ new Date(cls.endTime).toLocaleTimeString() }}</p>
-                <p class="text-xs text-slate-400 mt-1">{{ cls.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
+      <div v-if="activeTab === 'scheduling'" class="space-y-4">
+        <div class="bg-white rounded-2xl shadow-card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-primary">{{ $t('admin.classes') }}</h2>
+            <div class="flex items-center gap-2">
+              <!-- Calendar/List toggle -->
+              <div class="flex bg-slate-100 rounded-lg p-0.5">
+                <button @click="calendarView = true" class="px-3 py-1 rounded-md text-xs font-medium transition"
+                  :class="calendarView ? 'bg-white text-primary shadow-sm' : 'text-slate-500'">
+                  {{ $t('admin.calendarView') }}
+                </button>
+                <button @click="calendarView = false" class="px-3 py-1 rounded-md text-xs font-medium transition"
+                  :class="!calendarView ? 'bg-white text-primary shadow-sm' : 'text-slate-500'">
+                  {{ $t('admin.listView') }}
+                </button>
               </div>
-              <div v-if="!cls.cancelled" class="flex gap-2">
-                <button @click="cancelClass(cls.id)" class="text-red-500 hover:text-red-700 text-xs font-medium">{{ $t('admin.cancel') }}</button>
+              <button @click="showCreateClass = true" class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition">
+                {{ $t('admin.createClass') }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Calendar View -->
+          <div v-if="calendarView">
+            <!-- Week navigation -->
+            <div class="flex items-center justify-between mb-4">
+              <button @click="prevWeek" class="text-slate-500 hover:text-primary text-sm font-medium">&larr; {{ $t('admin.prevWeek') }}</button>
+              <span class="text-sm font-medium text-primary">
+                {{ calendarWeekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }}
+                &ndash;
+                {{ new Date(calendarWeekStart.getTime() + 6 * 86400000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) }}
+              </span>
+              <button @click="nextWeek" class="text-slate-500 hover:text-primary text-sm font-medium">{{ $t('admin.nextWeek') }} &rarr;</button>
+            </div>
+
+            <!-- 7-day grid -->
+            <div class="grid grid-cols-7 gap-2">
+              <!-- Day headers -->
+              <div v-for="(day, i) in calendarDays" :key="'h'+i"
+                class="text-center text-xs font-medium pb-1 border-b border-slate-100"
+                :class="day.toDateString() === new Date().toDateString() ? 'text-primary' : 'text-slate-500'">
+                {{ $t('admin.' + DAY_KEYS[(day.getDay())]) }}
+                <span class="block text-lg font-bold" :class="day.toDateString() === new Date().toDateString() ? 'text-primary' : 'text-slate-700'">{{ day.getDate() }}</span>
+              </div>
+
+              <!-- Day columns -->
+              <div v-for="(day, i) in calendarDays" :key="'d'+i" class="min-h-[100px]">
+                <div v-for="cls in classesByDay[day.toISOString().split('T')[0]] || []" :key="cls.id"
+                  class="mb-1 rounded-lg p-2 text-xs cursor-default"
+                  :class="cls.cancelled ? 'bg-slate-100 text-slate-400 line-through' : 'bg-primary/10 text-primary'">
+                  <p class="font-medium truncate">{{ isAr && cls.titleAr ? cls.titleAr : cls.title }}</p>
+                  <p class="text-[10px] opacity-70">{{ new Date(cls.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</p>
+                </div>
+                <div v-if="!(classesByDay[day.toISOString().split('T')[0]] || []).length" class="text-[10px] text-slate-300 text-center pt-4">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- List View (original) -->
+          <div v-else>
+            <div v-if="!classes.length" class="text-slate-400 text-sm py-8 text-center">{{ $t('admin.noClasses') }}</div>
+            <div v-else class="space-y-3">
+              <div v-for="cls in classes" :key="cls.id" class="border border-slate-100 rounded-xl p-4" :class="cls.cancelled ? 'opacity-50' : ''">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <h3 class="font-semibold text-primary">{{ cls.title }} <span v-if="cls.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span></h3>
+                    <p class="text-sm text-slate-500">{{ new Date(cls.startTime).toLocaleString() }} - {{ new Date(cls.endTime).toLocaleTimeString() }}</p>
+                    <p class="text-xs text-slate-400 mt-1">{{ cls.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
+                  </div>
+                  <div v-if="!cls.cancelled" class="flex gap-2">
+                    <button @click="cancelClass(cls.id)" class="text-red-500 hover:text-red-700 text-xs font-medium">{{ $t('admin.cancel') }}</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -342,6 +397,25 @@
               </select>
               <p class="text-xs text-slate-400 mt-1">{{ recurringClassCount }} {{ $t('admin.classesWillBeCreated') }}</p>
             </div>
+            <!-- Assign to students -->
+            <div>
+              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.assignTo') }}</label>
+              <select v-model="classForm.assignTo" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none bg-white text-sm">
+                <option value="all">{{ $t('admin.allStudents') }}</option>
+                <option value="specific">{{ $t('admin.specificStudent') }}</option>
+              </select>
+            </div>
+            <div v-if="classForm.assignTo === 'specific'">
+              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.selectStudent') }}</label>
+              <div class="border border-slate-200 rounded-lg max-h-40 overflow-y-auto p-2 space-y-1">
+                <label v-for="s in students" :key="s.id" class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-50 cursor-pointer text-sm">
+                  <input type="checkbox" :value="s.id" v-model="classForm.selectedStudentIds" class="rounded border-slate-300" />
+                  {{ s.firstName }} {{ s.lastName }}
+                  <span class="text-xs text-slate-400">{{ s.email }}</span>
+                </label>
+                <p v-if="!students.length" class="text-xs text-slate-400 text-center py-2">{{ $t('admin.noStudents') }}</p>
+              </div>
+            </div>
             <div class="flex gap-3 justify-end">
               <button type="button" @click="showCreateClass = false" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $t('admin.cancel') }}</button>
               <button type="submit" :disabled="creatingClass" class="bg-primary text-cream px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
@@ -400,9 +474,59 @@ const slotsByDay = computed(() => {
 
 const overrideForm = reactive({ date: '', available: false, startTime: '09:00', endTime: '17:00', reason: '' });
 
+// Calendar state
+const calendarView = ref(true); // true = calendar, false = list
+const calendarWeekStart = ref(getMonday(new Date()));
+
+function getMonday(d) {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  date.setDate(diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function prevWeek() {
+  calendarWeekStart.value = new Date(calendarWeekStart.value.getTime() - 7 * 86400000);
+}
+function nextWeek() {
+  calendarWeekStart.value = new Date(calendarWeekStart.value.getTime() + 7 * 86400000);
+}
+
+const calendarDays = computed(() => {
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(calendarWeekStart.value.getTime() + i * 86400000);
+    days.push(d);
+  }
+  return days;
+});
+
+const classesByDay = computed(() => {
+  const map = {};
+  for (const d of calendarDays.value) {
+    const key = d.toISOString().split('T')[0];
+    map[key] = [];
+  }
+  for (const cls of classes.value) {
+    const key = new Date(cls.startTime).toISOString().split('T')[0];
+    if (map[key]) map[key].push(cls);
+  }
+  // Sort each day's classes by start time
+  for (const key in map) map[key].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+  return map;
+});
+
+const isThisWeek = computed(() => {
+  const now = getMonday(new Date());
+  return calendarWeekStart.value.getTime() === now.getTime();
+});
+
 const classForm = reactive({
   title: '', titleAr: '', description: '', startTime: '', endTime: '',
   meetingLink: '', recurrence: '', duration: '60', repeatWeeks: '12',
+  assignTo: 'all', selectedStudentIds: [],
 });
 
 const studentClasses = computed(() => {
@@ -636,12 +760,13 @@ async function createClass() {
         endTime: session.end.toISOString(),
         meetingLink: classForm.meetingLink || undefined,
         recurrence: classForm.recurrence || null,
+        ...(classForm.assignTo === 'specific' && classForm.selectedStudentIds.length ? { studentIds: classForm.selectedStudentIds } : {}),
       };
       await api.post('/api/admin/classes', data);
     }
 
     showCreateClass.value = false;
-    Object.assign(classForm, { title: '', titleAr: '', description: '', startTime: '', endTime: '', meetingLink: '', recurrence: '', duration: '60', repeatWeeks: '12' });
+    Object.assign(classForm, { title: '', titleAr: '', description: '', startTime: '', endTime: '', meetingLink: '', recurrence: '', duration: '60', repeatWeeks: '12', assignTo: 'all', selectedStudentIds: [] });
     loadClasses();
   } catch {} finally {
     creatingClass.value = false;
@@ -656,6 +781,7 @@ watch(activeTab, (tab) => {
 });
 
 watch(studentSearch, () => { loadStudents(); });
+watch(showCreateClass, (v) => { if (v && !students.value.length) loadStudents(); });
 
 onMounted(() => {
   loadStats();
