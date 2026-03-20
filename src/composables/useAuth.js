@@ -1,5 +1,5 @@
 import { ref, computed, readonly } from 'vue';
-import { useRouter } from 'vue-router';
+import { router } from '@/router/index.js';
 import { api } from '@/config/api.js';
 
 const user = ref(null);
@@ -7,8 +7,6 @@ const loading = ref(true);
 const initialized = ref(false);
 
 export function useAuth() {
-  const router = useRouter();
-
   const isAuthenticated = computed(() => !!user.value);
   const isAdmin = computed(() => user.value?.role === 'admin');
   const isEnrolled = computed(() => user.value?.role === 'enrolled_student');
@@ -60,7 +58,6 @@ export function useAuth() {
     try {
       const data = await api.post('/api/auth/refresh');
       if (data.user) {
-        // Update role in case it changed
         if (user.value) {
           user.value.role = data.user.role;
         }
