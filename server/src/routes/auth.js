@@ -33,6 +33,7 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
 
     res.status(201).json({ message: t('register.success', lang) });
   } catch (error) {
+    console.error('Registration error:', error.message, error.stack);
     next(error);
   }
 });
