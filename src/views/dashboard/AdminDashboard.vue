@@ -126,6 +126,96 @@
         </div>
       </div>
 
+      <!-- Availability -->
+      <div v-if="activeTab === 'availability'" class="space-y-6">
+        <!-- Weekly Slots -->
+        <div class="bg-white rounded-2xl shadow-card p-6">
+          <h2 class="text-lg font-bold text-primary mb-1">{{ $t('admin.weeklyAvailability') }}</h2>
+          <p class="text-sm text-slate-400 mb-4">{{ $t('admin.availabilityDesc') }}</p>
+
+          <div v-if="availLoading" class="text-slate-400 text-sm py-8 text-center">Loading...</div>
+          <div v-else class="space-y-3">
+            <div v-for="day in 7" :key="day - 1" class="border border-slate-100 rounded-xl p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-medium text-primary text-sm">{{ $t('admin.' + FULL_DAY_KEYS[day - 1]) }}</span>
+                <button type="button" @click="addSlotToDay(day - 1)" class="text-xs text-primary hover:text-primary-800 font-medium">+ {{ $t('admin.addSlot') }}</button>
+              </div>
+              <div v-if="!slotsByDay[day - 1].length" class="text-xs text-slate-400">{{ $t('admin.dayOff') }}</div>
+              <div v-else class="space-y-2">
+                <div v-for="(slot, idx) in slotsByDay[day - 1]" :key="idx" class="flex items-center gap-2">
+                  <input type="time" :value="padTime(slot.startHour, slot.startMin)" @change="updateSlot(day - 1, idx, 'start', $event.target.value)"
+                    class="px-2 py-1.5 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+                  <span class="text-slate-400 text-xs">{{ $t('admin.to') }}</span>
+                  <input type="time" :value="padTime(slot.endHour, slot.endMin)" @change="updateSlot(day - 1, idx, 'end', $event.target.value)"
+                    class="px-2 py-1.5 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+                  <button type="button" @click="removeSlotFromDay(day - 1, idx)" class="text-red-400 hover:text-red-600 text-sm">&times;</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Save button -->
+            <div class="flex justify-end pt-2">
+              <button @click="saveAvailabilitySlots" :disabled="availSaving"
+                class="bg-primary text-cream px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
+                {{ availSaving ? $t('admin.saving') : (availSaved ? $t('admin.saved') : $t('admin.save')) }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Date Overrides -->
+        <div class="bg-white rounded-2xl shadow-card p-6">
+          <h2 class="text-lg font-bold text-primary mb-1">{{ $t('admin.overrides') }}</h2>
+          <p class="text-sm text-slate-400 mb-4">{{ $t('admin.overridesDesc') }}</p>
+
+          <!-- Existing overrides list -->
+          <div v-if="!availabilityOverrides.length" class="text-slate-400 text-sm py-4 text-center">{{ $t('admin.noOverrides') }}</div>
+          <div v-else class="space-y-2 mb-4">
+            <div v-for="ov in availabilityOverrides" :key="ov.id" class="flex items-center justify-between border border-slate-100 rounded-lg p-3">
+              <div>
+                <span class="font-medium text-sm text-primary">{{ new Date(ov.date).toLocaleDateString() }}</span>
+                <span v-if="!ov.available" class="ltr:ml-2 rtl:mr-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">{{ $t('admin.offDay') }}</span>
+                <span v-else class="ltr:ml-2 rtl:mr-2 text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">{{ $t('admin.extraAvailability') }}: {{ padTime(ov.startHour, ov.startMin) }}-{{ padTime(ov.endHour, ov.endMin) }}</span>
+                <span v-if="ov.reason" class="ltr:ml-2 rtl:mr-2 text-xs text-slate-400">{{ ov.reason }}</span>
+              </div>
+              <button @click="deleteOverride(ov.id)" class="text-red-400 hover:text-red-600 text-xs font-medium">{{ $t('admin.delete') }}</button>
+            </div>
+          </div>
+
+          <!-- Add override form -->
+          <div class="border border-dashed border-slate-200 rounded-xl p-4">
+            <h3 class="text-sm font-medium text-primary mb-3">{{ $t('admin.addOverride') }}</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.overrideDate') }}</label>
+                <input v-model="overrideForm.date" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.reason') }}</label>
+                <input v-model="overrideForm.reason" type="text" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+              </div>
+            </div>
+            <div class="mt-3 flex items-center gap-4">
+              <label class="flex items-center gap-2 text-sm">
+                <input v-model="overrideForm.available" type="checkbox" class="rounded border-slate-300" />
+                {{ $t('admin.extraAvailability') }}
+              </label>
+            </div>
+            <div v-if="overrideForm.available" class="mt-3 flex items-center gap-2">
+              <input v-model="overrideForm.startTime" type="time" class="px-2 py-1.5 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+              <span class="text-slate-400 text-xs">{{ $t('admin.to') }}</span>
+              <input v-model="overrideForm.endTime" type="time" class="px-2 py-1.5 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+            </div>
+            <div class="mt-3 flex justify-end">
+              <button @click="addOverride" :disabled="!overrideForm.date"
+                class="bg-primary text-cream px-4 py-1.5 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
+                {{ $t('admin.addOverride') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Activity Log -->
       <div v-if="activeTab === 'activity'" class="bg-white rounded-2xl shadow-card p-6">
         <h2 class="text-lg font-bold text-primary mb-4">{{ $t('admin.activityLog') }}</h2>
@@ -288,6 +378,28 @@ const newNote = ref('');
 const showCreateClass = ref(false);
 const creatingClass = ref(false);
 
+// Availability state
+const availabilitySlots = ref([]);
+const availabilityOverrides = ref([]);
+const availLoading = ref(false);
+const availSaving = ref(false);
+const availSaved = ref(false);
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const FULL_DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+// Build a per-day structure: { 0: [{startHour,startMin,endHour,endMin}], ... }
+const slotsByDay = computed(() => {
+  const map = {};
+  for (let d = 0; d < 7; d++) map[d] = [];
+  for (const s of availabilitySlots.value) {
+    if (!map[s.dayOfWeek]) map[s.dayOfWeek] = [];
+    map[s.dayOfWeek].push({ startHour: s.startHour, startMin: s.startMin || 0, endHour: s.endHour, endMin: s.endMin || 0 });
+  }
+  return map;
+});
+
+const overrideForm = reactive({ date: '', available: false, startTime: '09:00', endTime: '17:00', reason: '' });
+
 const classForm = reactive({
   title: '', titleAr: '', description: '', startTime: '', endTime: '',
   meetingLink: '', recurrence: '', duration: '60', repeatWeeks: '12',
@@ -309,6 +421,7 @@ const tabs = [
   { key: 'enrollments', label: 'admin.enrollments' },
   { key: 'students', label: 'admin.students' },
   { key: 'scheduling', label: 'admin.scheduling' },
+  { key: 'availability', label: 'admin.availability' },
   { key: 'activity', label: 'admin.activity' },
 ];
 
@@ -338,6 +451,101 @@ async function loadClasses() {
     const data = await api.get('/api/admin/classes');
     classes.value = data.classes;
   } catch {}
+}
+
+function padTime(h, m) {
+  return `${String(h).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
+}
+
+function addSlotToDay(dayOfWeek) {
+  availabilitySlots.value = [...availabilitySlots.value, { dayOfWeek, startHour: 9, startMin: 0, endHour: 17, endMin: 0 }];
+  availSaved.value = false;
+}
+
+function removeSlotFromDay(dayOfWeek, idx) {
+  // Find the idx-th slot for this day and remove it
+  let count = -1;
+  availabilitySlots.value = availabilitySlots.value.filter((s) => {
+    if (s.dayOfWeek === dayOfWeek) {
+      count++;
+      return count !== idx;
+    }
+    return true;
+  });
+  availSaved.value = false;
+}
+
+function updateSlot(dayOfWeek, idx, which, timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  let count = -1;
+  for (const s of availabilitySlots.value) {
+    if (s.dayOfWeek === dayOfWeek) {
+      count++;
+      if (count === idx) {
+        if (which === 'start') { s.startHour = h; s.startMin = m; }
+        else { s.endHour = h; s.endMin = m; }
+        break;
+      }
+    }
+  }
+  availSaved.value = false;
+}
+
+async function loadAvailability() {
+  availLoading.value = true;
+  try {
+    const data = await api.get('/api/admin/availability');
+    availabilitySlots.value = data.slots;
+    availabilityOverrides.value = data.overrides;
+  } catch {} finally {
+    availLoading.value = false;
+  }
+}
+
+async function addOverride() {
+  if (!overrideForm.date) return;
+  try {
+    const [sh, sm] = overrideForm.startTime.split(':').map(Number);
+    const [eh, em] = overrideForm.endTime.split(':').map(Number);
+    const body = {
+      date: overrideForm.date,
+      available: overrideForm.available,
+      reason: overrideForm.reason || undefined,
+      ...(overrideForm.available ? { startHour: sh, startMin: sm, endHour: eh, endMin: em } : {}),
+    };
+    const data = await api.post('/api/admin/availability/overrides', body);
+    // Replace if same date, else append
+    const existing = availabilityOverrides.value.findIndex((o) => new Date(o.date).toISOString().split('T')[0] === overrideForm.date);
+    if (existing >= 0) availabilityOverrides.value[existing] = data.override;
+    else availabilityOverrides.value.push(data.override);
+    Object.assign(overrideForm, { date: '', available: false, startTime: '09:00', endTime: '17:00', reason: '' });
+  } catch {}
+}
+
+async function deleteOverride(id) {
+  try {
+    await api.delete(`/api/admin/availability/overrides/${id}`);
+    availabilityOverrides.value = availabilityOverrides.value.filter((o) => o.id !== id);
+  } catch {}
+}
+
+async function saveAvailabilitySlots() {
+  availSaving.value = true;
+  try {
+    const slots = availabilitySlots.value.map((s) => ({
+      dayOfWeek: s.dayOfWeek,
+      startHour: s.startHour,
+      startMin: s.startMin || 0,
+      endHour: s.endHour,
+      endMin: s.endMin || 0,
+    }));
+    const data = await api.put('/api/admin/availability/slots', { slots });
+    availabilitySlots.value = data.slots;
+    availSaved.value = true;
+    setTimeout(() => { availSaved.value = false; }, 2000);
+  } catch {} finally {
+    availSaving.value = false;
+  }
 }
 
 async function handleApprove(id) {
@@ -444,6 +652,7 @@ watch(activeTab, (tab) => {
   if (tab === 'enrollments') loadEnrollments();
   if (tab === 'students') loadStudents();
   if (tab === 'scheduling') loadClasses();
+  if (tab === 'availability') loadAvailability();
 });
 
 watch(studentSearch, () => { loadStudents(); });

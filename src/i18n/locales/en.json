@@ -373,6 +373,7 @@
     "to": "to",
     "available": "Available",
     "booked": "Booked",
-    "overrideDate": "Date"
+    "overrideDate": "Date",
+    "addSlot": "Add slot"
   }
 }
