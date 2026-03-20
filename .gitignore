@@ -17,5 +17,5 @@ server/.env.production
 server/logs/
 
 # Prisma
-server/prisma/migrations/
+# Note: migrations/ must NOT be gitignored — they are required for deployment
 
