@@ -1,7 +1,6 @@
 import { prisma } from '../config/database.js';
 import { invalidateAllSessions } from './tokenService.js';
 import { sendEnrollmentApprovedEmail, sendEnrollmentRejectedEmail } from './emailService.js';
-import { sendEnrollmentApprovedWhatsApp, sendEnrollmentRejectedWhatsApp } from './whatsappService.js';
 import { auditLog } from '../utils/logger.js';
 
 /**
@@ -58,9 +57,8 @@ export async function approveEnrollment(studentId, { message, adminId, lang }) {
   // Update student count cache
   await updateStudentCountCache();
 
-  // Send approval email + WhatsApp
+  // Send approval email
   sendEnrollmentApprovedEmail(student.email, student.firstName, message, lang).catch(() => {});
-  sendEnrollmentApprovedWhatsApp(student.whatsapp, student.firstName, message, lang).catch(() => {});
 
   auditLog('ENROLLMENT_APPROVED', { studentId, adminId });
 
@@ -89,7 +87,6 @@ export async function rejectEnrollment(studentId, { message, adminId, lang }) {
   });
 
   sendEnrollmentRejectedEmail(student.email, student.firstName, message, lang).catch(() => {});
-  sendEnrollmentRejectedWhatsApp(student.whatsapp, student.firstName, message, lang).catch(() => {});
 
   auditLog('ENROLLMENT_REJECTED', { studentId, adminId, reason: message });
 

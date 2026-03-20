@@ -14,12 +14,6 @@ const envSchema = z.object({
   SMTP_PASS: z.string().default(''),
   EMAIL_FROM: z.string().default('Daris <noreply@daris.com>'),
   CSRF_SECRET: z.string().min(16).default('dev-csrf-secret-change-me'),
-
-  // WhatsApp (Meta Cloud API)
-  WHATSAPP_ENABLED: z.coerce.boolean().default(false),
-  WHATSAPP_API_TOKEN: z.string().default(''),
-  WHATSAPP_PHONE_NUMBER_ID: z.string().default(''), // Meta Business phone number ID
-  WHATSAPP_ADMIN_PHONE: z.string().default(''), // Sheikh's WhatsApp number (e.g. 966501234567)
 });
 
 function loadEnv() {
