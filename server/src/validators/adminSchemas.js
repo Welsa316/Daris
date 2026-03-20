@@ -44,3 +44,25 @@ export const messageStudentSchema = z.object({
   subject: z.string().min(1).max(200).trim(),
   message: z.string().min(1).max(5000).trim(),
 });
+
+export const availabilitySlotSchema = z.object({
+  dayOfWeek: z.number().int().min(0).max(6),
+  startHour: z.number().int().min(0).max(23),
+  startMin: z.number().int().min(0).max(59).default(0),
+  endHour: z.number().int().min(0).max(23),
+  endMin: z.number().int().min(0).max(59).default(0),
+});
+
+export const availabilitySlotsSchema = z.object({
+  slots: z.array(availabilitySlotSchema),
+});
+
+export const availabilityOverrideSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
+  available: z.boolean().default(false),
+  startHour: z.number().int().min(0).max(23).optional().nullable(),
+  startMin: z.number().int().min(0).max(59).optional().nullable(),
+  endHour: z.number().int().min(0).max(23).optional().nullable(),
+  endMin: z.number().int().min(0).max(59).optional().nullable(),
+  reason: z.string().max(200).optional().nullable(),
+});
