@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  pending
+  pending_review
+  enrolled_student
+  rejected
+  suspended
+  admin
+}
+
+model User {
+  id                String    @id @default(uuid()) @db.Uuid
+  email             String    @unique
+  passwordHash      String    @map("password_hash")
+  firstName         String    @map("first_name")
+  lastName          String    @map("last_name")
+  country           String
+  phone             String?
+  whatsapp          String?
+  telegram          String?
+  enrollmentMessage String?   @map("enrollment_message") @db.VarChar(500)
+  role              UserRole  @default(pending)
+  emailVerified     Boolean   @default(false) @map("email_verified")
+  tokenVersion      Int       @default(0) @map("token_version")
+  failedLoginAttempts Int     @default(0) @map("failed_login_attempts")
+  lockedUntil       DateTime? @map("locked_until")
+  lastLoginAt       DateTime? @map("last_login_at")
+  lastLoginIp       String?   @map("last_login_ip")
+  rejectedAt        DateTime? @map("rejected_at")
+  rejectionMessage  String?   @map("rejection_message")
+  enrolledAt        DateTime? @map("enrolled_at")
+  deletedAt         DateTime? @map("deleted_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  sessions          Session[]
+  adminNotes        AdminNote[]    @relation("StudentNotes")
+  authoredNotes     AdminNote[]    @relation("AuthorNotes")
+  classAssignments  ClassAssignment[]
+  emailTokens       EmailToken[]
+  auditLogs         AuditLog[]
+
+  @@index([role])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Session {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  refreshToken  String   @unique @map("refresh_token")
+  deviceInfo    String?  @map("device_info")
+  ipAddress     String?  @map("ip_address")
+  lastActiveAt  DateTime @default(now()) @map("last_active_at")
+  absoluteExpiry DateTime @map("absolute_expiry")
+  expiresAt     DateTime @map("expires_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model EmailToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @map("token_hash")
+  type      String   // "verification" | "password_reset"
+  used      Boolean  @default(false)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId, type])
+  @@map("email_tokens")
+}
+
+model ClassSession {
+  id          String   @id @default(uuid()) @db.Uuid
+  title       String
+  titleAr     String?  @map("title_ar")
+  description String?  @db.Text
+  descriptionAr String? @map("description_ar") @db.Text
+  startTime   DateTime @map("start_time")
+  endTime     DateTime @map("end_time")
+  timezone    String   @default("UTC")
+  meetingLink String?  @map("meeting_link")
+  recurrence  String?  // "weekly" | "biweekly" | "custom" | null (one-off)
+  recurrenceEnd DateTime? @map("recurrence_end")
+  cancelled   Boolean  @default(false)
+  cancelledAt DateTime? @map("cancelled_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  assignments ClassAssignment[]
+
+  @@index([startTime])
+  @@index([cancelled])
+  @@map("class_sessions")
+}
+
+model ClassAssignment {
+  id             String       @id @default(uuid()) @db.Uuid
+  classSessionId String       @map("class_session_id") @db.Uuid
+  studentId      String       @map("student_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  classSession   ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+  student        User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([classSessionId, studentId])
+  @@index([studentId])
+  @@map("class_assignments")
+}
+
+model AdminNote {
+  id        String   @id @default(uuid()) @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  student   User     @relation("StudentNotes", fields: [studentId], references: [id], onDelete: Cascade)
+  author    User     @relation("AuthorNotes", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@map("admin_notes")
+}
+
+model Announcement {
+  id        String   @id @default(uuid()) @db.Uuid
+  title     String
+  titleAr   String?  @map("title_ar")
+  content   String   @db.Text
+  contentAr String?  @map("content_ar") @db.Text
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("announcements")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  action    String
+  details   String?  @db.Text
+  ipAddress String?  @map("ip_address")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model StudentCountCache {
+  id        String   @id @default("singleton")
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("student_count_cache")
+}
