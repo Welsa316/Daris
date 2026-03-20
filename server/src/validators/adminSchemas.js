@@ -57,6 +57,20 @@ export const availabilitySlotsSchema = z.object({
   slots: z.array(availabilitySlotSchema),
 });
 
+export const batchClassSchema = z.object({
+  studentId: z.string().uuid(),
+  title: z.string().min(1).max(200).trim(),
+  titleAr: z.string().max(200).trim().optional().nullable(),
+  sessions: z.array(z.object({
+    startTime: z.string().datetime(),
+    endTime: z.string().datetime(),
+  })).min(1).max(200),
+});
+
+export const meetingLinkSchema = z.object({
+  meetingLink: z.string().url('Invalid meeting link').max(500),
+});
+
 export const availabilityOverrideSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
   available: z.boolean().default(false),

@@ -103,6 +103,20 @@
 
       <!-- Scheduling -->
       <div v-if="activeTab === 'scheduling'" class="space-y-4">
+        <!-- Global Meeting Link -->
+        <div class="bg-white rounded-2xl shadow-card p-4">
+          <div class="flex items-center gap-3">
+            <label class="text-sm font-medium text-primary whitespace-nowrap">{{ $t('admin.globalMeetingLink') }}</label>
+            <input v-model="globalMeetingLink" type="url" :placeholder="$t('admin.meetingLinkPlaceholder')"
+              class="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+            <button @click="saveMeetingLink" :disabled="savingLink"
+              class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50 shrink-0">
+              {{ savingLink ? $t('admin.saving') : $t('admin.save') }}
+            </button>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">{{ $t('admin.meetingLinkHint') }}</p>
+        </div>
+
         <div class="bg-white rounded-2xl shadow-card p-6">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-bold text-primary">{{ $t('admin.classes') }}</h2>
@@ -118,8 +132,8 @@
                   {{ $t('admin.listView') }}
                 </button>
               </div>
-              <button @click="showCreateClass = true" class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition">
-                {{ $t('admin.createClass') }}
+              <button @click="showScheduleForm = true" class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition">
+                {{ $t('admin.scheduleStudent') }}
               </button>
             </div>
           </div>
@@ -210,96 +224,6 @@
         </div>
       </div>
 
-      <!-- Availability -->
-      <div v-if="activeTab === 'availability'" class="space-y-6">
-        <!-- Weekly Slots -->
-        <div class="bg-white rounded-2xl shadow-card p-6">
-          <h2 class="text-lg font-bold text-primary mb-1">{{ $t('admin.weeklyAvailability') }}</h2>
-          <p class="text-sm text-slate-400 mb-4">{{ $t('admin.availabilityDesc') }}</p>
-
-          <div v-if="availLoading" class="text-slate-400 text-sm py-8 text-center">{{ $t('admin.loading') }}</div>
-          <div v-else class="space-y-3">
-            <div v-for="day in 7" :key="day - 1" class="border border-slate-100 rounded-xl p-4">
-              <div class="flex items-center justify-between mb-2">
-                <span class="font-medium text-primary text-sm">{{ $t('admin.' + FULL_DAY_KEYS[day - 1]) }}</span>
-                <button type="button" @click="addSlotToDay(day - 1)" class="text-xs text-primary hover:text-primary-800 font-medium">+ {{ $t('admin.addSlot') }}</button>
-              </div>
-              <div v-if="!slotsByDay[day - 1].length" class="text-xs text-slate-400">{{ $t('admin.dayOff') }}</div>
-              <div v-else class="space-y-2">
-                <div v-for="(slot, idx) in slotsByDay[day - 1]" :key="idx" class="flex items-center gap-2">
-                  <input type="time" :value="padTime(slot.startHour, slot.startMin)" @change="updateSlot(day - 1, idx, 'start', $event.target.value)"
-                    class="px-2 py-1.5 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
-                  <span class="text-slate-400 text-xs">{{ $t('admin.to') }}</span>
-                  <input type="time" :value="padTime(slot.endHour, slot.endMin)" @change="updateSlot(day - 1, idx, 'end', $event.target.value)"
-                    class="px-2 py-1.5 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
-                  <button type="button" @click="removeSlotFromDay(day - 1, idx)" class="text-red-400 hover:text-red-600 text-sm">&times;</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Save button -->
-            <div class="flex justify-end pt-2">
-              <button @click="saveAvailabilitySlots" :disabled="availSaving"
-                class="bg-primary text-cream px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
-                {{ availSaving ? $t('admin.saving') : (availSaved ? $t('admin.saved') : $t('admin.save')) }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Date Overrides -->
-        <div class="bg-white rounded-2xl shadow-card p-6">
-          <h2 class="text-lg font-bold text-primary mb-1">{{ $t('admin.overrides') }}</h2>
-          <p class="text-sm text-slate-400 mb-4">{{ $t('admin.overridesDesc') }}</p>
-
-          <!-- Existing overrides list -->
-          <div v-if="!availabilityOverrides.length" class="text-slate-400 text-sm py-4 text-center">{{ $t('admin.noOverrides') }}</div>
-          <div v-else class="space-y-2 mb-4">
-            <div v-for="ov in availabilityOverrides" :key="ov.id" class="flex items-center justify-between border border-slate-100 rounded-lg p-3">
-              <div>
-                <span class="font-medium text-sm text-primary">{{ new Date(ov.date).toLocaleDateString() }}</span>
-                <span v-if="!ov.available" class="ltr:ml-2 rtl:mr-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">{{ $t('admin.offDay') }}</span>
-                <span v-else class="ltr:ml-2 rtl:mr-2 text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">{{ $t('admin.extraAvailability') }}: {{ padTime(ov.startHour, ov.startMin) }}-{{ padTime(ov.endHour, ov.endMin) }}</span>
-                <span v-if="ov.reason" class="ltr:ml-2 rtl:mr-2 text-xs text-slate-400">{{ ov.reason }}</span>
-              </div>
-              <button @click="deleteOverride(ov.id)" class="text-red-400 hover:text-red-600 text-xs font-medium">{{ $t('admin.delete') }}</button>
-            </div>
-          </div>
-
-          <!-- Add override form -->
-          <div class="border border-dashed border-slate-200 rounded-xl p-4">
-            <h3 class="text-sm font-medium text-primary mb-3">{{ $t('admin.addOverride') }}</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.overrideDate') }}</label>
-                <input v-model="overrideForm.date" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
-              </div>
-              <div>
-                <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.reason') }}</label>
-                <input v-model="overrideForm.reason" type="text" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
-              </div>
-            </div>
-            <div class="mt-3 flex items-center gap-4">
-              <label class="flex items-center gap-2 text-sm">
-                <input v-model="overrideForm.available" type="checkbox" class="rounded border-slate-300" />
-                {{ $t('admin.extraAvailability') }}
-              </label>
-            </div>
-            <div v-if="overrideForm.available" class="mt-3 flex items-center gap-2">
-              <input v-model="overrideForm.startTime" type="time" class="px-2 py-1.5 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
-              <span class="text-slate-400 text-xs">{{ $t('admin.to') }}</span>
-              <input v-model="overrideForm.endTime" type="time" class="px-2 py-1.5 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
-            </div>
-            <div class="mt-3 flex justify-end">
-              <button @click="addOverride" :disabled="!overrideForm.date"
-                class="bg-primary text-cream px-4 py-1.5 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
-                {{ $t('admin.addOverride') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Activity Log -->
       <div v-if="activeTab === 'activity'" class="bg-white rounded-2xl shadow-card p-6">
         <h2 class="text-lg font-bold text-primary mb-4">{{ $t('admin.activityLog') }}</h2>
@@ -378,77 +302,73 @@
         </div>
       </div>
 
-      <!-- Create Class Modal -->
-      <div v-if="showCreateClass" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showCreateClass = false">
+      <!-- Schedule Student Modal -->
+      <div v-if="showScheduleForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showScheduleForm = false">
         <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
-          <h2 class="text-lg font-bold text-primary mb-4">{{ $t('admin.createClass') }}</h2>
-          <form @submit.prevent="createClass" class="space-y-4">
-            <input v-model="classForm.title" type="text" required :placeholder="$t('admin.classTitle')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none" />
-            <input v-model="classForm.titleAr" type="text" :placeholder="$t('admin.classTitleAr')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none" />
-            <textarea v-model="classForm.description" rows="2" :placeholder="$t('admin.classDescription')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none"></textarea>
+          <h2 class="text-lg font-bold text-primary mb-4">{{ $t('admin.scheduleStudent') }}</h2>
+          <form @submit.prevent="scheduleStudent" class="space-y-4">
+            <!-- Student -->
             <div>
-              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.startTime') }}</label>
-              <input v-model="classForm.startTime" type="datetime-local" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none text-sm" />
+              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.selectStudent') }}</label>
+              <select v-model="scheduleForm.studentId" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none bg-white text-sm">
+                <option value="" disabled>{{ $t('admin.selectStudent') }}</option>
+                <option v-for="s in students" :key="s.id" :value="s.id">{{ s.firstName }} {{ s.lastName }}</option>
+              </select>
             </div>
+
+            <!-- Days of week -->
+            <div>
+              <label class="block text-sm text-slate-500 mb-2">{{ $t('admin.classDays') }}</label>
+              <div class="flex flex-wrap gap-2">
+                <label v-for="(dayKey, i) in FULL_DAY_KEYS" :key="i"
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border cursor-pointer text-sm transition"
+                  :class="scheduleForm.days.includes(i) ? 'bg-primary/10 border-primary text-primary' : 'border-slate-200 text-slate-500 hover:border-slate-300'">
+                  <input type="checkbox" :value="i" v-model="scheduleForm.days" class="sr-only" />
+                  {{ $t('admin.' + dayKey) }}
+                </label>
+              </div>
+            </div>
+
+            <!-- Time -->
+            <div>
+              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.classTime') }}</label>
+              <input v-model="scheduleForm.time" type="time" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none text-sm" />
+            </div>
+
+            <!-- Duration -->
             <div>
               <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.duration') }}</label>
-              <select v-model="classForm.duration" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none bg-white text-sm">
+              <select v-model="scheduleForm.duration" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none bg-white text-sm">
                 <option value="30">30 {{ $t('admin.minutes') }}</option>
                 <option value="45">45 {{ $t('admin.minutes') }}</option>
                 <option value="60">1 {{ $t('admin.hour') }}</option>
                 <option value="90">1.5 {{ $t('admin.hours') }}</option>
                 <option value="120">2 {{ $t('admin.hours') }}</option>
-                <option value="custom">{{ $t('admin.customEndTime') }}</option>
               </select>
             </div>
-            <div v-if="classForm.duration === 'custom'">
-              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.endTime') }}</label>
-              <input v-model="classForm.endTime" type="datetime-local" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none text-sm" />
-            </div>
-            <input v-model="classForm.meetingLink" type="url" :placeholder="$t('admin.meetingLink')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none" />
+
+            <!-- Weeks -->
             <div>
-              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.recurrence') }}</label>
-              <select v-model="classForm.recurrence" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none bg-white text-sm">
-                <option value="">{{ $t('admin.oneOff') }}</option>
-                <option value="weekly">{{ $t('admin.weekly') }}</option>
-                <option value="biweekly">{{ $t('admin.biweekly') }}</option>
-              </select>
-            </div>
-            <div v-if="classForm.recurrence">
               <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.repeatUntil') }}</label>
-              <select v-model="classForm.repeatWeeks" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none bg-white text-sm">
+              <select v-model="scheduleForm.weeks" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none bg-white text-sm">
                 <option value="4">4 {{ $t('admin.weeks') }}</option>
                 <option value="8">8 {{ $t('admin.weeks') }}</option>
                 <option value="12">12 {{ $t('admin.weeks') }}</option>
-                <option value="16">16 {{ $t('admin.weeks') }}</option>
                 <option value="24">24 {{ $t('admin.weeks') }}</option>
                 <option value="52">52 {{ $t('admin.weeks') }} (1 {{ $t('admin.year') }})</option>
               </select>
-              <p class="text-xs text-slate-400 mt-1">{{ recurringClassCount }} {{ $t('admin.classesWillBeCreated') }}</p>
             </div>
-            <!-- Assign to students -->
-            <div>
-              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.assignTo') }}</label>
-              <select v-model="classForm.assignTo" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none bg-white text-sm">
-                <option value="all">{{ $t('admin.allStudents') }}</option>
-                <option value="specific">{{ $t('admin.specificStudent') }}</option>
-              </select>
+
+            <!-- Preview -->
+            <div v-if="scheduleForm.days.length && scheduleForm.studentId" class="bg-primary/5 rounded-lg p-3 text-sm text-primary">
+              {{ schedulePreview }}
             </div>
-            <div v-if="classForm.assignTo === 'specific'">
-              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.selectStudent') }}</label>
-              <div class="border border-slate-200 rounded-lg max-h-40 overflow-y-auto p-2 space-y-1">
-                <label v-for="s in students" :key="s.id" class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-50 cursor-pointer text-sm">
-                  <input type="checkbox" :value="s.id" v-model="classForm.selectedStudentIds" class="rounded border-slate-300" />
-                  {{ s.firstName }} {{ s.lastName }}
-                  <span class="text-xs text-slate-400">{{ s.email }}</span>
-                </label>
-                <p v-if="!students.length" class="text-xs text-slate-400 text-center py-2">{{ $t('admin.noStudents') }}</p>
-              </div>
-            </div>
+
             <div class="flex gap-3 justify-end">
-              <button type="button" @click="showCreateClass = false" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $t('admin.cancel') }}</button>
-              <button type="submit" :disabled="creatingClass || (classForm.assignTo === 'specific' && !classForm.selectedStudentIds.length)" class="bg-primary text-cream px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
-                {{ creatingClass ? $t('admin.creating') : $t('admin.create') }}
+              <button type="button" @click="showScheduleForm = false" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $t('admin.cancel') }}</button>
+              <button type="submit" :disabled="creatingClass || !scheduleForm.days.length || !scheduleForm.studentId"
+                class="bg-primary text-cream px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
+                {{ creatingClass ? $t('admin.creating') : $t('admin.scheduleNow') }}
               </button>
             </div>
           </form>
@@ -484,32 +404,24 @@ const classes = ref([]);
 const studentSearch = ref('');
 const selectedStudent = ref(null);
 const newNote = ref('');
-const showCreateClass = ref(false);
+const showScheduleForm = ref(false);
 const creatingClass = ref(false);
 const selectedClass = ref(null);
 const toast = ref('');
+const globalMeetingLink = ref('');
+const savingLink = ref(false);
 
-// Availability state
-const availabilitySlots = ref([]);
-const availabilityOverrides = ref([]);
-const availLoading = ref(false);
-const availSaving = ref(false);
-const availSaved = ref(false);
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const FULL_DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-// Build a per-day structure: { 0: [{startHour,startMin,endHour,endMin}], ... }
-const slotsByDay = computed(() => {
-  const map = {};
-  for (let d = 0; d < 7; d++) map[d] = [];
-  for (const s of availabilitySlots.value) {
-    if (!map[s.dayOfWeek]) map[s.dayOfWeek] = [];
-    map[s.dayOfWeek].push({ startHour: s.startHour, startMin: s.startMin || 0, endHour: s.endHour, endMin: s.endMin || 0 });
-  }
-  return map;
+// Simplified schedule form
+const scheduleForm = reactive({
+  studentId: '',
+  days: [],      // array of dayOfWeek numbers (0=Sun, 1=Mon, ...)
+  time: '15:00', // HH:MM
+  duration: '60', // minutes
+  weeks: '12',
 });
-
-const overrideForm = reactive({ date: '', available: false, startTime: '09:00', endTime: '17:00', reason: '' });
 
 // Calendar state
 const calendarView = ref(true); // true = calendar, false = list
@@ -560,29 +472,24 @@ const isThisWeek = computed(() => {
   return calendarWeekStart.value.getTime() === now.getTime();
 });
 
-const classForm = reactive({
-  title: '', titleAr: '', description: '', startTime: '', endTime: '',
-  meetingLink: '', recurrence: '', duration: '60', repeatWeeks: '12',
-  assignTo: 'all', selectedStudentIds: [],
-});
-
 const studentClasses = computed(() => {
   if (!selectedStudent.value?.classAssignments) return [];
   return selectedStudent.value.classAssignments;
 });
 
-const recurringClassCount = computed(() => {
-  if (!classForm.recurrence) return 0;
-  const weeks = parseInt(classForm.repeatWeeks) || 12;
-  const interval = classForm.recurrence === 'biweekly' ? 2 : 1;
-  return Math.floor(weeks / interval);
+const schedulePreview = computed(() => {
+  const weeks = parseInt(scheduleForm.weeks) || 12;
+  const totalSessions = scheduleForm.days.length * weeks;
+  const dayNames = scheduleForm.days.map(d => t('admin.' + FULL_DAY_KEYS[d])).join(', ');
+  const student = students.value.find(s => s.id === scheduleForm.studentId);
+  const name = student ? `${student.firstName} ${student.lastName}` : '';
+  return `${totalSessions} ${t('admin.classesFor')} ${name} — ${dayNames} ${t('admin.at')} ${scheduleForm.time}`;
 });
 
 const tabs = [
   { key: 'enrollments', label: 'admin.enrollments' },
   { key: 'students', label: 'admin.students' },
   { key: 'scheduling', label: 'admin.scheduling' },
-  { key: 'availability', label: 'admin.availability' },
   { key: 'activity', label: 'admin.activity' },
 ];
 
@@ -620,98 +527,20 @@ async function loadClasses() {
   } catch (e) { showToast(e); }
 }
 
-function padTime(h, m) {
-  return `${String(h).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
-}
-
-function addSlotToDay(dayOfWeek) {
-  availabilitySlots.value = [...availabilitySlots.value, { dayOfWeek, startHour: 9, startMin: 0, endHour: 17, endMin: 0 }];
-  availSaved.value = false;
-}
-
-function removeSlotFromDay(dayOfWeek, idx) {
-  // Find the idx-th slot for this day and remove it
-  let count = -1;
-  availabilitySlots.value = availabilitySlots.value.filter((s) => {
-    if (s.dayOfWeek === dayOfWeek) {
-      count++;
-      return count !== idx;
-    }
-    return true;
-  });
-  availSaved.value = false;
-}
-
-function updateSlot(dayOfWeek, idx, which, timeStr) {
-  const [h, m] = timeStr.split(':').map(Number);
-  let count = -1;
-  for (const s of availabilitySlots.value) {
-    if (s.dayOfWeek === dayOfWeek) {
-      count++;
-      if (count === idx) {
-        if (which === 'start') { s.startHour = h; s.startMin = m; }
-        else { s.endHour = h; s.endMin = m; }
-        break;
-      }
-    }
-  }
-  availSaved.value = false;
-}
-
-async function loadAvailability() {
-  availLoading.value = true;
+async function loadSettings() {
   try {
-    const data = await api.get('/api/admin/availability');
-    availabilitySlots.value = data.slots;
-    availabilityOverrides.value = data.overrides;
+    const data = await api.get('/api/admin/settings');
+    globalMeetingLink.value = data.settings?.meetingLink || '';
+  } catch {}
+}
+
+async function saveMeetingLink() {
+  if (!globalMeetingLink.value) return;
+  savingLink.value = true;
+  try {
+    await api.put('/api/admin/settings/meeting-link', { meetingLink: globalMeetingLink.value });
   } catch (e) { showToast(e); } finally {
-    availLoading.value = false;
-  }
-}
-
-async function addOverride() {
-  if (!overrideForm.date) return;
-  try {
-    const [sh, sm] = overrideForm.startTime.split(':').map(Number);
-    const [eh, em] = overrideForm.endTime.split(':').map(Number);
-    const body = {
-      date: overrideForm.date,
-      available: overrideForm.available,
-      reason: overrideForm.reason || undefined,
-      ...(overrideForm.available ? { startHour: sh, startMin: sm, endHour: eh, endMin: em } : {}),
-    };
-    const data = await api.post('/api/admin/availability/overrides', body);
-    // Replace if same date, else append
-    const existing = availabilityOverrides.value.findIndex((o) => new Date(o.date).toISOString().split('T')[0] === overrideForm.date);
-    if (existing >= 0) availabilityOverrides.value[existing] = data.override;
-    else availabilityOverrides.value.push(data.override);
-    Object.assign(overrideForm, { date: '', available: false, startTime: '09:00', endTime: '17:00', reason: '' });
-  } catch (e) { showToast(e); }
-}
-
-async function deleteOverride(id) {
-  try {
-    await api.delete(`/api/admin/availability/overrides/${id}`);
-    availabilityOverrides.value = availabilityOverrides.value.filter((o) => o.id !== id);
-  } catch (e) { showToast(e); }
-}
-
-async function saveAvailabilitySlots() {
-  availSaving.value = true;
-  try {
-    const slots = availabilitySlots.value.map((s) => ({
-      dayOfWeek: s.dayOfWeek,
-      startHour: s.startHour,
-      startMin: s.startMin || 0,
-      endHour: s.endHour,
-      endMin: s.endMin || 0,
-    }));
-    const data = await api.put('/api/admin/availability/slots', { slots });
-    availabilitySlots.value = data.slots;
-    availSaved.value = true;
-    setTimeout(() => { availSaved.value = false; }, 2000);
-  } catch (e) { showToast(e); } finally {
-    availSaving.value = false;
+    savingLink.value = false;
   }
 }
 
@@ -766,50 +595,45 @@ async function cancelClass(id) {
   } catch (e) { showToast(e); }
 }
 
-async function createClass() {
+function getNextDayOfWeek(dayOfWeek, timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const now = new Date();
+  const result = new Date(now);
+  result.setHours(h, m, 0, 0);
+  const currentDay = now.getDay();
+  let daysUntil = dayOfWeek - currentDay;
+  if (daysUntil < 0 || (daysUntil === 0 && result <= now)) daysUntil += 7;
+  result.setDate(result.getDate() + daysUntil);
+  return result;
+}
+
+async function scheduleStudent() {
   if (creatingClass.value) return;
   creatingClass.value = true;
   try {
-    const start = new Date(classForm.startTime);
-    let end;
-    if (classForm.duration === 'custom') {
-      end = new Date(classForm.endTime);
-    } else {
-      end = new Date(start.getTime() + parseInt(classForm.duration) * 60000);
-    }
+    const student = students.value.find(s => s.id === scheduleForm.studentId);
+    const title = student ? `${student.firstName} ${student.lastName}` : 'Class';
+    const durationMs = parseInt(scheduleForm.duration) * 60000;
+    const weeks = parseInt(scheduleForm.weeks) || 12;
 
-    // Generate all sessions for recurring classes
     const sessions = [];
-    if (classForm.recurrence) {
-      const weeks = parseInt(classForm.repeatWeeks) || 12;
-      const intervalDays = classForm.recurrence === 'biweekly' ? 14 : 7;
-      const durationMs = end.getTime() - start.getTime();
-      for (let i = 0; i < weeks; i += (intervalDays / 7)) {
-        const sessionStart = new Date(start.getTime() + (i * 7 * 86400000));
-        const sessionEnd = new Date(sessionStart.getTime() + durationMs);
-        sessions.push({ start: sessionStart, end: sessionEnd });
+    for (const day of scheduleForm.days) {
+      const firstOccurrence = getNextDayOfWeek(day, scheduleForm.time);
+      for (let w = 0; w < weeks; w++) {
+        const start = new Date(firstOccurrence.getTime() + w * 7 * 86400000);
+        const end = new Date(start.getTime() + durationMs);
+        sessions.push({ startTime: start.toISOString(), endTime: end.toISOString() });
       }
-    } else {
-      sessions.push({ start, end });
     }
 
-    // Create all sessions
-    for (const session of sessions) {
-      const data = {
-        title: classForm.title,
-        titleAr: classForm.titleAr || undefined,
-        description: classForm.description || undefined,
-        startTime: session.start.toISOString(),
-        endTime: session.end.toISOString(),
-        meetingLink: classForm.meetingLink || undefined,
-        recurrence: classForm.recurrence || null,
-        ...(classForm.assignTo === 'specific' && classForm.selectedStudentIds.length ? { studentIds: classForm.selectedStudentIds } : {}),
-      };
-      await api.post('/api/admin/classes', data);
-    }
+    await api.post('/api/admin/classes/batch', {
+      studentId: scheduleForm.studentId,
+      title,
+      sessions,
+    });
 
-    showCreateClass.value = false;
-    Object.assign(classForm, { title: '', titleAr: '', description: '', startTime: '', endTime: '', meetingLink: '', recurrence: '', duration: '60', repeatWeeks: '12', assignTo: 'all', selectedStudentIds: [] });
+    showScheduleForm.value = false;
+    Object.assign(scheduleForm, { studentId: '', days: [], time: '15:00', duration: '60', weeks: '12' });
     loadClasses();
   } catch (e) { showToast(e); } finally {
     creatingClass.value = false;
@@ -819,12 +643,11 @@ async function createClass() {
 watch(activeTab, (tab) => {
   if (tab === 'enrollments') loadEnrollments();
   if (tab === 'students') loadStudents();
-  if (tab === 'scheduling') loadClasses();
-  if (tab === 'availability') loadAvailability();
+  if (tab === 'scheduling') { loadClasses(); loadSettings(); }
 });
 
 watch(studentSearch, () => { loadStudents(); });
-watch(showCreateClass, (v) => { if (v && !students.value.length) loadStudents(); });
+watch(showScheduleForm, (v) => { if (v && !students.value.length) loadStudents(); });
 
 onMounted(() => {
   loadStats();

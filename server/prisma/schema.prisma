@@ -178,6 +178,14 @@ model StudentCountCache {
   @@map("student_count_cache")
 }
 
+model SiteSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("site_settings")
+}
+
 model AvailabilitySlot {
   id        String   @id @default(uuid()) @db.Uuid
   dayOfWeek Int      @map("day_of_week") // 0=Sunday, 1=Monday ... 6=Saturday
