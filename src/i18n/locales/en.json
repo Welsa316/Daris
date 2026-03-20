@@ -395,6 +395,10 @@
     "globalMeetingLink": "Meeting Link",
     "meetingLinkPlaceholder": "https://zoom.us/j/...",
     "meetingLinkHint": "This link is shared with students 30 minutes before each class",
-    "today": "Today"
+    "today": "Today",
+    "upcomingClassesTitle": "Upcoming Classes",
+    "noUpcomingClasses": "No upcoming classes",
+    "joinClass": "Join",
+    "noMeetingLink": "No meeting link set"
   }
 }
