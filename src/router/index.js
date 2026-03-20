@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { watch } from 'vue';
 import HomeView from '../views/HomeView.vue';
 import AboutView from '../views/AboutView.vue';
 import ProgramsView from '../views/ProgramsView.vue';
@@ -75,5 +76,38 @@ export const router = createRouter({
   routes,
   scrollBehavior() {
     return { top: 0 };
+  }
+});
+
+// Navigation guards for auth enforcement
+router.beforeEach(async (to) => {
+  // Lazy import to avoid circular dependency (useAuth imports router)
+  const { useAuth } = await import('@/composables/useAuth.js');
+  const { user, initialized, isAdmin } = useAuth();
+
+  // Wait for initial auth check to complete
+  if (!initialized.value) {
+    await new Promise((resolve) => {
+      const unwatch = watch(initialized, (val) => {
+        if (val) { unwatch(); resolve(); }
+      });
+    });
+  }
+
+  const isAuthenticated = !!user.value;
+
+  // Guest-only routes (login, register) — redirect if already logged in
+  if (to.meta.guest && isAuthenticated) {
+    return isAdmin.value ? '/admin' : '/dashboard';
+  }
+
+  // Auth-required routes — redirect to login if not authenticated
+  if (to.meta.auth && !isAuthenticated) {
+    return '/login';
+  }
+
+  // Role-required routes — redirect home if wrong role
+  if (to.meta.role && user.value?.role !== to.meta.role) {
+    return '/';
   }
 });
