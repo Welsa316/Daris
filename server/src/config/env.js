@@ -6,7 +6,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
-  FRONTEND_URL: z.string().url(),
+  FRONTEND_URL: z.string().default(''), // Set to Railway public URL (e.g. https://daris-production.up.railway.app)
   SMTP_HOST: z.string().default('smtp.resend.com'),
   SMTP_PORT: z.coerce.number().default(465),
   SMTP_SECURE: z.coerce.boolean().default(true),
