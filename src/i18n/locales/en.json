@@ -374,6 +374,17 @@
     "available": "Available",
     "booked": "Booked",
     "overrideDate": "Date",
-    "addSlot": "Add slot"
+    "addSlot": "Add slot",
+    "emailLabel": "Email",
+    "countryLabel": "Country",
+    "phoneLabel": "Phone",
+    "whatsappLabel": "WhatsApp",
+    "telegramLabel": "Telegram",
+    "lastLogin": "Last login",
+    "loading": "Loading...",
+    "rejectPrompt": "Rejection message (optional):",
+    "suspendConfirm": "Are you sure you want to suspend this student?",
+    "cancelConfirm": "Cancel this class? Students will be notified.",
+    "error": "Something went wrong"
   }
 }

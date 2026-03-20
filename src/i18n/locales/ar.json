@@ -374,6 +374,17 @@
     "available": "متاح",
     "booked": "محجوز",
     "overrideDate": "التاريخ",
-    "addSlot": "إضافة فترة"
+    "addSlot": "إضافة فترة",
+    "emailLabel": "البريد الإلكتروني",
+    "countryLabel": "البلد",
+    "phoneLabel": "الهاتف",
+    "whatsappLabel": "واتساب",
+    "telegramLabel": "تيليجرام",
+    "lastLogin": "آخر تسجيل دخول",
+    "loading": "جاري التحميل...",
+    "rejectPrompt": "رسالة الرفض (اختياري):",
+    "suspendConfirm": "هل أنت متأكد من تعليق هذا الطالب؟",
+    "cancelConfirm": "إلغاء هذه الحصة؟ سيتم إبلاغ الطلاب.",
+    "error": "حدث خطأ ما"
   }
 }

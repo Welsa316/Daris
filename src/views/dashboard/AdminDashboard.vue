@@ -50,9 +50,9 @@
                 <h3 class="font-semibold text-primary">{{ req.firstName }} {{ req.lastName }}</h3>
                 <p class="text-sm text-slate-500">{{ req.email }}</p>
                 <p class="text-sm text-slate-400 mt-1">{{ req.country }} · {{ new Date(req.createdAt).toLocaleDateString() }}</p>
-                <p v-if="req.phone" class="text-sm text-slate-400">Phone: {{ req.phone }}</p>
-                <p v-if="req.whatsapp" class="text-sm text-slate-400">WhatsApp: {{ req.whatsapp }}</p>
-                <p v-if="req.telegram" class="text-sm text-slate-400">Telegram: {{ req.telegram }}</p>
+                <p v-if="req.phone" class="text-sm text-slate-400">{{ $t('admin.phoneLabel') }}: {{ req.phone }}</p>
+                <p v-if="req.whatsapp" class="text-sm text-slate-400">{{ $t('admin.whatsappLabel') }}: {{ req.whatsapp }}</p>
+                <p v-if="req.telegram" class="text-sm text-slate-400">{{ $t('admin.telegramLabel') }}: {{ req.telegram }}</p>
                 <p v-if="req.enrollmentMessage" class="text-sm text-slate-600 mt-2 bg-slate-50 p-3 rounded-lg">{{ req.enrollmentMessage }}</p>
               </div>
               <div class="flex gap-2 shrink-0">
@@ -129,11 +129,17 @@
             <!-- Week navigation -->
             <div class="flex items-center justify-between mb-4">
               <button @click="prevWeek" class="text-slate-500 hover:text-primary text-sm font-medium">&larr; {{ $t('admin.prevWeek') }}</button>
-              <span class="text-sm font-medium text-primary">
-                {{ calendarWeekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }}
-                &ndash;
-                {{ new Date(calendarWeekStart.getTime() + 6 * 86400000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) }}
-              </span>
+              <div class="flex items-center gap-3">
+                <button v-if="!isThisWeek" @click="calendarWeekStart = getMonday(new Date()); selectedClass = null"
+                  class="text-xs text-primary border border-primary/30 px-2 py-0.5 rounded-full hover:bg-primary/5 transition">
+                  {{ $t('admin.today') }}
+                </button>
+                <span class="text-sm font-medium text-primary">
+                  {{ calendarWeekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }}
+                  &ndash;
+                  {{ new Date(calendarWeekStart.getTime() + 6 * 86400000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) }}
+                </span>
+              </div>
               <button @click="nextWeek" class="text-slate-500 hover:text-primary text-sm font-medium">{{ $t('admin.nextWeek') }} &rarr;</button>
             </div>
 
@@ -150,12 +156,35 @@
               <!-- Day columns -->
               <div v-for="(day, i) in calendarDays" :key="'d'+i" class="min-h-[100px]">
                 <div v-for="cls in classesByDay[day.toISOString().split('T')[0]] || []" :key="cls.id"
-                  class="mb-1 rounded-lg p-2 text-xs cursor-default"
-                  :class="cls.cancelled ? 'bg-slate-100 text-slate-400 line-through' : 'bg-primary/10 text-primary'">
+                  @click="selectedClass = cls"
+                  class="mb-1 rounded-lg p-2 text-xs cursor-pointer hover:ring-2 hover:ring-primary/30 transition"
+                  :class="[cls.cancelled ? 'bg-slate-100 text-slate-400 line-through' : 'bg-primary/10 text-primary', selectedClass?.id === cls.id ? 'ring-2 ring-primary' : '']">
                   <p class="font-medium truncate">{{ isAr && cls.titleAr ? cls.titleAr : cls.title }}</p>
                   <p class="text-[10px] opacity-70">{{ new Date(cls.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</p>
                 </div>
                 <div v-if="!(classesByDay[day.toISOString().split('T')[0]] || []).length" class="text-[10px] text-slate-300 text-center pt-4">—</div>
+              </div>
+            </div>
+
+            <!-- Selected class detail -->
+            <div v-if="selectedClass" class="mt-4 border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h3 class="font-semibold text-primary">{{ isAr && selectedClass.titleAr ? selectedClass.titleAr : selectedClass.title }}
+                    <span v-if="selectedClass.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span>
+                  </h3>
+                  <p class="text-sm text-slate-500 mt-1">{{ new Date(selectedClass.startTime).toLocaleString() }} – {{ new Date(selectedClass.endTime).toLocaleTimeString() }}</p>
+                  <p class="text-xs text-slate-400 mt-1">{{ selectedClass.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
+                  <div v-if="selectedClass.assignments?.length" class="mt-2 flex flex-wrap gap-1">
+                    <span v-for="a in selectedClass.assignments" :key="a.student.id" class="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded-full">
+                      {{ a.student.firstName }} {{ a.student.lastName }}
+                    </span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button v-if="!selectedClass.cancelled" @click="cancelClass(selectedClass.id); selectedClass = null" class="text-red-500 hover:text-red-700 text-xs font-medium">{{ $t('admin.cancel') }}</button>
+                  <button @click="selectedClass = null" class="text-slate-400 hover:text-slate-600">&times;</button>
+                </div>
               </div>
             </div>
           </div>
@@ -188,7 +217,7 @@
           <h2 class="text-lg font-bold text-primary mb-1">{{ $t('admin.weeklyAvailability') }}</h2>
           <p class="text-sm text-slate-400 mb-4">{{ $t('admin.availabilityDesc') }}</p>
 
-          <div v-if="availLoading" class="text-slate-400 text-sm py-8 text-center">Loading...</div>
+          <div v-if="availLoading" class="text-slate-400 text-sm py-8 text-center">{{ $t('admin.loading') }}</div>
           <div v-else class="space-y-3">
             <div v-for="day in 7" :key="day - 1" class="border border-slate-100 rounded-xl p-4">
               <div class="flex items-center justify-between mb-2">
@@ -294,12 +323,12 @@
             <button @click="selectedStudent = null" class="text-slate-400 hover:text-slate-600">&times;</button>
           </div>
           <div class="space-y-2 text-sm">
-            <p><span class="text-slate-400">Email:</span> {{ selectedStudent.email }}</p>
-            <p><span class="text-slate-400">Country:</span> {{ selectedStudent.country }}</p>
-            <p v-if="selectedStudent.phone"><span class="text-slate-400">Phone:</span> {{ selectedStudent.phone }}</p>
-            <p v-if="selectedStudent.whatsapp"><span class="text-slate-400">WhatsApp:</span> {{ selectedStudent.whatsapp }}</p>
-            <p v-if="selectedStudent.telegram"><span class="text-slate-400">Telegram:</span> {{ selectedStudent.telegram }}</p>
-            <p v-if="selectedStudent.lastLoginAt"><span class="text-slate-400">Last login:</span> {{ new Date(selectedStudent.lastLoginAt).toLocaleString() }}</p>
+            <p><span class="text-slate-400">{{ $t('admin.emailLabel') }}:</span> {{ selectedStudent.email }}</p>
+            <p><span class="text-slate-400">{{ $t('admin.countryLabel') }}:</span> {{ selectedStudent.country }}</p>
+            <p v-if="selectedStudent.phone"><span class="text-slate-400">{{ $t('admin.phoneLabel') }}:</span> {{ selectedStudent.phone }}</p>
+            <p v-if="selectedStudent.whatsapp"><span class="text-slate-400">{{ $t('admin.whatsappLabel') }}:</span> {{ selectedStudent.whatsapp }}</p>
+            <p v-if="selectedStudent.telegram"><span class="text-slate-400">{{ $t('admin.telegramLabel') }}:</span> {{ selectedStudent.telegram }}</p>
+            <p v-if="selectedStudent.lastLoginAt"><span class="text-slate-400">{{ $t('admin.lastLogin') }}:</span> {{ new Date(selectedStudent.lastLoginAt).toLocaleString() }}</p>
           </div>
 
           <!-- Student's Classes -->
@@ -418,13 +447,19 @@
             </div>
             <div class="flex gap-3 justify-end">
               <button type="button" @click="showCreateClass = false" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $t('admin.cancel') }}</button>
-              <button type="submit" :disabled="creatingClass" class="bg-primary text-cream px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
+              <button type="submit" :disabled="creatingClass || (classForm.assignTo === 'specific' && !classForm.selectedStudentIds.length)" class="bg-primary text-cream px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
                 {{ creatingClass ? $t('admin.creating') : $t('admin.create') }}
               </button>
             </div>
           </form>
         </div>
       </div>
+      <!-- Toast -->
+      <Transition name="fade">
+        <div v-if="toast" class="fixed bottom-6 inset-x-0 flex justify-center z-50 pointer-events-none">
+          <div class="bg-red-600 text-white px-5 py-2.5 rounded-xl shadow-lg text-sm pointer-events-auto">{{ toast }}</div>
+        </div>
+      </Transition>
     </div>
   </div>
 </template>
@@ -436,7 +471,7 @@ import { useAuth } from '@/composables/useAuth.js';
 import { api } from '@/config/api.js';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 const { logout } = useAuth();
 
 const isAr = computed(() => locale.value === 'ar');
@@ -451,6 +486,8 @@ const selectedStudent = ref(null);
 const newNote = ref('');
 const showCreateClass = ref(false);
 const creatingClass = ref(false);
+const selectedClass = ref(null);
+const toast = ref('');
 
 // Availability state
 const availabilitySlots = ref([]);
@@ -549,17 +586,23 @@ const tabs = [
   { key: 'activity', label: 'admin.activity' },
 ];
 
+function showToast(err) {
+  const msg = err?.message || err?.data?.error || t('admin.error') || 'Error';
+  toast.value = msg;
+  setTimeout(() => { toast.value = ''; }, 3000);
+}
+
 async function handleLogout() { await logout(); }
 
 async function loadStats() {
-  try { stats.value = await api.get('/api/admin/stats'); } catch {}
+  try { stats.value = await api.get('/api/admin/stats'); } catch (e) { showToast(e); }
 }
 
 async function loadEnrollments() {
   try {
     const data = await api.get('/api/admin/enrollments/pending');
     enrollments.value = data.requests;
-  } catch {}
+  } catch (e) { showToast(e); }
 }
 
 async function loadStudents() {
@@ -567,14 +610,14 @@ async function loadStudents() {
     const query = studentSearch.value ? `?search=${encodeURIComponent(studentSearch.value)}` : '';
     const data = await api.get(`/api/admin/students${query}`);
     students.value = data.students;
-  } catch {}
+  } catch (e) { showToast(e); }
 }
 
 async function loadClasses() {
   try {
-    const data = await api.get('/api/admin/classes');
+    const data = await api.get('/api/admin/classes?limit=200');
     classes.value = data.classes;
-  } catch {}
+  } catch (e) { showToast(e); }
 }
 
 function padTime(h, m) {
@@ -621,7 +664,7 @@ async function loadAvailability() {
     const data = await api.get('/api/admin/availability');
     availabilitySlots.value = data.slots;
     availabilityOverrides.value = data.overrides;
-  } catch {} finally {
+  } catch (e) { showToast(e); } finally {
     availLoading.value = false;
   }
 }
@@ -643,14 +686,14 @@ async function addOverride() {
     if (existing >= 0) availabilityOverrides.value[existing] = data.override;
     else availabilityOverrides.value.push(data.override);
     Object.assign(overrideForm, { date: '', available: false, startTime: '09:00', endTime: '17:00', reason: '' });
-  } catch {}
+  } catch (e) { showToast(e); }
 }
 
 async function deleteOverride(id) {
   try {
     await api.delete(`/api/admin/availability/overrides/${id}`);
     availabilityOverrides.value = availabilityOverrides.value.filter((o) => o.id !== id);
-  } catch {}
+  } catch (e) { showToast(e); }
 }
 
 async function saveAvailabilitySlots() {
@@ -667,7 +710,7 @@ async function saveAvailabilitySlots() {
     availabilitySlots.value = data.slots;
     availSaved.value = true;
     setTimeout(() => { availSaved.value = false; }, 2000);
-  } catch {} finally {
+  } catch (e) { showToast(e); } finally {
     availSaving.value = false;
   }
 }
@@ -677,23 +720,23 @@ async function handleApprove(id) {
     await api.post(`/api/admin/enrollments/${id}/approve`, {});
     enrollments.value = enrollments.value.filter((e) => e.id !== id);
     loadStats();
-  } catch {}
+  } catch (e) { showToast(e); }
 }
 
 async function handleReject(id) {
-  const message = prompt('Rejection message (optional):');
+  const message = prompt(t('admin.rejectPrompt'));
   try {
     await api.post(`/api/admin/enrollments/${id}/reject`, { message });
     enrollments.value = enrollments.value.filter((e) => e.id !== id);
     loadStats();
-  } catch {}
+  } catch (e) { showToast(e); }
 }
 
 async function viewStudent(id) {
   try {
     const data = await api.get(`/api/admin/students/${id}`);
     selectedStudent.value = data.student;
-  } catch {}
+  } catch (e) { showToast(e); }
 }
 
 async function addNote(studentId) {
@@ -702,25 +745,25 @@ async function addNote(studentId) {
     const data = await api.post(`/api/admin/students/${studentId}/notes`, { content: newNote.value });
     selectedStudent.value.adminNotes.unshift(data.note);
     newNote.value = '';
-  } catch {}
+  } catch (e) { showToast(e); }
 }
 
 async function handleSuspend(id) {
-  if (!confirm('Are you sure you want to suspend this student?')) return;
+  if (!confirm(t('admin.suspendConfirm'))) return;
   try {
     await api.post(`/api/admin/students/${id}/suspend`);
     selectedStudent.value = null;
     loadStudents();
     loadStats();
-  } catch {}
+  } catch (e) { showToast(e); }
 }
 
 async function cancelClass(id) {
-  if (!confirm('Cancel this class? Students will be notified.')) return;
+  if (!confirm(t('admin.cancelConfirm'))) return;
   try {
     await api.post(`/api/admin/classes/${id}/cancel`);
     loadClasses();
-  } catch {}
+  } catch (e) { showToast(e); }
 }
 
 async function createClass() {
@@ -768,7 +811,7 @@ async function createClass() {
     showCreateClass.value = false;
     Object.assign(classForm, { title: '', titleAr: '', description: '', startTime: '', endTime: '', meetingLink: '', recurrence: '', duration: '60', repeatWeeks: '12', assignTo: 'all', selectedStudentIds: [] });
     loadClasses();
-  } catch {} finally {
+  } catch (e) { showToast(e); } finally {
     creatingClass.value = false;
   }
 }
@@ -788,3 +831,8 @@ onMounted(() => {
   loadEnrollments();
 });
 </script>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+</style>
