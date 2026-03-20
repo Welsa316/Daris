@@ -10,24 +10,23 @@ export const prisma = basePrisma.$extends({
   query: {
     user: {
       async findMany({ args, query }) {
-        if (!args.where) args.where = {};
-        if (args.where.deletedAt === undefined) {
-          args.where.deletedAt = null;
-        }
+        args = {
+          ...args,
+          where: {
+            ...args.where,
+            ...(args.where?.deletedAt === undefined ? { deletedAt: null } : {}),
+          },
+        };
         return query(args);
       },
       async findFirst({ args, query }) {
-        if (!args.where) args.where = {};
-        if (args.where.deletedAt === undefined) {
-          args.where.deletedAt = null;
-        }
-        return query(args);
-      },
-      async findUnique({ args, query }) {
-        if (!args.where) args.where = {};
-        if (args.where.deletedAt === undefined) {
-          args.where.deletedAt = null;
-        }
+        args = {
+          ...args,
+          where: {
+            ...args.where,
+            ...(args.where?.deletedAt === undefined ? { deletedAt: null } : {}),
+          },
+        };
         return query(args);
       },
     },
