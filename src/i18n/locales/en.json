@@ -311,6 +311,23 @@
     "weekly": "Weekly",
     "biweekly": "Biweekly",
     "activityLog": "Activity log",
-    "noActivity": "No recent activity."
+    "noActivity": "No recent activity.",
+    "studentClasses": "Class schedule",
+    "noStudentClasses": "No classes assigned yet.",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "startTime": "Start time",
+    "endTime": "End time",
+    "duration": "Duration",
+    "minutes": "min",
+    "hour": "hour",
+    "hours": "hours",
+    "customEndTime": "Custom end time",
+    "recurrence": "Recurrence",
+    "repeatUntil": "Repeat for",
+    "weeks": "weeks",
+    "year": "year",
+    "classesWillBeCreated": "classes will be created",
+    "creating": "Creating..."
   }
 }

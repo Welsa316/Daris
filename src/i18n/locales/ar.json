@@ -311,6 +311,23 @@
     "weekly": "أسبوعي",
     "biweekly": "كل أسبوعين",
     "activityLog": "سجل النشاط",
-    "noActivity": "لا يوجد نشاط حديث."
+    "noActivity": "لا يوجد نشاط حديث.",
+    "studentClasses": "جدول الحصص",
+    "noStudentClasses": "لا توجد حصص مسجلة بعد.",
+    "upcoming": "قادمة",
+    "past": "سابقة",
+    "startTime": "وقت البدء",
+    "endTime": "وقت الانتهاء",
+    "duration": "المدة",
+    "minutes": "دقيقة",
+    "hour": "ساعة",
+    "hours": "ساعات",
+    "customEndTime": "وقت انتهاء مخصص",
+    "recurrence": "التكرار",
+    "repeatUntil": "التكرار لمدة",
+    "weeks": "أسابيع",
+    "year": "سنة",
+    "classesWillBeCreated": "حصة سيتم إنشاؤها",
+    "creating": "جاري الإنشاء..."
   }
 }
