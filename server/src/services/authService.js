@@ -61,12 +61,6 @@ export async function registerUser({ firstName, lastName, email, password, count
     logger.error('Failed to send verification email', { error: err.message })
   );
 
-  // Notify admin
-  const admin = await prisma.user.findFirst({ where: { role: 'admin' } });
-  if (admin) {
-    sendNewEnrollmentNotification(admin.email, `${user.firstName} ${user.lastName}`, lang).catch(() => {});
-  }
-
   auditLog('USER_REGISTERED', { userId: user.id, ip: ipAddress });
 
   return { success: true, userId: user.id };
@@ -112,6 +106,15 @@ export async function verifyEmail(rawToken) {
   ]);
 
   auditLog('EMAIL_VERIFIED', { userId: emailToken.userId });
+
+  // Notify admin that a student is ready for review
+  const admin = await prisma.user.findFirst({ where: { role: 'admin' } });
+  if (admin) {
+    const student = emailToken.user;
+    sendNewEnrollmentNotification(admin.email, `${student.firstName} ${student.lastName}`).catch((err) =>
+      logger.error('Failed to send admin enrollment notification', { error: err.message })
+    );
+  }
 
   return { success: true };
 }
