@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "build": "cd .. && npm install && npx vite build && cd server && npx prisma generate",
+    "build": "cd .. && npm install --include=dev && npx vite build && cd server && npx prisma generate",
     "db:generate": "npx prisma generate",
     "db:migrate": "npx prisma migrate dev",
     "db:migrate:prod": "npx prisma migrate deploy",
