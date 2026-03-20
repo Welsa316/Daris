@@ -19,11 +19,19 @@ router.use(authenticate, verifyTokenVersion, requireAdmin);
 // --- Dashboard Stats ---
 router.get('/stats', async (req, res, next) => {
   try {
+    const adminId = req.user.id;
     const [totalEnrolled, totalPending, upcomingClasses, recentActivity] = await Promise.all([
-      prisma.user.count({ where: { role: 'enrolled_student', deletedAt: null } }),
+      prisma.user.count({
+        where: {
+          role: 'enrolled_student',
+          deletedAt: null,
+          classAssignments: { some: { classSession: { createdByAdminId: adminId } } },
+        },
+      }),
       prisma.user.count({ where: { role: 'pending_review', deletedAt: null } }),
       prisma.classSession.count({
         where: {
+          createdByAdminId: adminId,
           startTime: {
             gte: new Date(),
             lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -123,14 +131,23 @@ router.get('/students', validate(paginationSchema, 'query'), async (req, res, ne
     const where = {
       role: 'enrolled_student',
       deletedAt: null,
+      classAssignments: {
+        some: {
+          classSession: { createdByAdminId: req.user.id },
+        },
+      },
     };
 
     if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { country: { contains: search, mode: 'insensitive' } },
+      where.AND = [
+        {
+          OR: [
+            { firstName: { contains: search, mode: 'insensitive' } },
+            { lastName: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+            { country: { contains: search, mode: 'insensitive' } },
+          ],
+        },
       ];
     }
 
@@ -342,8 +359,11 @@ router.get('/classes', validate(paginationSchema, 'query'), async (req, res, nex
     const { page, limit } = req.query;
     const skip = (page - 1) * limit;
 
+    const classWhere = { createdByAdminId: req.user.id };
+
     const [classes, total] = await Promise.all([
       prisma.classSession.findMany({
+        where: classWhere,
         orderBy: { startTime: 'asc' },
         include: {
           assignments: {
@@ -357,7 +377,7 @@ router.get('/classes', validate(paginationSchema, 'query'), async (req, res, nex
         skip,
         take: limit,
       }),
-      prisma.classSession.count(),
+      prisma.classSession.count({ where: classWhere }),
     ]);
 
     res.json({ classes, total, page, totalPages: Math.ceil(total / limit) });
@@ -377,6 +397,7 @@ router.post('/classes', validate(classSessionSchema), async (req, res, next) => 
         startTime: new Date(classData.startTime),
         endTime: new Date(classData.endTime),
         recurrenceEnd: classData.recurrenceEnd ? new Date(classData.recurrenceEnd) : null,
+        createdByAdminId: req.user.id,
       },
     });
 
@@ -541,6 +562,7 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
             endTime: new Date(session.endTime),
             meetingLink,
             recurrence: 'weekly',
+            createdByAdminId: req.user.id,
           },
         });
         await tx.classAssignment.create({
@@ -810,6 +832,27 @@ function getMonday(d) {
   date.setHours(0, 0, 0, 0);
   return date;
 }
+
+// --- Admin List ---
+router.get('/admins', async (req, res, next) => {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { role: 'admin', deletedAt: null },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        lastLoginAt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    res.json({ admins });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // --- Audit Logs ---
 router.get('/audit-logs', validate(paginationSchema, 'query'), async (req, res, next) => {
