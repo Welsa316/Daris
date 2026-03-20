@@ -1,32 +1,37 @@
 import { PrismaClient } from '@prisma/client';
 import { isDev } from './env.js';
 
-export const prisma = new PrismaClient({
+const basePrisma = new PrismaClient({
   log: isDev ? ['warn', 'error'] : ['error'],
 });
 
-// Soft-delete middleware: filter out deleted users by default
-prisma.$use(async (params, next) => {
-  if (params.model === 'User') {
-    // For find operations, exclude soft-deleted records unless explicitly requested
-    if (params.action === 'findMany' || params.action === 'findFirst') {
-      if (!params.args) params.args = {};
-      if (!params.args.where) params.args.where = {};
-      if (params.args.where.deletedAt === undefined) {
-        params.args.where.deletedAt = null;
-      }
-    }
-    if (params.action === 'findUnique' || params.action === 'findFirst') {
-      // Convert findUnique to findFirst to support compound conditions
-      if (params.action === 'findUnique') {
-        params.action = 'findFirst';
-        const where = params.args.where;
-        // Flatten unique constraint keys
-        params.args.where = { ...where, deletedAt: null };
-      }
-    }
-  }
-  return next(params);
+// Soft-delete extension: filter out deleted users by default
+export const prisma = basePrisma.$extends({
+  query: {
+    user: {
+      async findMany({ args, query }) {
+        if (!args.where) args.where = {};
+        if (args.where.deletedAt === undefined) {
+          args.where.deletedAt = null;
+        }
+        return query(args);
+      },
+      async findFirst({ args, query }) {
+        if (!args.where) args.where = {};
+        if (args.where.deletedAt === undefined) {
+          args.where.deletedAt = null;
+        }
+        return query(args);
+      },
+      async findUnique({ args, query }) {
+        if (!args.where) args.where = {};
+        if (args.where.deletedAt === undefined) {
+          args.where.deletedAt = null;
+        }
+        return query(args);
+      },
+    },
+  },
 });
 
 export async function connectDatabase() {
