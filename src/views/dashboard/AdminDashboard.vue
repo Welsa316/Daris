@@ -4,7 +4,10 @@
       <!-- Header -->
       <div class="flex items-center justify-between mb-8">
         <h1 class="text-2xl font-display font-bold text-primary">{{ $t('admin.title') }}</h1>
-        <button @click="handleLogout" class="text-sm text-slate-400 hover:text-primary transition">{{ $t('auth.logout') }}</button>
+        <div class="flex items-center gap-3">
+          <LanguageSwitcher />
+          <button @click="handleLogout" class="text-sm text-slate-400 hover:text-primary transition">{{ $t('auth.logout') }}</button>
+        </div>
       </div>
 
       <!-- Stats -->
@@ -154,6 +157,30 @@
             <p v-if="selectedStudent.lastLoginAt"><span class="text-slate-400">Last login:</span> {{ new Date(selectedStudent.lastLoginAt).toLocaleString() }}</p>
           </div>
 
+          <!-- Student's Classes -->
+          <div class="mt-6">
+            <h3 class="font-semibold text-primary mb-3">{{ $t('admin.studentClasses') }}</h3>
+            <div v-if="!studentClasses.length" class="text-slate-400 text-sm">{{ $t('admin.noStudentClasses') }}</div>
+            <div v-else class="space-y-2 max-h-48 overflow-y-auto">
+              <div v-for="a in studentClasses" :key="a.id" class="border border-slate-100 rounded-lg p-3 text-sm"
+                :class="a.classSession.cancelled ? 'opacity-50' : ''">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <p class="font-medium text-primary">{{ isAr && a.classSession.titleAr ? a.classSession.titleAr : a.classSession.title }}
+                      <span v-if="a.classSession.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span>
+                    </p>
+                    <p class="text-xs text-slate-500">{{ new Date(a.classSession.startTime).toLocaleString() }} - {{ new Date(a.classSession.endTime).toLocaleTimeString() }}</p>
+                    <p v-if="a.classSession.recurrence" class="text-xs text-slate-400">{{ a.classSession.recurrence }}</p>
+                  </div>
+                  <span :class="new Date(a.classSession.startTime) > new Date() ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'"
+                    class="text-xs px-2 py-0.5 rounded-full shrink-0">
+                    {{ new Date(a.classSession.startTime) > new Date() ? $t('admin.upcoming') : $t('admin.past') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Notes -->
           <div class="mt-6">
             <h3 class="font-semibold text-primary mb-3">{{ $t('admin.notes') }}</h3>
@@ -185,19 +212,51 @@
             <input v-model="classForm.title" type="text" required :placeholder="$t('admin.classTitle')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none" />
             <input v-model="classForm.titleAr" type="text" :placeholder="$t('admin.classTitleAr')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none" />
             <textarea v-model="classForm.description" rows="2" :placeholder="$t('admin.classDescription')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none"></textarea>
-            <div class="grid grid-cols-2 gap-4">
-              <input v-model="classForm.startTime" type="datetime-local" required class="px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none text-sm" />
-              <input v-model="classForm.endTime" type="datetime-local" required class="px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none text-sm" />
+            <div>
+              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.startTime') }}</label>
+              <input v-model="classForm.startTime" type="datetime-local" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none text-sm" />
+            </div>
+            <div>
+              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.duration') }}</label>
+              <select v-model="classForm.duration" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none bg-white text-sm">
+                <option value="30">30 {{ $t('admin.minutes') }}</option>
+                <option value="45">45 {{ $t('admin.minutes') }}</option>
+                <option value="60">1 {{ $t('admin.hour') }}</option>
+                <option value="90">1.5 {{ $t('admin.hours') }}</option>
+                <option value="120">2 {{ $t('admin.hours') }}</option>
+                <option value="custom">{{ $t('admin.customEndTime') }}</option>
+              </select>
+            </div>
+            <div v-if="classForm.duration === 'custom'">
+              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.endTime') }}</label>
+              <input v-model="classForm.endTime" type="datetime-local" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none text-sm" />
             </div>
             <input v-model="classForm.meetingLink" type="url" :placeholder="$t('admin.meetingLink')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none" />
-            <select v-model="classForm.recurrence" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none bg-white text-sm">
-              <option value="">{{ $t('admin.oneOff') }}</option>
-              <option value="weekly">{{ $t('admin.weekly') }}</option>
-              <option value="biweekly">{{ $t('admin.biweekly') }}</option>
-            </select>
+            <div>
+              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.recurrence') }}</label>
+              <select v-model="classForm.recurrence" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none bg-white text-sm">
+                <option value="">{{ $t('admin.oneOff') }}</option>
+                <option value="weekly">{{ $t('admin.weekly') }}</option>
+                <option value="biweekly">{{ $t('admin.biweekly') }}</option>
+              </select>
+            </div>
+            <div v-if="classForm.recurrence">
+              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.repeatUntil') }}</label>
+              <select v-model="classForm.repeatWeeks" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none bg-white text-sm">
+                <option value="4">4 {{ $t('admin.weeks') }}</option>
+                <option value="8">8 {{ $t('admin.weeks') }}</option>
+                <option value="12">12 {{ $t('admin.weeks') }}</option>
+                <option value="16">16 {{ $t('admin.weeks') }}</option>
+                <option value="24">24 {{ $t('admin.weeks') }}</option>
+                <option value="52">52 {{ $t('admin.weeks') }} (1 {{ $t('admin.year') }})</option>
+              </select>
+              <p class="text-xs text-slate-400 mt-1">{{ recurringClassCount }} {{ $t('admin.classesWillBeCreated') }}</p>
+            </div>
             <div class="flex gap-3 justify-end">
               <button type="button" @click="showCreateClass = false" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $t('admin.cancel') }}</button>
-              <button type="submit" class="bg-primary text-cream px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition">{{ $t('admin.create') }}</button>
+              <button type="submit" :disabled="creatingClass" class="bg-primary text-cream px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
+                {{ creatingClass ? $t('admin.creating') : $t('admin.create') }}
+              </button>
             </div>
           </form>
         </div>
@@ -207,11 +266,16 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth.js';
 import { api } from '@/config/api.js';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 
+const { locale } = useI18n();
 const { logout } = useAuth();
+
+const isAr = computed(() => locale.value === 'ar');
 
 const activeTab = ref('enrollments');
 const stats = ref(null);
@@ -222,10 +286,23 @@ const studentSearch = ref('');
 const selectedStudent = ref(null);
 const newNote = ref('');
 const showCreateClass = ref(false);
+const creatingClass = ref(false);
 
 const classForm = reactive({
   title: '', titleAr: '', description: '', startTime: '', endTime: '',
-  meetingLink: '', recurrence: '',
+  meetingLink: '', recurrence: '', duration: '60', repeatWeeks: '12',
+});
+
+const studentClasses = computed(() => {
+  if (!selectedStudent.value?.classAssignments) return [];
+  return selectedStudent.value.classAssignments;
+});
+
+const recurringClassCount = computed(() => {
+  if (!classForm.recurrence) return 0;
+  const weeks = parseInt(classForm.repeatWeeks) || 12;
+  const interval = classForm.recurrence === 'biweekly' ? 2 : 1;
+  return Math.floor(weeks / interval);
 });
 
 const tabs = [
@@ -315,18 +392,52 @@ async function cancelClass(id) {
 }
 
 async function createClass() {
+  if (creatingClass.value) return;
+  creatingClass.value = true;
   try {
-    const data = {
-      ...classForm,
-      startTime: new Date(classForm.startTime).toISOString(),
-      endTime: new Date(classForm.endTime).toISOString(),
-      recurrence: classForm.recurrence || null,
-    };
-    await api.post('/api/admin/classes', data);
+    const start = new Date(classForm.startTime);
+    let end;
+    if (classForm.duration === 'custom') {
+      end = new Date(classForm.endTime);
+    } else {
+      end = new Date(start.getTime() + parseInt(classForm.duration) * 60000);
+    }
+
+    // Generate all sessions for recurring classes
+    const sessions = [];
+    if (classForm.recurrence) {
+      const weeks = parseInt(classForm.repeatWeeks) || 12;
+      const intervalDays = classForm.recurrence === 'biweekly' ? 14 : 7;
+      const durationMs = end.getTime() - start.getTime();
+      for (let i = 0; i < weeks; i += (intervalDays / 7)) {
+        const sessionStart = new Date(start.getTime() + (i * 7 * 86400000));
+        const sessionEnd = new Date(sessionStart.getTime() + durationMs);
+        sessions.push({ start: sessionStart, end: sessionEnd });
+      }
+    } else {
+      sessions.push({ start, end });
+    }
+
+    // Create all sessions
+    for (const session of sessions) {
+      const data = {
+        title: classForm.title,
+        titleAr: classForm.titleAr || undefined,
+        description: classForm.description || undefined,
+        startTime: session.start.toISOString(),
+        endTime: session.end.toISOString(),
+        meetingLink: classForm.meetingLink || undefined,
+        recurrence: classForm.recurrence || null,
+      };
+      await api.post('/api/admin/classes', data);
+    }
+
     showCreateClass.value = false;
-    Object.assign(classForm, { title: '', titleAr: '', description: '', startTime: '', endTime: '', meetingLink: '', recurrence: '' });
+    Object.assign(classForm, { title: '', titleAr: '', description: '', startTime: '', endTime: '', meetingLink: '', recurrence: '', duration: '60', repeatWeeks: '12' });
     loadClasses();
-  } catch {}
+  } catch {} finally {
+    creatingClass.value = false;
+  }
 }
 
 watch(activeTab, (tab) => {

@@ -204,6 +204,24 @@ router.get('/students/:id', async (req, res, next) => {
             updatedAt: true,
           },
         },
+        classAssignments: {
+          orderBy: { classSession: { startTime: 'desc' } },
+          select: {
+            id: true,
+            classSession: {
+              select: {
+                id: true,
+                title: true,
+                titleAr: true,
+                startTime: true,
+                endTime: true,
+                meetingLink: true,
+                cancelled: true,
+                recurrence: true,
+              },
+            },
+          },
+        },
       },
     });
 
