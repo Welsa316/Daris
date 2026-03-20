@@ -2,6 +2,7 @@ import { prisma } from '../config/database.js';
 import { hashPassword, verifyPassword, generateToken, hashToken } from '../utils/crypto.js';
 import { generateAccessToken, createRefreshToken, invalidateAllSessions } from './tokenService.js';
 import { sendVerificationEmail, sendAccountLockedEmail, sendNewEnrollmentNotification } from './emailService.js';
+import { sendNewEnrollmentWhatsApp } from './whatsappService.js';
 import { logger, auditLog } from '../utils/logger.js';
 
 const LOCKOUT_THRESHOLD = 5;
@@ -66,6 +67,13 @@ export async function registerUser({ firstName, lastName, email, password, count
   if (admin) {
     sendNewEnrollmentNotification(admin.email, `${user.firstName} ${user.lastName}`, lang).catch(() => {});
   }
+
+  // Notify admin via WhatsApp
+  sendNewEnrollmentWhatsApp(
+    `${user.firstName} ${user.lastName}`,
+    user.country,
+    user.enrollmentMessage
+  ).catch(() => {});
 
   auditLog('USER_REGISTERED', { userId: user.id, ip: ipAddress });
 
