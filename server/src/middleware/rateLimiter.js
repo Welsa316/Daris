@@ -1,11 +1,11 @@
 import rateLimit from 'express-rate-limit';
 
 /**
- * Login endpoint: max 5 per IP per 15 minutes
+ * Login endpoint: max 15 per IP per 15 minutes
  */
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 15,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests. Please try again later.', ar: 'طلبات كثيرة جداً. يرجى المحاولة لاحقاً.' },
@@ -13,11 +13,11 @@ export const loginLimiter = rateLimit({
 });
 
 /**
- * Registration endpoint: max 3 per IP per hour
+ * Registration endpoint: max 10 per IP per hour
  */
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 3,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests. Please try again later.', ar: 'طلبات كثيرة جداً. يرجى المحاولة لاحقاً.' },
