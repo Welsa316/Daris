@@ -30,6 +30,30 @@
         </div>
       </div>
 
+      <!-- Upcoming Classes (always visible) -->
+      <div class="bg-white rounded-2xl shadow-card p-6 mb-8">
+        <h2 class="text-lg font-bold text-primary mb-4">{{ $t('admin.upcomingClassesTitle') || 'Upcoming Classes' }}</h2>
+        <div v-if="!upcomingClasses.length" class="text-slate-400 text-sm py-4 text-center">{{ $t('admin.noUpcomingClasses') || 'No upcoming classes' }}</div>
+        <div v-else class="space-y-3">
+          <div v-for="cls in upcomingClasses" :key="cls.id"
+            class="flex items-center justify-between border border-slate-100 rounded-xl p-4 hover:border-primary/30 transition">
+            <div>
+              <h3 class="font-semibold text-primary">{{ isAr && cls.titleAr ? cls.titleAr : cls.title }}</h3>
+              <p class="text-sm text-slate-500 mt-0.5">{{ formatClassTime(cls.startTime) }} – {{ new Date(cls.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</p>
+              <p class="text-xs text-slate-400 mt-0.5">{{ cls.assignments?.map(a => a.student.firstName + ' ' + a.student.lastName).join(', ') }}</p>
+              <p class="text-xs mt-1" :class="classTimeLabel(cls).color">{{ classTimeLabel(cls).text }}</p>
+            </div>
+            <a v-if="cls.meetingLink || globalMeetingLink"
+              :href="cls.meetingLink || globalMeetingLink" target="_blank" rel="noopener"
+              class="bg-green-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-green-700 transition shrink-0 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              {{ $t('admin.joinClass') || 'Join' }}
+            </a>
+            <span v-else class="text-xs text-slate-400 italic shrink-0">{{ $t('admin.noMeetingLink') || 'No meeting link set' }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Tabs -->
       <div class="flex gap-2 mb-6 overflow-x-auto">
         <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
@@ -472,6 +496,39 @@ const isThisWeek = computed(() => {
   return calendarWeekStart.value.getTime() === now.getTime();
 });
 
+const upcomingClasses = computed(() => {
+  const now = new Date();
+  const threeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+  return classes.value
+    .filter(cls => !cls.cancelled && new Date(cls.startTime) >= now && new Date(cls.startTime) <= threeDays)
+    .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
+    .slice(0, 10);
+});
+
+function formatClassTime(iso) {
+  const d = new Date(iso);
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (d.toDateString() === today.toDateString()) return `Today, ${timeStr}`;
+  if (d.toDateString() === tomorrow.toDateString()) return `Tomorrow, ${timeStr}`;
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) + ', ' + timeStr;
+}
+
+function classTimeLabel(cls) {
+  const now = new Date();
+  const start = new Date(cls.startTime);
+  const end = new Date(cls.endTime);
+  const diffMin = Math.round((start - now) / 60000);
+
+  if (now >= start && now <= end) return { text: 'Live now', color: 'text-green-600 font-semibold' };
+  if (diffMin <= 30 && diffMin > 0) return { text: `Starts in ${diffMin} min`, color: 'text-amber-600 font-medium' };
+  if (diffMin <= 60 && diffMin > 0) return { text: `In ${diffMin} minutes`, color: 'text-blue-600' };
+  return { text: '', color: '' };
+}
+
 const studentClasses = computed(() => {
   if (!selectedStudent.value?.classAssignments) return [];
   return selectedStudent.value.classAssignments;
@@ -652,6 +709,8 @@ watch(showScheduleForm, (v) => { if (v && !students.value.length) loadStudents()
 onMounted(() => {
   loadStats();
   loadEnrollments();
+  loadClasses();
+  loadSettings();
 });
 </script>
 

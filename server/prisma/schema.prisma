@@ -45,6 +45,7 @@ model User {
   adminNotes        AdminNote[]    @relation("StudentNotes")
   authoredNotes     AdminNote[]    @relation("AuthorNotes")
   classAssignments  ClassAssignment[]
+  createdClasses    ClassSession[]     @relation("AdminClasses")
   emailTokens       EmailToken[]
   auditLogs         AuditLog[]
 
@@ -89,26 +90,29 @@ model EmailToken {
 }
 
 model ClassSession {
-  id          String   @id @default(uuid()) @db.Uuid
-  title       String
-  titleAr     String?  @map("title_ar")
-  description String?  @db.Text
-  descriptionAr String? @map("description_ar") @db.Text
-  startTime   DateTime @map("start_time")
-  endTime     DateTime @map("end_time")
-  timezone    String   @default("UTC")
-  meetingLink String?  @map("meeting_link")
-  recurrence  String?  // "weekly" | "biweekly" | "custom" | null (one-off)
-  recurrenceEnd DateTime? @map("recurrence_end")
-  cancelled   Boolean  @default(false)
-  cancelledAt DateTime? @map("cancelled_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid()) @db.Uuid
+  title           String
+  titleAr         String?  @map("title_ar")
+  description     String?  @db.Text
+  descriptionAr   String?  @map("description_ar") @db.Text
+  startTime       DateTime @map("start_time")
+  endTime         DateTime @map("end_time")
+  timezone        String   @default("UTC")
+  meetingLink     String?  @map("meeting_link")
+  recurrence      String?  // "weekly" | "biweekly" | "custom" | null (one-off)
+  recurrenceEnd   DateTime? @map("recurrence_end")
+  cancelled       Boolean  @default(false)
+  cancelledAt     DateTime? @map("cancelled_at")
+  createdByAdminId String? @map("created_by_admin_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  assignments ClassAssignment[]
+  createdByAdmin  User?    @relation("AdminClasses", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  assignments     ClassAssignment[]
 
   @@index([startTime])
   @@index([cancelled])
+  @@index([createdByAdminId])
   @@map("class_sessions")
 }
 
