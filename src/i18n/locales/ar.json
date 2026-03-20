@@ -395,6 +395,10 @@
     "globalMeetingLink": "رابط الاجتماع",
     "meetingLinkPlaceholder": "https://zoom.us/j/...",
     "meetingLinkHint": "يُشارك هذا الرابط مع الطلاب قبل 30 دقيقة من كل حصة",
-    "today": "اليوم"
+    "today": "اليوم",
+    "upcomingClassesTitle": "الحصص القادمة",
+    "noUpcomingClasses": "لا توجد حصص قادمة",
+    "joinClass": "انضمام",
+    "noMeetingLink": "لم يتم تعيين رابط الاجتماع"
   }
 }
