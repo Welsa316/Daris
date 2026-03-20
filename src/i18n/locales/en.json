@@ -385,6 +385,16 @@
     "rejectPrompt": "Rejection message (optional):",
     "suspendConfirm": "Are you sure you want to suspend this student?",
     "cancelConfirm": "Cancel this class? Students will be notified.",
-    "error": "Something went wrong"
+    "error": "Something went wrong",
+    "scheduleStudent": "Schedule Student",
+    "classDays": "Class Days",
+    "classTime": "Class Time",
+    "scheduleNow": "Schedule",
+    "classesFor": "classes for",
+    "at": "at",
+    "globalMeetingLink": "Meeting Link",
+    "meetingLinkPlaceholder": "https://zoom.us/j/...",
+    "meetingLinkHint": "This link is shared with students 30 minutes before each class",
+    "today": "Today"
   }
 }

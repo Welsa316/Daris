@@ -112,11 +112,16 @@ router.get('/dashboard', requireEnrolled, async (req, res, next) => {
       take: 10,
     });
 
+    // Get global meeting link fallback
+    const globalLinkSetting = await prisma.siteSetting.findUnique({ where: { key: 'meetingLink' } });
+    const globalMeetingLink = globalLinkSetting?.value || null;
+
     // Conditionally show meeting links (only 30 min before class)
     const MEETING_LINK_WINDOW_MS = 30 * 60 * 1000;
     const classesForClient = upcomingClasses.map((assignment) => {
       const cls = assignment.classSession;
       const timeUntilClass = new Date(cls.startTime).getTime() - now.getTime();
+      const link = cls.meetingLink || globalMeetingLink;
       return {
         id: cls.id,
         title: cls.title,
@@ -127,7 +132,7 @@ router.get('/dashboard', requireEnrolled, async (req, res, next) => {
         endTime: cls.endTime,
         timezone: cls.timezone,
         // Only reveal meeting link within 30 minutes of class start
-        meetingLink: timeUntilClass <= MEETING_LINK_WINDOW_MS && timeUntilClass > 0 ? cls.meetingLink : null,
+        meetingLink: timeUntilClass <= MEETING_LINK_WINDOW_MS && timeUntilClass > 0 ? link : null,
         meetingLinkAvailableIn: timeUntilClass > MEETING_LINK_WINDOW_MS ? Math.ceil(timeUntilClass / 60000) : null,
       };
     });
@@ -220,17 +225,20 @@ router.get('/schedule', requireEnrolled, async (req, res, next) => {
     const now = new Date();
     const MEETING_LINK_WINDOW_MS = 30 * 60 * 1000;
 
-    const assignments = await prisma.classAssignment.findMany({
-      where: { studentId: req.user.id },
-      include: {
-        classSession: true,
-      },
-      orderBy: { classSession: { startTime: 'asc' } },
-    });
+    const [assignments, globalLinkSetting] = await Promise.all([
+      prisma.classAssignment.findMany({
+        where: { studentId: req.user.id },
+        include: { classSession: true },
+        orderBy: { classSession: { startTime: 'asc' } },
+      }),
+      prisma.siteSetting.findUnique({ where: { key: 'meetingLink' } }),
+    ]);
+    const globalMeetingLink = globalLinkSetting?.value || null;
 
     const schedule = assignments.map((a) => {
       const cls = a.classSession;
       const timeUntilClass = new Date(cls.startTime).getTime() - now.getTime();
+      const link = cls.meetingLink || globalMeetingLink;
       return {
         id: cls.id,
         title: cls.title,
@@ -240,7 +248,7 @@ router.get('/schedule', requireEnrolled, async (req, res, next) => {
         startTime: cls.startTime,
         endTime: cls.endTime,
         timezone: cls.timezone,
-        meetingLink: timeUntilClass <= MEETING_LINK_WINDOW_MS && timeUntilClass > 0 ? cls.meetingLink : null,
+        meetingLink: timeUntilClass <= MEETING_LINK_WINDOW_MS && timeUntilClass > 0 ? link : null,
         cancelled: cls.cancelled,
         recurrence: cls.recurrence,
       };

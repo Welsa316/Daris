@@ -385,6 +385,16 @@
     "rejectPrompt": "رسالة الرفض (اختياري):",
     "suspendConfirm": "هل أنت متأكد من تعليق هذا الطالب؟",
     "cancelConfirm": "إلغاء هذه الحصة؟ سيتم إبلاغ الطلاب.",
-    "error": "حدث خطأ ما"
+    "error": "حدث خطأ ما",
+    "scheduleStudent": "جدولة طالب",
+    "classDays": "أيام الدرس",
+    "classTime": "وقت الدرس",
+    "scheduleNow": "جدولة",
+    "classesFor": "حصص لـ",
+    "at": "في",
+    "globalMeetingLink": "رابط الاجتماع",
+    "meetingLinkPlaceholder": "https://zoom.us/j/...",
+    "meetingLinkHint": "يُشارك هذا الرابط مع الطلاب قبل 30 دقيقة من كل حصة",
+    "today": "اليوم"
   }
 }

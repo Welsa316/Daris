@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate, verifyTokenVersion } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
 import { validate } from '../middleware/validate.js';
-import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema } from '../validators/adminSchemas.js';
+import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema, batchClassSchema, meetingLinkSchema } from '../validators/adminSchemas.js';
 import { getPendingEnrollments, approveEnrollment, rejectEnrollment, getRejectedApplicants, suspendStudent, removeStudent } from '../services/enrollmentService.js';
 import { prisma } from '../config/database.js';
 import { sendClassCancelledEmail } from '../services/emailService.js';
@@ -485,6 +485,78 @@ router.delete('/classes/:id', async (req, res, next) => {
     await prisma.classSession.delete({ where: { id: req.params.id } });
     auditLog('CLASS_DELETED', { classId: req.params.id, adminId: req.user.id });
     res.json({ message: t('schedule.deleted', lang) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// --- Settings ---
+
+router.get('/settings', async (req, res, next) => {
+  try {
+    const settings = await prisma.siteSetting.findMany();
+    const result = {};
+    for (const s of settings) result[s.key] = s.value;
+    res.json({ settings: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/settings/meeting-link', validate(meetingLinkSchema), async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    await prisma.siteSetting.upsert({
+      where: { key: 'meetingLink' },
+      update: { value: req.body.meetingLink },
+      create: { key: 'meetingLink', value: req.body.meetingLink },
+    });
+    auditLog('MEETING_LINK_UPDATED', { adminId: req.user.id });
+    res.json({ message: t('schedule.updated', lang) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// --- Batch Class Creation (simplified scheduling) ---
+
+router.post('/classes/batch', validate(batchClassSchema), async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    const { studentId, title, titleAr, sessions } = req.body;
+
+    // Get global meeting link
+    const meetingLinkSetting = await prisma.siteSetting.findUnique({ where: { key: 'meetingLink' } });
+    const meetingLink = meetingLinkSetting?.value || null;
+
+    // Create all sessions + assignments in a transaction
+    const created = await prisma.$transaction(async (tx) => {
+      const results = [];
+      for (const session of sessions) {
+        const classSession = await tx.classSession.create({
+          data: {
+            title,
+            titleAr: titleAr || null,
+            startTime: new Date(session.startTime),
+            endTime: new Date(session.endTime),
+            meetingLink,
+            recurrence: 'weekly',
+          },
+        });
+        await tx.classAssignment.create({
+          data: {
+            classSessionId: classSession.id,
+            studentId,
+          },
+        });
+        results.push(classSession);
+      }
+      return results;
+    });
+
+    auditLog('CLASSES_BATCH_CREATED', { count: created.length, studentId, adminId: req.user.id });
+
+    res.status(201).json({ message: t('schedule.created', lang), count: created.length });
   } catch (error) {
     next(error);
   }
