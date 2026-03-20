@@ -5,7 +5,8 @@ import { validate } from '../middleware/validate.js';
 import { updateProfileSchema } from '../validators/authSchemas.js';
 import { prisma } from '../config/database.js';
 import { t, getLang } from '../utils/i18n.js';
-import { auditLog } from '../utils/logger.js';
+import { auditLog, logger } from '../utils/logger.js';
+import { sendNewEnrollmentNotification } from '../services/emailService.js';
 
 const router = Router();
 
@@ -33,11 +34,19 @@ router.get('/enrollment-status', async (req, res, next) => {
 
     // If email is verified but role is still 'pending', fix the inconsistency
     if (user.emailVerified && user.role === 'pending') {
-      await prisma.user.update({
+      const fullUser = await prisma.user.update({
         where: { id: req.user.id },
         data: { role: 'pending_review' },
       });
       user.role = 'pending_review';
+
+      // Send admin notification that was missed
+      const admin = await prisma.user.findFirst({ where: { role: 'admin' } });
+      if (admin) {
+        sendNewEnrollmentNotification(admin.email, `${fullUser.firstName} ${fullUser.lastName}`).catch((err) =>
+          logger.error('Failed to send admin enrollment notification', { error: err.message })
+        );
+      }
     }
 
     let status;
