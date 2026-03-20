@@ -204,7 +204,7 @@
     "loggingIn": "Logging in...",
     "logout": "Log out",
     "email": "Email",
-    "emailPlaceholder": "you@example.com",
+    "emailPlaceholder": "you{'@'}example.com",
     "password": "Password",
     "passwordPlaceholder": "Enter your password",
     "forgotPassword": "Forgot password?",
