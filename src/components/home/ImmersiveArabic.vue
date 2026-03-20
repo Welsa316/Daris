@@ -42,14 +42,22 @@
         <div class="w-8 h-px bg-gold/30 mb-6" data-reveal aria-hidden="true"></div>
 
         <p
-          class="text-base text-cream/40 leading-relaxed max-w-sm mb-10"
+          class="text-base text-cream/40 leading-relaxed max-w-sm mb-6"
           data-reveal
           data-reveal-delay="150"
         >
           {{ $t('home.splitArabicBody') }}
         </p>
 
-        <div data-reveal data-reveal-delay="300">
+        <blockquote
+          class="border-s-2 border-gold/30 ps-4 text-sm text-cream/30 italic leading-relaxed max-w-sm mb-10"
+          data-reveal
+          data-reveal-delay="200"
+        >
+          {{ $t('home.splitArabicQuote') }}
+        </blockquote>
+
+        <div data-reveal data-reveal-delay="350">
           <a
             :href="whatsAppHref"
             target="_blank"
