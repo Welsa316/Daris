@@ -14,6 +14,7 @@ const envSchema = z.object({
   SMTP_PASS: z.string().default(''),
   EMAIL_FROM: z.string().default('Daris <noreply@daris.com>'),
   ADMIN_EMAIL: z.string().default(''),
+  FORMSPREE_ENDPOINT: z.string().default(''), // e.g. https://formspree.io/f/xABCDEFG
   CSRF_SECRET: z.string().min(16).default('dev-csrf-secret-change-me'),
 });
 
