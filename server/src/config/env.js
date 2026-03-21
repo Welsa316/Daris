@@ -13,6 +13,7 @@ const envSchema = z.object({
   SMTP_USER: z.string().default(''),
   SMTP_PASS: z.string().default(''),
   EMAIL_FROM: z.string().default('Daris <noreply@daris.com>'),
+  ADMIN_EMAIL: z.string().default(''),
   CSRF_SECRET: z.string().min(16).default('dev-csrf-secret-change-me'),
 });
 

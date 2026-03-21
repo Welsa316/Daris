@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { env } from '../config/env.js';
 import { hashPassword, verifyPassword, generateToken, hashToken } from '../utils/crypto.js';
 import { generateAccessToken, createRefreshToken, invalidateAllSessions } from './tokenService.js';
 import { sendVerificationEmail, sendAccountLockedEmail, sendNewEnrollmentNotification } from './emailService.js';
@@ -109,9 +110,10 @@ export async function verifyEmail(rawToken) {
 
   // Notify admin that a student is ready for review
   const admin = await prisma.user.findFirst({ where: { role: 'admin' } });
-  if (admin) {
+  const adminEmail = admin?.email || env.ADMIN_EMAIL;
+  if (adminEmail) {
     const student = emailToken.user;
-    sendNewEnrollmentNotification(admin.email, `${student.firstName} ${student.lastName}`).catch((err) =>
+    sendNewEnrollmentNotification(adminEmail, `${student.firstName} ${student.lastName}`).catch((err) =>
       logger.error('Failed to send admin enrollment notification', { error: err.message })
     );
   }
