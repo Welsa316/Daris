@@ -385,6 +385,8 @@
     "rejectPrompt": "Rejection message (optional):",
     "suspendConfirm": "Are you sure you want to suspend this student?",
     "cancelConfirm": "Cancel this class? Students will be notified.",
+    "deleteAll": "Delete All",
+    "deleteAllConfirm": "Are you sure you want to delete ALL classes? This cannot be undone.",
     "error": "Something went wrong",
     "scheduleStudent": "Schedule Student",
     "classDays": "Class Days",

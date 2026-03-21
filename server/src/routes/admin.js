@@ -511,6 +511,23 @@ router.delete('/classes/:id', async (req, res, next) => {
   }
 });
 
+// Delete all classes (bulk wipe)
+router.delete('/classes', async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    await prisma.classAssignment.deleteMany({
+      where: { classSession: { createdByAdminId: req.user.id } },
+    });
+    const result = await prisma.classSession.deleteMany({
+      where: { createdByAdminId: req.user.id },
+    });
+    auditLog('ALL_CLASSES_DELETED', { count: result.count, adminId: req.user.id });
+    res.json({ message: t('schedule.deleted', lang), count: result.count });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // --- Settings ---
 
 router.get('/settings', async (req, res, next) => {

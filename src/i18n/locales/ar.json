@@ -385,6 +385,8 @@
     "rejectPrompt": "رسالة الرفض (اختياري):",
     "suspendConfirm": "هل أنت متأكد من تعليق هذا الطالب؟",
     "cancelConfirm": "إلغاء هذه الحصة؟ سيتم إبلاغ الطلاب.",
+    "deleteAll": "حذف الكل",
+    "deleteAllConfirm": "متأكد إنك عايز تحذف كل الحصص؟ مش هتقدر ترجعها.",
     "error": "حدث خطأ ما",
     "scheduleStudent": "جدولة طالب",
     "classDays": "أيام الدرس",
