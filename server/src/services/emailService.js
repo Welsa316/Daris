@@ -190,23 +190,28 @@ export async function sendClassCancelledEmail(email, firstName, classTitle, clas
   await sendEmail({ to: email, subject, html });
 }
 
-export async function sendNewEnrollmentNotification(adminEmail, studentName, lang = 'en') {
-  const subject = lang === 'ar'
-    ? 'دارس — طلب تسجيل جديد'
-    : 'Daris — New Enrollment Request';
+export async function sendNewEnrollmentNotification(studentName) {
+  if (!env.FORMSPREE_ENDPOINT) {
+    logger.warn('FORMSPREE_ENDPOINT not set — skipping admin enrollment notification');
+    return;
+  }
 
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #1F4D3A;">New Enrollment Request</h2>
-      <p>A new student has registered and is awaiting your review:</p>
-      <p style="background: #f5f1e8; padding: 12px; border-radius: 6px;">
-        <strong>${studentName}</strong>
-      </p>
-      <a href="${env.FRONTEND_URL}/admin/enrollments" style="display: inline-block; background: #1F4D3A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
-        Review Request
-      </a>
-    </div>
-  `;
+  const reviewUrl = env.FRONTEND_URL ? `${env.FRONTEND_URL}/admin` : '';
 
-  await sendEmail({ to: adminEmail, subject, html });
+  const response = await fetch(env.FORMSPREE_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
+      subject: 'Daris — New Enrollment Request',
+      message: `A new student has registered and is awaiting your review:\n\nStudent: ${studentName}${reviewUrl ? `\n\nReview: ${reviewUrl}` : ''}`,
+      _subject: 'Daris — New Enrollment Request',
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Formspree error ${response.status}: ${text}`);
+  }
+
+  logger.info('Formspree enrollment notification sent');
 }
