@@ -190,15 +190,14 @@ export async function sendClassCancelledEmail(email, firstName, classTitle, clas
   await sendEmail({ to: email, subject, html });
 }
 
+const FORMSPREE_URL = 'https://formspree.io/f/maqpkzka';
+
 export async function sendNewEnrollmentNotification(studentName) {
-  if (!env.FORMSPREE_ENDPOINT) {
-    logger.warn('FORMSPREE_ENDPOINT not set — skipping admin enrollment notification');
-    return;
-  }
+  const endpoint = env.FORMSPREE_ENDPOINT || FORMSPREE_URL;
 
   const reviewUrl = env.FRONTEND_URL ? `${env.FRONTEND_URL}/admin` : '';
 
-  const response = await fetch(env.FORMSPREE_ENDPOINT, {
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({
