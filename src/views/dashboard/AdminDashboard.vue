@@ -412,14 +412,26 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth.js';
 import { api } from '@/config/api.js';
+import { setLocale } from '@/i18n/index.js';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 
 const { locale, t } = useI18n();
 const { logout } = useAuth();
+
+// Admin dashboard defaults to Arabic — restore previous locale on leave
+const previousLocale = locale.value;
+if (locale.value !== 'ar') {
+  setLocale('ar');
+}
+onUnmounted(() => {
+  if (locale.value === 'ar' && previousLocale !== 'ar') {
+    setLocale(previousLocale);
+  }
+});
 
 const isAr = computed(() => locale.value === 'ar');
 
