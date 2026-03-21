@@ -1,27 +1,27 @@
 <template>
   <!-- FIQH — Grounded & Practical
-       Lower-third dark panel overlay. Image breathes at the top.
-       Directional top-down light. Documentary frame feel.
+       Upper panel overlay. Image (scholars) breathes at the bottom.
+       Bottom-up light. Documentary frame feel.
        Strongest contrast of the three immersive sections. -->
-  <section class="relative overflow-hidden min-h-[70vh] md:min-h-[80vh] flex items-end">
-    <!-- Photograph — mosque interior with natural light streaming in -->
+  <section class="relative overflow-hidden min-h-[70vh] md:min-h-[80vh] flex items-start">
+    <!-- Painting — scholars gathered in a mosque courtyard -->
     <div class="absolute inset-0">
       <img
         src="/images/WhatsApp Image 2026-03-19 at 20.36.50.jpeg"
         alt="Classical painting of scholars gathered in a mosque courtyard, studying and discussing Islamic jurisprudence"
-        class="w-full h-full object-cover object-top"
+        class="w-full h-full object-cover object-bottom"
         loading="lazy"
       />
     </div>
-    <!-- Top-down directional gradient — image is bright at top, fades into panel at bottom -->
-    <div class="absolute inset-0 bg-gradient-to-b from-black/10 via-black/20 to-black/80" aria-hidden="true"></div>
+    <!-- Bottom-up gradient — image is bright at bottom, fades into panel at top -->
+    <div class="absolute inset-0 bg-gradient-to-t from-black/10 via-black/20 to-black/80" aria-hidden="true"></div>
     <!-- Grain — heavier, grittier feel -->
     <div class="absolute inset-0 grain-texture opacity-60" aria-hidden="true"></div>
 
-    <!-- Lower-third panel — text anchored to the bottom, image breathes above -->
+    <!-- Upper panel — text anchored to the top, image breathes below -->
     <div class="relative w-full">
-      <!-- Soft frosted panel with hard top edge for documentary feel -->
-      <div class="bg-gradient-to-b from-primary-950/80 via-primary-950/90 to-primary-950 backdrop-blur-sm border-t border-white/[0.05]">
+      <!-- Soft frosted panel with hard bottom edge for documentary feel -->
+      <div class="bg-gradient-to-t from-primary-950/80 via-primary-950/90 to-primary-950 backdrop-blur-sm border-b border-white/[0.05]">
         <div class="section-wide py-14 md:py-20">
           <div class="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-10 md:gap-16 items-end">
             <!-- Text — left column of the panel -->
