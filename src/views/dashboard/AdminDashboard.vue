@@ -159,6 +159,9 @@
               <button @click="showScheduleForm = true" class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition">
                 {{ $t('admin.scheduleStudent') }}
               </button>
+              <button v-if="classes.length" @click="deleteAllClasses" class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-200 transition">
+                {{ $t('admin.deleteAll') || 'Delete All' }}
+              </button>
             </div>
           </div>
 
@@ -648,6 +651,15 @@ async function cancelClass(id) {
   if (!confirm(t('admin.cancelConfirm'))) return;
   try {
     await api.post(`/api/admin/classes/${id}/cancel`);
+    loadClasses();
+  } catch (e) { showToast(e); }
+}
+
+async function deleteAllClasses() {
+  if (!confirm(t('admin.deleteAllConfirm') || 'Are you sure you want to delete ALL classes? This cannot be undone.')) return;
+  try {
+    await api.delete('/api/admin/classes');
+    selectedClass.value = null;
     loadClasses();
   } catch (e) { showToast(e); }
 }
