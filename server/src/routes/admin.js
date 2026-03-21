@@ -131,11 +131,6 @@ router.get('/students', validate(paginationSchema, 'query'), async (req, res, ne
     const where = {
       role: 'enrolled_student',
       deletedAt: null,
-      classAssignments: {
-        some: {
-          classSession: { createdByAdminId: req.user.id },
-        },
-      },
     };
 
     if (search) {
@@ -515,11 +510,12 @@ router.delete('/classes/:id', async (req, res, next) => {
 router.delete('/classes', async (req, res, next) => {
   try {
     const lang = getLang(req);
+    const now = new Date();
     await prisma.classAssignment.deleteMany({
-      where: { classSession: { createdByAdminId: req.user.id } },
+      where: { classSession: { createdByAdminId: req.user.id, startTime: { gte: now } } },
     });
     const result = await prisma.classSession.deleteMany({
-      where: { createdByAdminId: req.user.id },
+      where: { createdByAdminId: req.user.id, startTime: { gte: now } },
     });
     auditLog('ALL_CLASSES_DELETED', { count: result.count, adminId: req.user.id });
     res.json({ message: t('schedule.deleted', lang), count: result.count });
