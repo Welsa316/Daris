@@ -4,6 +4,7 @@ import { requireEnrolled, requireRole } from '../middleware/rbac.js';
 import { validate } from '../middleware/validate.js';
 import { updateProfileSchema } from '../validators/authSchemas.js';
 import { prisma } from '../config/database.js';
+import { env } from '../config/env.js';
 import { t, getLang } from '../utils/i18n.js';
 import { auditLog, logger } from '../utils/logger.js';
 import { sendNewEnrollmentNotification } from '../services/emailService.js';
@@ -42,8 +43,9 @@ router.get('/enrollment-status', async (req, res, next) => {
 
       // Send admin notification that was missed
       const admin = await prisma.user.findFirst({ where: { role: 'admin' } });
-      if (admin) {
-        sendNewEnrollmentNotification(admin.email, `${fullUser.firstName} ${fullUser.lastName}`).catch((err) =>
+      const adminEmail = admin?.email || env.ADMIN_EMAIL;
+      if (adminEmail) {
+        sendNewEnrollmentNotification(adminEmail, `${fullUser.firstName} ${fullUser.lastName}`).catch((err) =>
           logger.error('Failed to send admin enrollment notification', { error: err.message })
         );
       }
