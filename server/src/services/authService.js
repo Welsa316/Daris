@@ -109,7 +109,7 @@ export async function verifyEmail(rawToken) {
 
   // Notify admin via Formspree that a student is ready for review
   const student = emailToken.user;
-  sendNewEnrollmentNotification(`${student.firstName} ${student.lastName}`).catch((err) =>
+  sendNewEnrollmentNotification(student).catch((err) =>
     logger.error('Failed to send admin enrollment notification', { error: err.message })
   );
 
