@@ -9,7 +9,7 @@
       <img
         src="/images/WhatsApp Image 2026-03-19 at 20.36.50.jpeg"
         alt="Classical painting of scholars gathered in a mosque courtyard, studying and discussing Islamic jurisprudence"
-        class="w-full h-full object-cover"
+        class="w-full h-full object-cover object-top"
         loading="lazy"
       />
     </div>
