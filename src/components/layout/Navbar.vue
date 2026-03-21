@@ -119,6 +119,7 @@
         </RouterLink>
 
         <RouterLink
+          v-if="!isAdmin"
           to="/contact"
           class="inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold active:scale-[0.97] transition-all duration-300 ltr:ml-2 rtl:mr-2"
           :class="scrolled
@@ -200,6 +201,7 @@
           </RouterLink>
 
           <RouterLink
+            v-if="!isAdmin"
             to="/contact"
             class="mt-2 flex items-center justify-center w-full rounded-full px-4 py-2.5 text-sm font-semibold transition-colors duration-200"
             :class="scrolled
