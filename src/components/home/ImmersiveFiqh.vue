@@ -7,8 +7,8 @@
     <!-- Photograph — mosque interior with natural light streaming in -->
     <div class="absolute inset-0">
       <img
-        src="https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=1920&q=80"
-        alt="Mosque interior bathed in natural light, arched windows casting warm shadows"
+        src="/images/WhatsApp Image 2026-03-19 at 20.36.50.jpeg"
+        alt="Classical painting of scholars gathered in a mosque courtyard, studying and discussing Islamic jurisprudence"
         class="w-full h-full object-cover"
         loading="lazy"
       />
