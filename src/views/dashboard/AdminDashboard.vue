@@ -621,6 +621,7 @@ async function handleApprove(id) {
     await api.post(`/api/admin/enrollments/${id}/approve`, {});
     enrollments.value = enrollments.value.filter((e) => e.id !== id);
     loadStats();
+    loadStudents();
   } catch (e) { showToast(e); }
 }
 
