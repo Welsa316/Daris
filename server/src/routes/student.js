@@ -41,7 +41,7 @@ router.get('/enrollment-status', async (req, res, next) => {
       user.role = 'pending_review';
 
       // Send admin notification via Formspree that was missed
-      sendNewEnrollmentNotification(`${fullUser.firstName} ${fullUser.lastName}`).catch((err) =>
+      sendNewEnrollmentNotification(fullUser).catch((err) =>
         logger.error('Failed to send admin enrollment notification', { error: err.message })
       );
     }

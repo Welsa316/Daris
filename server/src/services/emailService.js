@@ -192,18 +192,32 @@ export async function sendClassCancelledEmail(email, firstName, classTitle, clas
 
 const FORMSPREE_URL = 'https://formspree.io/f/maqpkzka';
 
-export async function sendNewEnrollmentNotification(studentName) {
+export async function sendNewEnrollmentNotification(student) {
   const endpoint = env.FORMSPREE_ENDPOINT || FORMSPREE_URL;
 
   const reviewUrl = env.FRONTEND_URL ? `${env.FRONTEND_URL}/admin` : '';
+  const name = `${student.firstName} ${student.lastName}`;
+
+  const lines = [
+    'طالب جديد سجّل وعايز مراجعة:',
+    '',
+    `الاسم: ${name}`,
+    `الإيميل: ${student.email}`,
+  ];
+  if (student.phone) lines.push(`الموبايل: ${student.phone}`);
+  if (student.whatsapp) lines.push(`واتساب: ${student.whatsapp}`);
+  if (student.telegram) lines.push(`تليجرام: ${student.telegram}`);
+  if (student.country) lines.push(`البلد: ${student.country}`);
+  if (student.enrollmentMessage) lines.push(`\nرسالة الطالب: ${student.enrollmentMessage}`);
+  if (reviewUrl) lines.push(`\nراجع الطلب: ${reviewUrl}`);
 
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({
-      subject: 'Daris — New Enrollment Request',
-      message: `A new student has registered and is awaiting your review:\n\nStudent: ${studentName}${reviewUrl ? `\n\nReview: ${reviewUrl}` : ''}`,
-      _subject: 'Daris — New Enrollment Request',
+      subject: 'دارس — طلب تسجيل جديد',
+      message: lines.join('\n'),
+      _subject: 'دارس — طلب تسجيل جديد',
     }),
   });
 
