@@ -2,10 +2,10 @@ import { Router } from 'express';
 import { authenticate, verifyTokenVersion } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
 import { validate } from '../middleware/validate.js';
-import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema, batchClassSchema, meetingLinkSchema } from '../validators/adminSchemas.js';
+import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, rescheduleClassSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema, batchClassSchema, meetingLinkSchema } from '../validators/adminSchemas.js';
 import { getPendingEnrollments, approveEnrollment, rejectEnrollment, getRejectedApplicants, suspendStudent, removeStudent } from '../services/enrollmentService.js';
 import { prisma } from '../config/database.js';
-import { sendClassCancelledEmail } from '../services/emailService.js';
+import { sendClassCancelledEmail, sendClassRescheduledEmail } from '../services/emailService.js';
 import { t, getLang } from '../utils/i18n.js';
 import { auditLog } from '../utils/logger.js';
 import nodemailer from 'nodemailer';
@@ -490,6 +490,61 @@ router.post('/classes/:id/cancel', async (req, res, next) => {
     auditLog('CLASS_CANCELLED', { classId: classSession.id, adminId: req.user.id });
 
     res.json({ message: t('schedule.cancelled', lang) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/classes/:id/reschedule', validate(rescheduleClassSchema), async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    const { startTime, endTime } = req.body;
+
+    // Fetch current class to preserve original times
+    const existing = await prisma.classSession.findUnique({ where: { id: req.params.id } });
+    if (!existing) return res.status(404).json({ error: 'Class not found' });
+
+    // Preserve the first original times (don't overwrite on subsequent reschedules)
+    const originalStartTime = existing.originalStartTime || existing.startTime;
+    const originalEndTime = existing.originalEndTime || existing.endTime;
+
+    const classSession = await prisma.classSession.update({
+      where: { id: req.params.id },
+      data: {
+        startTime: new Date(startTime),
+        endTime: new Date(endTime),
+        rescheduled: true,
+        rescheduledAt: new Date(),
+        originalStartTime,
+        originalEndTime,
+        // Clear cancelled status if it was cancelled
+        cancelled: false,
+        cancelledAt: null,
+      },
+      include: {
+        assignments: {
+          include: {
+            student: { select: { email: true, firstName: true } },
+          },
+        },
+      },
+    });
+
+    // Notify assigned students
+    for (const assignment of classSession.assignments) {
+      sendClassRescheduledEmail(
+        assignment.student.email,
+        assignment.student.firstName,
+        classSession.title,
+        existing.startTime.toISOString(),
+        new Date(startTime).toISOString(),
+        lang
+      ).catch(() => {});
+    }
+
+    auditLog('CLASS_RESCHEDULED', { classId: classSession.id, adminId: req.user.id });
+
+    res.json({ message: t('schedule.rescheduled', lang), classSession });
   } catch (error) {
     next(error);
   }
