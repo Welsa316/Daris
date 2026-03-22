@@ -199,7 +199,7 @@
                 <div v-for="cls in classesByDay[day.toISOString().split('T')[0]] || []" :key="cls.id"
                   @click="selectedClass = cls"
                   class="mb-1 rounded-lg p-2 text-xs cursor-pointer hover:ring-2 hover:ring-primary/30 transition"
-                  :class="[cls.cancelled ? 'bg-slate-100 text-slate-400 line-through' : 'bg-primary/10 text-primary', selectedClass?.id === cls.id ? 'ring-2 ring-primary' : '']">
+                  :class="[cls.cancelled ? 'bg-slate-100 text-slate-400 line-through' : cls.rescheduled ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-primary/10 text-primary', selectedClass?.id === cls.id ? 'ring-2 ring-primary' : '']">
                   <p class="font-medium truncate">{{ isAr && cls.titleAr ? cls.titleAr : cls.title }}</p>
                   <p class="text-[10px] opacity-70">{{ new Date(cls.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</p>
                 </div>
@@ -213,6 +213,7 @@
                 <div>
                   <h3 class="font-semibold text-primary">{{ isAr && selectedClass.titleAr ? selectedClass.titleAr : selectedClass.title }}
                     <span v-if="selectedClass.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span>
+                    <span v-if="selectedClass.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
                   </h3>
                   <p class="text-sm text-slate-500 mt-1">{{ new Date(selectedClass.startTime).toLocaleString() }} – {{ new Date(selectedClass.endTime).toLocaleTimeString() }}</p>
                   <p class="text-xs text-slate-400 mt-1">{{ selectedClass.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
@@ -223,6 +224,7 @@
                   </div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
+                  <button v-if="!selectedClass.cancelled" @click="openReschedule(selectedClass)" class="text-amber-600 hover:text-amber-700 text-xs font-medium">{{ $t('admin.reschedule') }}</button>
                   <button v-if="!selectedClass.cancelled" @click="cancelClass(selectedClass.id); selectedClass = null" class="text-red-500 hover:text-red-700 text-xs font-medium">{{ $t('admin.cancel') }}</button>
                   <button @click="selectedClass = null" class="text-slate-400 hover:text-slate-600">&times;</button>
                 </div>
@@ -237,11 +239,12 @@
               <div v-for="cls in classes" :key="cls.id" class="border border-slate-100 rounded-xl p-4" :class="cls.cancelled ? 'opacity-50' : ''">
                 <div class="flex items-start justify-between">
                   <div>
-                    <h3 class="font-semibold text-primary">{{ cls.title }} <span v-if="cls.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span></h3>
+                    <h3 class="font-semibold text-primary">{{ cls.title }} <span v-if="cls.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span><span v-if="cls.rescheduled" class="text-amber-600 text-xs"> ({{ $t('admin.rescheduled') }})</span></h3>
                     <p class="text-sm text-slate-500">{{ new Date(cls.startTime).toLocaleString() }} - {{ new Date(cls.endTime).toLocaleTimeString() }}</p>
                     <p class="text-xs text-slate-400 mt-1">{{ cls.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
                   </div>
                   <div v-if="!cls.cancelled" class="flex gap-2">
+                    <button @click="openReschedule(cls)" class="text-amber-600 hover:text-amber-700 text-xs font-medium">{{ $t('admin.reschedule') }}</button>
                     <button @click="cancelClass(cls.id)" class="text-red-500 hover:text-red-700 text-xs font-medium">{{ $t('admin.cancel') }}</button>
                   </div>
                 </div>
@@ -293,6 +296,7 @@
                   <div>
                     <p class="font-medium text-primary">{{ isAr && a.classSession.titleAr ? a.classSession.titleAr : a.classSession.title }}
                       <span v-if="a.classSession.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span>
+                      <span v-if="a.classSession.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
                     </p>
                     <p class="text-xs text-slate-500">{{ new Date(a.classSession.startTime).toLocaleString() }} - {{ new Date(a.classSession.endTime).toLocaleTimeString() }}</p>
                     <p v-if="a.classSession.recurrence" class="text-xs text-slate-400">{{ a.classSession.recurrence }}</p>
@@ -401,6 +405,34 @@
           </form>
         </div>
       </div>
+      <!-- Reschedule Modal -->
+      <div v-if="showRescheduleModal && rescheduleTarget" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showRescheduleModal = false">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+          <div class="flex items-start justify-between mb-4">
+            <h2 class="text-lg font-bold text-primary">{{ $t('admin.rescheduleTitle') }}</h2>
+            <button @click="showRescheduleModal = false" class="text-slate-400 hover:text-slate-600">&times;</button>
+          </div>
+          <p class="text-sm text-slate-500 mb-4">{{ rescheduleTarget.title }}</p>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.newDate') }}</label>
+              <input v-model="rescheduleDate" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+            </div>
+            <div>
+              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.newTime') }}</label>
+              <input v-model="rescheduleTime" type="time" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+            </div>
+          </div>
+          <div class="flex gap-3 justify-end mt-6">
+            <button @click="showRescheduleModal = false" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $t('admin.cancel') }}</button>
+            <button @click="rescheduleClass" :disabled="!rescheduleDate || !rescheduleTime"
+              class="bg-amber-600 text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-amber-700 transition disabled:opacity-50">
+              {{ $t('admin.reschedule') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Toast -->
       <Transition name="fade">
         <div v-if="toast" class="fixed bottom-6 inset-x-0 flex justify-center z-50 pointer-events-none">
@@ -449,6 +481,10 @@ const selectedClass = ref(null);
 const toast = ref('');
 const globalMeetingLink = ref('');
 const savingLink = ref(false);
+const showRescheduleModal = ref(false);
+const rescheduleTarget = ref(null);
+const rescheduleDate = ref('');
+const rescheduleTime = ref('');
 
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const FULL_DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -664,6 +700,33 @@ async function cancelClass(id) {
   if (!confirm(t('admin.cancelConfirm'))) return;
   try {
     await api.post(`/api/admin/classes/${id}/cancel`);
+    loadClasses();
+  } catch (e) { showToast(e); }
+}
+
+function openReschedule(cls) {
+  rescheduleTarget.value = cls;
+  const d = new Date(cls.startTime);
+  rescheduleDate.value = d.toISOString().split('T')[0];
+  rescheduleTime.value = d.toTimeString().slice(0, 5);
+  showRescheduleModal.value = true;
+}
+
+async function rescheduleClass() {
+  if (!rescheduleTarget.value || !rescheduleDate.value || !rescheduleTime.value) return;
+  const cls = rescheduleTarget.value;
+  const originalDuration = new Date(cls.endTime) - new Date(cls.startTime);
+  const newStart = new Date(`${rescheduleDate.value}T${rescheduleTime.value}:00`);
+  const newEnd = new Date(newStart.getTime() + originalDuration);
+
+  try {
+    await api.post(`/api/admin/classes/${cls.id}/reschedule`, {
+      startTime: newStart.toISOString(),
+      endTime: newEnd.toISOString(),
+    });
+    showRescheduleModal.value = false;
+    rescheduleTarget.value = null;
+    selectedClass.value = null;
     loadClasses();
   } catch (e) { showToast(e); }
 }

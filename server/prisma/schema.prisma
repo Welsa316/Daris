@@ -103,6 +103,10 @@ model ClassSession {
   recurrenceEnd   DateTime? @map("recurrence_end")
   cancelled       Boolean  @default(false)
   cancelledAt     DateTime? @map("cancelled_at")
+  rescheduled       Boolean   @default(false)
+  rescheduledAt     DateTime? @map("rescheduled_at")
+  originalStartTime DateTime? @map("original_start_time")
+  originalEndTime   DateTime? @map("original_end_time")
   createdByAdminId String? @map("created_by_admin_id") @db.Uuid
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")

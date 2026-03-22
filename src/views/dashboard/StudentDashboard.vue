@@ -43,8 +43,11 @@
             <div v-for="cls in dashboard.upcomingClasses" :key="cls.id" class="border border-slate-100 rounded-xl p-4 hover:border-primary/20 transition">
               <div class="flex items-start justify-between">
                 <div>
-                  <h3 class="font-semibold text-primary">{{ isAr ? (cls.titleAr || cls.title) : cls.title }}</h3>
+                  <h3 class="font-semibold text-primary">{{ isAr ? (cls.titleAr || cls.title) : cls.title }}
+                    <span v-if="cls.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
+                  </h3>
                   <p class="text-sm text-slate-500 mt-1">{{ formatDate(cls.startTime) }} - {{ formatTime(cls.endTime) }}</p>
+                  <p v-if="cls.rescheduled && cls.originalStartTime" class="text-xs text-slate-400 mt-0.5 line-through">{{ $t('admin.originalTime') }}: {{ formatDate(cls.originalStartTime) }}</p>
                   <p v-if="cls.description" class="text-sm text-slate-400 mt-1">{{ isAr ? (cls.descriptionAr || cls.description) : cls.description }}</p>
                 </div>
                 <a v-if="cls.meetingLink" :href="cls.meetingLink" target="_blank" rel="noopener" class="shrink-0 bg-primary text-cream text-sm font-medium px-4 py-2 rounded-full hover:bg-primary-800 transition">

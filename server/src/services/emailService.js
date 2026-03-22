@@ -190,6 +190,28 @@ export async function sendClassCancelledEmail(email, firstName, classTitle, clas
   await sendEmail({ to: email, subject, html });
 }
 
+export async function sendClassRescheduledEmail(email, firstName, classTitle, oldDate, newDate, lang = 'en') {
+  const subject = lang === 'ar'
+    ? 'دارس — إعادة جدولة حصة'
+    : 'Daris — Class Rescheduled';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ${lang === 'ar' ? 'rtl' : 'ltr'};">
+      <h2 style="color: #1F4D3A;">${lang === 'ar' ? 'تمت إعادة جدولة الحصة' : 'Class Rescheduled'}</h2>
+      <p>${lang === 'ar'
+        ? `عزيزي ${firstName}، تمت إعادة جدولة الحصة التالية:`
+        : `Dear ${firstName}, the following class has been rescheduled:`}</p>
+      <p style="background: #f5f1e8; padding: 12px; border-radius: 6px;">
+        <strong>${classTitle}</strong><br/>
+        <span style="text-decoration: line-through; color: #999;">${oldDate}</span><br/>
+        <span style="color: #1F4D3A; font-weight: bold;">→ ${newDate}</span>
+      </p>
+    </div>
+  `;
+
+  await sendEmail({ to: email, subject, html });
+}
+
 const FORMSPREE_URL = 'https://formspree.io/f/maqpkzka';
 
 export async function sendNewEnrollmentNotification(student) {

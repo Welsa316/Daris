@@ -24,6 +24,11 @@ export const classSessionSchema = z.object({
 
 export const classSessionUpdateSchema = classSessionSchema.partial();
 
+export const rescheduleClassSchema = z.object({
+  startTime: z.string().datetime({ message: 'Invalid start time' }),
+  endTime: z.string().datetime({ message: 'Invalid end time' }),
+});
+
 export const announcementSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200).trim(),
   titleAr: z.string().max(200).trim().optional().nullable(),

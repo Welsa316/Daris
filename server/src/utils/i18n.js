@@ -143,6 +143,10 @@ const messages = {
     en: 'Class has been cancelled. Students will be notified.',
     ar: 'تم إلغاء الحصة. سيتم إخطار الطلاب.',
   },
+  'schedule.rescheduled': {
+    en: 'Class has been rescheduled. Students will be notified.',
+    ar: 'تمت إعادة جدولة الحصة. سيتم إخطار الطلاب.',
+  },
 
   // General
   'error.generic': {
