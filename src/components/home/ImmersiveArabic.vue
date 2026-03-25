@@ -84,6 +84,7 @@
             >
               بِلِسَانٍ عَرَبِيٍّ مُبِينٍ
             </p>
+            <p class="text-[10px] uppercase tracking-[0.2em] text-gold mb-6">{{ $t('home.quranVerseRef') }}</p>
             <!-- Section title -->
             <div class="flex items-center gap-4">
               <div class="w-12 h-px bg-gold"></div>
