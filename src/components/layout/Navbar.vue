@@ -66,7 +66,7 @@
       <!-- Desktop nav -->
       <div
         id="primary-navigation"
-        class="hidden md:flex md:items-center md:gap-8 text-sm md:text-base font-medium"
+        class="hidden md:flex md:items-center md:gap-8 text-base md:text-lg font-medium"
       >
         <RouterLink
           v-for="item in navItems"
@@ -121,7 +121,7 @@
         <RouterLink
           v-if="!isAdmin"
           to="/contact"
-          class="inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold active:scale-[0.97] transition-all duration-300 ltr:ml-2 rtl:mr-2"
+          class="inline-flex items-center rounded-full px-8 py-3 text-base font-semibold active:scale-[0.97] transition-all duration-300 ltr:ml-2 rtl:mr-2"
           :class="scrolled
             ? 'bg-primary text-cream shadow-soft hover:bg-primary-800 hover:shadow-soft-md'
             : 'bg-gold text-primary-950 shadow-lg hover:bg-gold-300 hover:shadow-xl'"

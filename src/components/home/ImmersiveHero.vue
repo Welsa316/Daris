@@ -26,13 +26,14 @@
     <div class="relative z-10 flex items-center min-h-screen">
       <div class="relative px-12 md:px-20 lg:px-28 py-20 max-w-xl">
 
-        <!-- Brand name — dramatically large -->
-        <h1 class="hero-entrance hero-entrance-1 font-display text-gold text-7xl sm:text-8xl md:text-9xl tracking-[0.1em] leading-none mb-0">
-          {{ $t('hero.eyebrow') }}
-        </h1>
+        <!-- Brand name + divider centered under it -->
+        <div class="w-fit">
+          <h1 class="hero-entrance hero-entrance-1 font-display text-gold text-7xl sm:text-8xl md:text-9xl tracking-[0.1em] leading-none">
+            {{ $t('hero.eyebrow') }}
+          </h1>
 
-        <!-- Book divider — gold line / open book icon / gold line -->
-        <div class="hero-entrance hero-entrance-2 flex items-center mt-2 mb-6 max-w-[200px]" aria-hidden="true">
+          <!-- Book divider — gold line / open book icon / gold line, centered under DARIS -->
+          <div class="hero-entrance hero-entrance-2 flex items-center mt-2 mb-6 max-w-[200px] mx-auto" aria-hidden="true">
           <div class="h-px bg-gold flex-grow"></div>
           <div class="mx-2 text-gold">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -40,6 +41,7 @@
             </svg>
           </div>
           <div class="h-px bg-gold flex-grow"></div>
+        </div>
         </div>
 
         <!-- Motto -->
@@ -54,20 +56,20 @@
 
         <!-- CTA buttons — pill shape, side by side -->
         <div class="hero-entrance hero-entrance-3 flex flex-col sm:flex-row items-stretch gap-4">
-          <!-- WhatsApp — gold pill with glow -->
+          <!-- WhatsApp — shiny metallic gold pill -->
           <a
             :href="whatsAppHref"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center justify-between gap-6 rounded-full bg-gold px-6 py-3 text-sm font-semibold text-primary-950 shadow-[0_0_15px_rgba(200,169,81,0.3)] hover:opacity-90 transition-all duration-200"
+            class="btn-gold-shiny inline-flex items-center justify-between gap-6 rounded-full px-6 py-3 text-sm font-semibold text-primary-950 hover:brightness-110 transition-all duration-200"
           >
             {{ $t('hero.ctaWhatsApp') }}
-            <svg class="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+            <svg class="h-4 w-4 text-primary-700 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
           </a>
-          <!-- View programs — green-tinted liquid glass pill -->
+          <!-- View programs — solid dark green pill -->
           <RouterLink
             to="/programs"
-            class="inline-flex items-center justify-between gap-6 rounded-full border border-primary/40 bg-primary-950/20 backdrop-blur-[4px] px-6 py-3 text-sm font-semibold text-cream/90 hover:bg-primary-950/30 transition-all duration-200"
+            class="inline-flex items-center justify-between gap-6 rounded-full bg-primary-950 px-6 py-3 text-sm font-semibold text-cream hover:bg-primary-900 transition-all duration-200"
           >
             {{ $t('hero.ctaPrograms') }}
             <svg class="h-4 w-4 text-gold rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
@@ -93,5 +95,9 @@ const whatsAppHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
 <style scoped>
 .hero-image {
   filter: sepia(0.3) contrast(1.1) brightness(0.9);
+}
+.btn-gold-shiny {
+  background: linear-gradient(to bottom, #e8cc7a 0%, #d5b96a 40%, #c8a951 60%, #b89840 100%);
+  box-shadow: 0 0 15px rgba(200, 169, 81, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 </style>
