@@ -31,26 +31,15 @@
           {{ $t('hero.eyebrow') }}
         </h1>
 
-        <!-- Ornamental flourish divider -->
-        <div class="hero-entrance hero-entrance-2 mt-2 mb-6" aria-hidden="true">
-          <svg class="w-[280px] h-[20px]" viewBox="0 0 280 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Left arrow -->
-            <path d="M0 10 L12 5 L12 15 Z" fill="#C8A951" />
-            <!-- Left line -->
-            <line x1="14" y1="10" x2="105" y2="10" stroke="#C8A951" stroke-width="1" />
-            <!-- Left scroll curl -->
-            <path d="M105 10 Q115 2, 125 10 Q115 18, 105 10" stroke="#C8A951" stroke-width="1" fill="none" />
-            <!-- Central diamond -->
-            <path d="M130 10 L140 3 L150 10 L140 17 Z" fill="#C8A951" />
-            <!-- Inner diamond -->
-            <path d="M135 10 L140 5.5 L145 10 L140 14.5 Z" fill="none" stroke="#C8A951" stroke-width="0.5" />
-            <!-- Right scroll curl -->
-            <path d="M155 10 Q165 2, 175 10 Q165 18, 155 10" stroke="#C8A951" stroke-width="1" fill="none" />
-            <!-- Right line -->
-            <line x1="175" y1="10" x2="266" y2="10" stroke="#C8A951" stroke-width="1" />
-            <!-- Right arrow -->
-            <path d="M280 10 L268 5 L268 15 Z" fill="#C8A951" />
-          </svg>
+        <!-- Book divider — gold line / open book icon / gold line -->
+        <div class="hero-entrance hero-entrance-2 flex items-center mt-2 mb-6 max-w-[200px]" aria-hidden="true">
+          <div class="h-px bg-gold flex-grow"></div>
+          <div class="mx-2 text-gold">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="h-px bg-gold flex-grow"></div>
         </div>
 
         <!-- Motto -->
@@ -63,25 +52,25 @@
           {{ $t('hero.description') }}
         </p>
 
-        <!-- CTA buttons — two rectangular side by side -->
+        <!-- CTA buttons — pill shape, side by side -->
         <div class="hero-entrance hero-entrance-3 flex flex-col sm:flex-row items-stretch gap-4">
-          <!-- WhatsApp — gold filled -->
+          <!-- WhatsApp — gold pill with glow -->
           <a
             :href="whatsAppHref"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center justify-between gap-6 bg-gold px-8 py-4 text-sm font-semibold text-primary-950 hover:bg-gold-300 transition-all duration-200"
+            class="inline-flex items-center justify-between gap-6 rounded-full bg-gold px-6 py-3 text-sm font-semibold text-primary-950 shadow-[0_0_15px_rgba(200,169,81,0.3)] hover:opacity-90 transition-all duration-200"
           >
             {{ $t('hero.ctaWhatsApp') }}
-            <svg class="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+            <svg class="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
           </a>
-          <!-- View programs — dark green -->
+          <!-- View programs — green-tinted liquid glass pill -->
           <RouterLink
             to="/programs"
-            class="inline-flex items-center justify-between gap-6 bg-primary-950 px-8 py-4 text-sm font-semibold text-cream border border-cream/20 hover:bg-primary-900 transition-all duration-200"
+            class="inline-flex items-center justify-between gap-6 rounded-full border border-primary/40 bg-primary-950/20 backdrop-blur-[4px] px-6 py-3 text-sm font-semibold text-cream/90 hover:bg-primary-950/30 transition-all duration-200"
           >
             {{ $t('hero.ctaPrograms') }}
-            <svg class="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+            <svg class="h-4 w-4 text-gold rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
           </RouterLink>
         </div>
 
