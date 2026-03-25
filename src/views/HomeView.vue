@@ -21,6 +21,9 @@
     <!-- 6. Authority Stats -->
     <AuthorityStats />
 
+    <!-- 6b. Countries Reach -->
+    <CountriesReach />
+
     <!-- 7. Testimonials — editorial, hairlines (commented out for future use)
     <TestimonialSection />
     -->
@@ -37,6 +40,7 @@ import ImmersiveQuran from '@/components/home/ImmersiveQuran.vue';
 import ImmersiveArabic from '@/components/home/ImmersiveArabic.vue';
 import ImmersiveFiqh from '@/components/home/ImmersiveFiqh.vue';
 import AuthorityStats from '@/components/home/AuthorityStats.vue';
+import CountriesReach from '@/components/home/CountriesReach.vue';
 // import TestimonialSection from '@/components/home/TestimonialSection.vue';
 import BoldCTA from '@/components/home/BoldCTA.vue';
 

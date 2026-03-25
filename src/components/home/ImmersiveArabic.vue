@@ -1,23 +1,24 @@
 <template>
   <!-- ARABIC — Scholarly & Refined
-       Asymmetric left-aligned text. Ancient calligraphy manuscript
-       background. Cooler neutral tones with gold ink warmth. -->
+       Warm parchment gradient background with decorative Quran verse.
+       Tha'alibi quote as the main focal text. -->
   <section class="relative overflow-hidden min-h-[70vh] md:min-h-[80vh] flex items-center">
-    <!-- Photograph — ancient Arabic manuscript with gold illuminated calligraphy -->
-    <div class="absolute inset-0">
-      <img
-        src="/images/arabic-calligraphy.png"
-        alt="Arabic calligraphy in gold ink on warm parchment"
-        class="w-full h-full object-cover"
-        loading="lazy"
-      />
+    <!-- Warm parchment gradient background -->
+    <div class="absolute inset-0 bg-gradient-to-br from-primary-950 via-primary-950 to-[#1a2e24]" aria-hidden="true"></div>
+
+    <!-- Decorative Quran verse — بِلِسَانٍ عَرَبِيٍّ مُبِينٍ -->
+    <div class="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none" aria-hidden="true">
+      <p
+        class="text-[8rem] sm:text-[12rem] md:text-[16rem] lg:text-[20rem] font-display text-gold/[0.06] leading-none whitespace-nowrap select-none"
+        dir="rtl"
+        lang="ar"
+      >بِلِسَانٍ عَرَبِيٍّ مُبِينٍ</p>
     </div>
-    <!-- Lateral gradient — heavier on the left to cradle text, lighter on right to show calligraphy -->
-    <div class="absolute inset-0 bg-gradient-to-r from-primary-950/90 via-primary-950/55 to-primary-950/20 ltr:block rtl:hidden" aria-hidden="true"></div>
-    <div class="absolute inset-0 bg-gradient-to-l from-primary-950/90 via-primary-950/55 to-primary-950/20 rtl:block ltr:hidden" aria-hidden="true"></div>
-    <!-- Soft bottom gradient -->
-    <div class="absolute inset-0 bg-gradient-to-b from-primary-950/20 via-transparent to-primary-950/40" aria-hidden="true"></div>
-    <!-- Grain — lighter than Quran for tonal variety -->
+
+    <!-- Soft warm glow — shifted to the right for depth -->
+    <div class="absolute top-1/2 right-1/4 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-gold/[0.04] blur-[120px]" aria-hidden="true"></div>
+
+    <!-- Grain — lighter for tonal variety -->
     <div class="absolute inset-0 grain-texture opacity-30" aria-hidden="true"></div>
 
     <!-- Left-aligned text with strong breathing space on right -->
@@ -30,32 +31,36 @@
           {{ $t('home.splitArabicEyebrow') }}
         </p>
 
-        <!-- Smaller headline than Quran — scholarly restraint -->
-        <h2
-          class="font-display text-3xl sm:text-4xl md:text-5xl text-cream leading-[1.12] mb-6"
+        <!-- Tha'alibi quote — the main focal element -->
+        <blockquote
+          class="font-display text-2xl sm:text-3xl md:text-4xl text-cream/70 leading-[1.3] mb-8"
+          dir="rtl"
+          lang="ar"
           data-reveal="cinematic"
+        >
+          {{ $t('home.splitArabicQuote') }}
+        </blockquote>
+
+        <!-- Thin rule -->
+        <div class="w-8 h-px bg-gold/30 mb-6" data-reveal aria-hidden="true"></div>
+
+        <!-- Title -->
+        <h2
+          class="font-display text-xl sm:text-2xl md:text-3xl text-cream leading-[1.12] mb-5"
+          data-reveal
+          data-reveal-delay="100"
         >
           {{ $t('home.splitArabicTitle') }}
         </h2>
 
-        <!-- Thin rule — asymmetric, aligned left, not centered -->
-        <div class="w-8 h-px bg-gold/30 mb-6" data-reveal aria-hidden="true"></div>
-
+        <!-- Body description — below the quote, smaller -->
         <p
-          class="text-base text-cream/40 leading-relaxed max-w-sm mb-6"
-          data-reveal
-          data-reveal-delay="150"
-        >
-          {{ $t('home.splitArabicBody') }}
-        </p>
-
-        <blockquote
-          class="border-s-2 border-gold/30 ps-4 text-sm text-cream/30 italic leading-relaxed max-w-sm mb-10"
+          class="text-base text-cream/35 leading-relaxed max-w-sm mb-10"
           data-reveal
           data-reveal-delay="200"
         >
-          {{ $t('home.splitArabicQuote') }}
-        </blockquote>
+          {{ $t('home.splitArabicBody') }}
+        </p>
 
         <div data-reveal data-reveal-delay="350">
           <a
