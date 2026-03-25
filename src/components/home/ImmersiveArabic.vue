@@ -2,17 +2,30 @@
   <!-- ARABIC — Ornate title + paper pane + transparent verse card. -->
   <section class="relative min-h-[900px] bg-cream flex flex-col justify-center py-24 px-6 md:px-24 overflow-hidden">
 
-    <!-- Decorative mosque arch accent — centered behind content -->
+    <!-- Decorative mosque arch + Islamic geometric pattern OUTSIDE the arch -->
     <div class="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
-      <svg class="w-[70%] max-w-4xl h-full opacity-[0.04]" viewBox="0 0 600 900" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-        <!-- Outer pointed arch (Islamic ogee) -->
-        <path d="M80 900 L80 400 Q80 200 300 60 Q520 200 520 400 L520 900" stroke="#C8A951" stroke-width="2" />
-        <!-- Inner arch -->
-        <path d="M120 900 L120 420 Q120 240 300 120 Q480 240 480 420 L480 900" stroke="#C8A951" stroke-width="1" />
-        <!-- Keystone detail at top -->
-        <circle cx="300" cy="80" r="8" stroke="#C8A951" stroke-width="1" />
-        <!-- Horizontal band -->
-        <line x1="80" y1="500" x2="520" y2="500" stroke="#C8A951" stroke-width="0.5" />
+      <svg class="w-full h-full opacity-[0.07]" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <!-- Arch shape used as a clip mask — INVERTED so pattern fills OUTSIDE -->
+          <path id="archInner" d="M350 900 L350 380 Q350 120 600 20 Q850 120 850 380 L850 900 Z" />
+          <clipPath id="outsideArch">
+            <rect width="1200" height="900" />
+          </clipPath>
+          <mask id="archMask">
+            <rect width="1200" height="900" fill="white" />
+            <use href="#archInner" fill="black" />
+          </mask>
+          <!-- Islamic geometric star pattern tile -->
+          <pattern id="islamicPattern" width="80" height="80" patternUnits="userSpaceOnUse">
+            <polygon points="40,8 46.5,26 64,18 53.5,33.5 72,40 53.5,46.5 64,62 46.5,54 40,72 33.5,54 16,62 26.5,46.5 8,40 26.5,33.5 16,18 33.5,26" fill="none" stroke="#C8A951" stroke-width="0.5" />
+            <polygon points="40,20 50,26.5 56,40 50,53.5 40,60 30,53.5 24,40 30,26.5" fill="none" stroke="#C8A951" stroke-width="0.5" />
+          </pattern>
+        </defs>
+        <!-- Pattern filling area OUTSIDE the arch -->
+        <rect width="1200" height="900" fill="url(#islamicPattern)" mask="url(#archMask)" />
+        <!-- Arch stroke lines -->
+        <path d="M350 900 L350 380 Q350 120 600 20 Q850 120 850 380 L850 900" stroke="#C8A951" stroke-width="1.5" fill="none" />
+        <path d="M380 900 L380 390 Q380 145 600 50 Q820 145 820 390 L820 900" stroke="#C8A951" stroke-width="0.75" fill="none" />
       </svg>
     </div>
 
@@ -28,7 +41,7 @@
       <!-- ─── Left column: paper pane ─── -->
       <div class="lg:col-span-8 lg:pe-8">
         <div
-          class="relative bg-white p-10 md:p-16 rounded-sm overflow-hidden"
+          class="relative bg-white p-10 md:p-16 rounded-sm"
           style="box-shadow: 0 0 40px rgba(212, 175, 55, 0.08), inset 0 0 20px rgba(255, 255, 255, 0.3); border: 1px solid rgba(212, 175, 55, 0.25);"
           data-reveal
         >
@@ -100,15 +113,15 @@
           ></div>
 
           <div class="relative z-10">
-            <!-- Quran verse -->
+            <!-- Quran verse — ornate font like the attribution labels -->
             <p
-              class="font-display italic text-2xl md:text-3xl text-primary-950/70 leading-relaxed mb-4"
+              class="font-ornate text-xl md:text-2xl text-primary-950/60 leading-relaxed mb-4 tracking-wide"
               dir="rtl"
               lang="ar"
             >
               بِلِسَانٍ عَرَبِيٍّ مُبِينٍ
             </p>
-            <p class="text-[10px] uppercase tracking-[0.2em] text-gold">{{ $t('home.quranVerseRef') }}</p>
+            <p class="font-ornate text-[10px] uppercase tracking-[0.3em] text-gold font-bold">{{ $t('home.quranVerseRef') }}</p>
           </div>
         </div>
       </div>
