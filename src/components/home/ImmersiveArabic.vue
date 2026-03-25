@@ -1,6 +1,6 @@
 <template>
-  <!-- ARABIC — Stitch-inspired asymmetric layout.
-       Cream bg, large Tha'alibi quote as headline, Quran verse card on right. -->
+  <!-- ARABIC — Asymmetric layout with paper pane + transparent verse card.
+       Cream bg, Tha'alibi quote on paper pane, Quran verse in glass card. -->
   <section class="relative min-h-[900px] bg-cream flex flex-col justify-center py-24 px-6 md:px-24 overflow-hidden">
 
     <!-- Subtle star watermark (placeholder — to be replaced later) -->
@@ -18,77 +18,96 @@
     </div>
 
     <!-- Content grid -->
-    <div class="relative z-10 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-10 gap-12">
+    <div class="relative z-10 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-0">
 
-      <!-- ─── Left column: quote + description ─── -->
-      <div class="lg:col-span-6 flex flex-col items-start gap-12">
-
-        <!-- Eyebrow -->
-        <p
-          class="text-[10px] font-semibold tracking-[0.4em] uppercase text-gold/60"
+      <!-- ─── Left column: paper pane with quote ─── -->
+      <div class="lg:col-span-8 lg:pe-8">
+        <!-- Paper pane -->
+        <div
+          class="relative bg-white p-10 md:p-16 rounded-sm overflow-hidden"
+          style="box-shadow: 0 0 40px rgba(212, 175, 55, 0.08), inset 0 0 20px rgba(255, 255, 255, 0.3); border: 1px solid rgba(212, 175, 55, 0.25);"
           data-reveal
         >
-          {{ $t('home.splitArabicEyebrow') }}
-        </p>
-
-        <!-- Tha'alibi quote — the dominant headline -->
-        <div class="relative ltr:pl-12 rtl:pr-12" data-reveal="cinematic">
-          <!-- Quote icon -->
-          <span
-            class="absolute ltr:left-0 rtl:right-0 top-0 font-serif text-gold/50 text-6xl leading-none select-none pointer-events-none"
+          <!-- Subtle dot pattern on paper -->
+          <div
+            class="absolute inset-0 opacity-[0.06] pointer-events-none"
+            style="background-image: radial-gradient(circle at 2px 2px, rgba(212, 175, 55, 0.3) 1px, transparent 0); background-size: 24px 24px;"
             aria-hidden="true"
-          >&ldquo;</span>
-          <p class="font-display italic text-3xl md:text-4xl lg:text-5xl text-primary-950/80 leading-[1.2] max-w-2xl">
-            {{ $t('home.splitArabicQuote') }}
-          </p>
-          <p class="text-[10px] uppercase tracking-[0.2em] text-gold mt-4">
-            {{ $t('home.splitArabicAttribution') }}
-          </p>
-        </div>
+          ></div>
 
-        <!-- Indented body text with gold rule -->
-        <div class="w-full max-w-md ltr:ml-12 ltr:lg:ml-24 rtl:mr-12 rtl:lg:mr-24 mt-4" data-reveal data-reveal-delay="150">
-          <div class="h-px w-24 bg-gold/40 mb-8"></div>
-          <p class="text-primary-950/60 text-lg leading-relaxed font-light">
-            {{ $t('home.splitArabicBody') }}
-          </p>
-        </div>
+          <div class="relative z-10">
+            <!-- Eyebrow -->
+            <p class="text-[10px] font-semibold tracking-[0.4em] uppercase text-gold/60 mb-10">
+              {{ $t('home.splitArabicEyebrow') }}
+            </p>
 
-        <!-- CTA -->
-        <div data-reveal data-reveal-delay="300">
-          <a
-            :href="whatsAppHref"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex items-center gap-3 bg-gold text-white px-8 py-3.5 rounded-full font-semibold text-sm hover:shadow-[0_0_40px_rgba(212,175,55,0.2)] transition-all duration-200"
-          >
-            {{ $t('hero.ctaWhatsApp') }}
-            <svg class="h-3.5 w-3.5 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
-          </a>
+            <!-- Tha'alibi quote — dominant headline -->
+            <div class="relative ltr:pl-12 rtl:pr-12 ltr:border-l-4 rtl:border-r-4 border-gold/30 mb-12">
+              <!-- Quote icon -->
+              <span
+                class="absolute ltr:-left-6 rtl:-right-6 -top-8 font-serif text-gold/20 text-7xl leading-none select-none pointer-events-none"
+                aria-hidden="true"
+              >&ldquo;</span>
+              <p class="font-display italic text-3xl md:text-4xl lg:text-5xl text-primary-950/90 leading-[1.2] max-w-2xl">
+                {{ $t('home.splitArabicQuote') }}
+              </p>
+              <p class="text-sm uppercase tracking-[0.3em] text-gold mt-6 font-bold">
+                {{ $t('home.splitArabicAttribution') }}
+              </p>
+            </div>
+
+            <!-- Body description -->
+            <div class="max-w-xl mb-12">
+              <p class="text-primary-950/70 text-xl leading-relaxed font-light">
+                {{ $t('home.splitArabicBody') }}
+              </p>
+            </div>
+
+            <!-- CTA — "Begin Your Journey" style -->
+            <a
+              :href="whatsAppHref"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-6 py-4 px-10 bg-primary-950 text-gold border border-gold/30 font-bold tracking-widest uppercase text-sm hover:bg-primary-950/90 transition-all duration-200 group"
+              data-reveal
+              data-reveal-delay="200"
+            >
+              {{ $t('home.splitArabicCta') }}
+              <svg class="h-4 w-4 rtl:rotate-180 group-hover:ltr:translate-x-2 group-hover:rtl:-translate-x-2 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+            </a>
+          </div>
         </div>
       </div>
 
-      <!-- ─── Right column: Quran verse card ─── -->
-      <div class="lg:col-span-4 flex flex-col justify-end lg:pb-20">
+      <!-- ─── Right column: transparent glass card ─── -->
+      <div class="lg:col-span-4 flex flex-col justify-center">
         <div
-          class="relative p-10 bg-primary-950/[0.03] backdrop-blur-md rounded-xl ltr:border-l rtl:border-r border-gold/30 shadow-sm"
+          class="relative w-full p-10 bg-primary-950/[0.04] backdrop-blur-md border border-gold/30 rounded-sm overflow-hidden shadow-[0_0_40px_rgba(212,175,55,0.06)]"
           data-reveal
           data-reveal-delay="200"
         >
+          <!-- Subtle dot pattern -->
+          <div
+            class="absolute inset-0 opacity-[0.08] pointer-events-none"
+            style="background-image: radial-gradient(circle at 2px 2px, rgba(212, 175, 55, 0.2) 1px, transparent 0); background-size: 24px 24px;"
+            aria-hidden="true"
+          ></div>
+
           <div class="relative z-10">
             <!-- Quran verse -->
             <p
-              class="font-display italic text-2xl md:text-3xl text-primary-950/70 leading-relaxed mb-6"
+              class="font-display italic text-2xl md:text-3xl text-primary-950/70 leading-relaxed mb-4"
               dir="rtl"
               lang="ar"
             >
               بِلِسَانٍ عَرَبِيٍّ مُبِينٍ
             </p>
-            <p class="text-[10px] uppercase tracking-[0.2em] text-gold mb-6">{{ $t('home.quranVerseRef') }}</p>
+            <p class="text-[10px] uppercase tracking-[0.2em] text-gold mb-10">{{ $t('home.quranVerseRef') }}</p>
+
             <!-- Section title -->
             <div class="flex items-center gap-4">
-              <div class="w-12 h-px bg-gold"></div>
-              <h2 class="text-sm text-primary-950/40 tracking-widest uppercase">
+              <div class="w-16 h-px bg-gold"></div>
+              <h2 class="text-xs text-primary-950/40 tracking-[0.3em] uppercase font-bold">
                 {{ $t('home.splitArabicTitle') }}
               </h2>
             </div>
