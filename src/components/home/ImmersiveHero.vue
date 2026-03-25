@@ -5,7 +5,7 @@
       <img
         src="/images/HeroBanner.jpeg"
         alt="Children studying in a mosque with light rays streaming through an archway"
-        class="w-full h-full object-cover object-[center_30%]"
+        class="w-full h-full object-cover object-[center_80%]"
       />
     </div>
     <!-- Gradient overlay — neutral black, no green tint -->
@@ -34,7 +34,7 @@
         </h1>
 
         <!-- Arabic motto -->
-        <p class="hero-entrance hero-entrance-1 font-display text-cream/30 text-lg sm:text-xl md:text-2xl leading-relaxed mb-6" dir="rtl" lang="ar">
+        <p class="hero-entrance hero-entrance-1 font-display text-cream/30 text-lg sm:text-xl md:text-2xl leading-relaxed mb-6">
           {{ $t('hero.motto') }}
         </p>
 
