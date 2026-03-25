@@ -4,14 +4,7 @@
        so it reads on cream). Same motif as hero but colour-shifted.
        Photo card right-aligned, narrower, badge on edge. -->
 
-  <section class="relative overflow-hidden bg-cream py-20 md:py-28 lg:py-32">
-
-    <!-- ── Islamic geometric pattern overlay (primary-700 stroke on cream, prominent) ── -->
-    <div
-      class="absolute inset-0 opacity-[0.12]"
-      :style="patternStyle"
-      aria-hidden="true"
-    ></div>
+  <section class="relative overflow-hidden py-20 md:py-28 lg:py-32">
 
     <!-- Soft gold radial glow — shifted right to back the card -->
     <div

@@ -1,40 +1,12 @@
 <template>
-  <!-- ARABIC — Ornate title + paper pane + transparent verse card. -->
-  <section class="relative min-h-[900px] bg-cream flex flex-col justify-center py-24 px-6 md:px-24 overflow-hidden">
-
-    <!-- Decorative mosque arch + Islamic geometric pattern OUTSIDE the arch -->
-    <div class="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
-      <svg class="w-full h-full opacity-[0.14]" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-        <defs>
-          <!-- Arch shape used as a clip mask — INVERTED so pattern fills OUTSIDE -->
-          <path id="archInner" d="M350 900 L350 380 Q350 120 600 20 Q850 120 850 380 L850 900 Z" />
-          <clipPath id="outsideArch">
-            <rect width="1200" height="900" />
-          </clipPath>
-          <mask id="archMask">
-            <rect width="1200" height="900" fill="white" />
-            <use href="#archInner" fill="black" />
-          </mask>
-          <!-- Islamic geometric star pattern tile -->
-          <pattern id="islamicPattern" width="80" height="80" patternUnits="userSpaceOnUse">
-            <polygon points="40,8 46.5,26 64,18 53.5,33.5 72,40 53.5,46.5 64,62 46.5,54 40,72 33.5,54 16,62 26.5,46.5 8,40 26.5,33.5 16,18 33.5,26" fill="none" stroke="#C8A951" stroke-width="0.5" />
-            <polygon points="40,20 50,26.5 56,40 50,53.5 40,60 30,53.5 24,40 30,26.5" fill="none" stroke="#C8A951" stroke-width="0.5" />
-          </pattern>
-        </defs>
-        <!-- Pattern filling area OUTSIDE the arch -->
-        <rect width="1200" height="900" fill="url(#islamicPattern)" mask="url(#archMask)" />
-        <!-- Arch stroke lines -->
-        <path d="M350 900 L350 380 Q350 120 600 20 Q850 120 850 380 L850 900" stroke="#C8A951" stroke-width="2.5" fill="none" />
-        <path d="M380 900 L380 390 Q380 145 600 50 Q820 145 820 390 L820 900" stroke="#C8A951" stroke-width="1.5" fill="none" />
-      </svg>
-    </div>
-
+  <!-- ARABIC — Ornate title + paper pane + mihrab arch with Quran verse. -->
+  <section class="relative flex flex-col justify-center py-24 px-6 md:px-24 overflow-visible">
 
     <!-- Content grid -->
     <div class="relative z-10 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-0">
 
       <!-- ─── Left column: paper pane ─── -->
-      <div class="lg:col-span-8 lg:pe-8">
+      <div class="lg:col-span-7 lg:pe-8">
         <div
           class="relative bg-white p-10 md:p-16 rounded-sm"
           style="box-shadow: 0 0 40px rgba(212, 175, 55, 0.08), inset 0 0 20px rgba(255, 255, 255, 0.3); border: 1px solid rgba(212, 175, 55, 0.25);"
@@ -54,7 +26,7 @@
             </p>
 
             <!-- Ornate title — gradient forest green → gold -->
-            <h2 class="font-ornate text-5xl md:text-7xl lg:text-8xl leading-[1.1] tracking-tighter mb-12 overflow-visible">
+            <h2 class="font-ornate text-4xl md:text-6xl lg:text-7xl leading-[1.15] tracking-tighter mb-12 overflow-visible">
               <span class="text-primary-950">{{ $t('home.splitArabicHeadline1') }}</span>
               <br />
               <span class="text-reveal block mt-2 font-black italic">{{ $t('home.splitArabicHeadline2') }}</span>
@@ -93,30 +65,36 @@
         </div>
       </div>
 
-      <!-- ─── Right column: transparent glass card ─── -->
-      <div class="lg:col-span-4 flex flex-col justify-center">
+      <!-- ─── Right column: mihrab arch with Quran verse ─── -->
+      <div class="lg:col-span-5 flex flex-col justify-center items-center">
         <div
-          class="relative w-full p-12 md:p-16 bg-primary-950/[0.04] backdrop-blur-md border border-gold/30 rounded-sm overflow-hidden shadow-[0_0_40px_rgba(212,175,55,0.06)]"
+          class="mihrab-arch relative w-full max-w-[320px] h-[480px] rounded-t-full border-2 border-gold/40 overflow-hidden flex flex-col items-center justify-center"
           data-reveal
           data-reveal-delay="200"
         >
-          <!-- Subtle dot pattern -->
-          <div
-            class="absolute inset-0 opacity-[0.08] pointer-events-none"
-            style="background-image: radial-gradient(circle at 2px 2px, rgba(212, 175, 55, 0.2) 1px, transparent 0); background-size: 24px 24px;"
-            aria-hidden="true"
-          ></div>
+          <!-- Green gradient depth -->
+          <div class="absolute inset-0 bg-gradient-to-t from-primary-950/60 via-primary-950/30 to-primary-950/10" aria-hidden="true"></div>
 
-          <div class="relative z-10">
-            <!-- Quran verse — ornate font like the attribution labels -->
+          <!-- Side panels with gold gradient -->
+          <div class="absolute left-0 top-0 w-10 h-full bg-gradient-to-b from-gold/15 to-transparent border-r border-gold/10" aria-hidden="true"></div>
+          <div class="absolute right-0 top-0 w-10 h-full bg-gradient-to-b from-gold/15 to-transparent border-l border-gold/10" aria-hidden="true"></div>
+
+          <!-- Inner content -->
+          <div class="relative z-10 text-center px-8">
+            <!-- Quran verse in gold -->
             <p
-              class="font-ornate text-3xl md:text-4xl text-primary-950/60 leading-relaxed mb-6 tracking-wide"
+              class="font-display text-3xl md:text-4xl text-gold leading-relaxed mb-4"
               dir="rtl"
               lang="ar"
             >
               بِلِسَانٍ عَرَبِيٍّ مُبِينٍ
             </p>
-            <p class="text-xs font-bold uppercase tracking-[0.3em] text-gold">{{ $t('home.quranVerseRef') }}</p>
+            <!-- English translation -->
+            <p class="text-cream/60 text-sm italic mb-4">
+              {{ $t('home.quranVerseTranslation') }}
+            </p>
+            <!-- Surah reference in white -->
+            <p class="text-xs font-bold uppercase tracking-[0.3em] text-white/80">{{ $t('home.quranVerseRef') }}</p>
           </div>
         </div>
       </div>
@@ -141,5 +119,11 @@ const whatsAppHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+.mihrab-arch {
+  background: rgba(12, 32, 25, 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 0 40px rgba(200, 169, 81, 0.08), inset 0 0 60px rgba(12, 32, 25, 0.3);
 }
 </style>
