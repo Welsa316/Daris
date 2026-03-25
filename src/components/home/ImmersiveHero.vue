@@ -1,18 +1,18 @@
 <template>
-  <section class="relative min-h-screen bg-primary-950 overflow-hidden">
+  <section class="relative min-h-screen bg-black overflow-hidden">
     <!-- Full-width background photograph -->
     <div class="absolute inset-0">
       <img
         src="/images/HeroBanner.jpeg"
         alt="Children studying in a mosque with light rays streaming through an archway"
-        class="w-full h-full object-cover object-bottom"
+        class="w-full h-full object-cover object-[center_30%]"
       />
     </div>
-    <!-- Gradient overlay — heavier on the left for text readability -->
-    <div class="absolute inset-0 bg-gradient-to-r from-primary-950/85 via-primary-950/50 to-primary-950/20 ltr:block rtl:hidden" aria-hidden="true"></div>
-    <div class="absolute inset-0 bg-gradient-to-l from-primary-950/85 via-primary-950/50 to-primary-950/20 rtl:block ltr:hidden" aria-hidden="true"></div>
+    <!-- Gradient overlay — neutral black, no green tint -->
+    <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-black/10 ltr:block rtl:hidden" aria-hidden="true"></div>
+    <div class="absolute inset-0 bg-gradient-to-l from-black/80 via-black/40 to-black/10 rtl:block ltr:hidden" aria-hidden="true"></div>
     <!-- Cinematic framing — top/bottom -->
-    <div class="absolute inset-0 bg-gradient-to-b from-primary-950/60 via-transparent to-primary-950/40" aria-hidden="true"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/30" aria-hidden="true"></div>
     <!-- Grain -->
     <div class="absolute inset-0 grain-texture opacity-40" aria-hidden="true"></div>
 
