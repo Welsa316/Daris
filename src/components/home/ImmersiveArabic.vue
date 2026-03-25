@@ -2,11 +2,17 @@
   <!-- ARABIC — Ornate title + paper pane + transparent verse card. -->
   <section class="relative min-h-[900px] bg-cream flex flex-col justify-center py-24 px-6 md:px-24 overflow-hidden">
 
-    <!-- Subtle star watermark (placeholder — to be replaced later) -->
-    <div class="absolute top-20 ltr:right-10 rtl:left-10 opacity-10 pointer-events-none" aria-hidden="true">
-      <svg class="text-gold fill-current" height="400" width="400" viewBox="0 0 100 100">
-        <path d="M50 0 L61 39 L100 50 L61 61 L50 100 L39 61 L0 50 L39 39 Z" />
-        <circle cx="50" cy="50" fill="none" r="15" stroke="currentColor" stroke-width="0.5" />
+    <!-- Decorative mosque arch accent — centered behind content -->
+    <div class="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
+      <svg class="w-[70%] max-w-4xl h-full opacity-[0.04]" viewBox="0 0 600 900" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+        <!-- Outer pointed arch (Islamic ogee) -->
+        <path d="M80 900 L80 400 Q80 200 300 60 Q520 200 520 400 L520 900" stroke="#C8A951" stroke-width="2" />
+        <!-- Inner arch -->
+        <path d="M120 900 L120 420 Q120 240 300 120 Q480 240 480 420 L480 900" stroke="#C8A951" stroke-width="1" />
+        <!-- Keystone detail at top -->
+        <circle cx="300" cy="80" r="8" stroke="#C8A951" stroke-width="1" />
+        <!-- Horizontal band -->
+        <line x1="80" y1="500" x2="520" y2="500" stroke="#C8A951" stroke-width="0.5" />
       </svg>
     </div>
 
@@ -123,7 +129,7 @@ const whatsAppHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
 
 <style scoped>
 .text-reveal {
-  background: linear-gradient(to bottom, var(--color-primary-950) 0%, var(--color-gold) 100%);
+  background: linear-gradient(to bottom, #0c2019 0%, #C8A951 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
