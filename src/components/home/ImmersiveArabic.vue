@@ -34,7 +34,7 @@
     <div class="relative z-10 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-0">
 
       <!-- ─── Left column: paper pane ─── -->
-      <div class="lg:col-span-9 lg:pe-8">
+      <div class="lg:col-span-8 lg:pe-8">
         <div
           class="relative bg-white p-10 md:p-16 rounded-sm"
           style="box-shadow: 0 0 40px rgba(212, 175, 55, 0.08), inset 0 0 20px rgba(255, 255, 255, 0.3); border: 1px solid rgba(212, 175, 55, 0.25);"
@@ -54,7 +54,7 @@
             </p>
 
             <!-- Ornate title — gradient forest green → gold -->
-            <h2 class="font-ornate text-5xl md:text-7xl lg:text-8xl leading-[0.9] tracking-tighter mb-12">
+            <h2 class="font-ornate text-5xl md:text-7xl lg:text-8xl leading-[1.1] tracking-tighter mb-12 overflow-visible">
               <span class="text-primary-950">{{ $t('home.splitArabicHeadline1') }}</span>
               <br />
               <span class="text-reveal block mt-2 font-black italic">{{ $t('home.splitArabicHeadline2') }}</span>
@@ -94,9 +94,9 @@
       </div>
 
       <!-- ─── Right column: transparent glass card ─── -->
-      <div class="lg:col-span-3 flex flex-col justify-center">
+      <div class="lg:col-span-4 flex flex-col justify-center">
         <div
-          class="relative w-full p-10 bg-primary-950/[0.04] backdrop-blur-md border border-gold/30 rounded-sm overflow-hidden shadow-[0_0_40px_rgba(212,175,55,0.06)]"
+          class="relative w-full p-12 md:p-16 bg-primary-950/[0.04] backdrop-blur-md border border-gold/30 rounded-sm overflow-hidden shadow-[0_0_40px_rgba(212,175,55,0.06)]"
           data-reveal
           data-reveal-delay="200"
         >
@@ -110,13 +110,13 @@
           <div class="relative z-10">
             <!-- Quran verse — ornate font like the attribution labels -->
             <p
-              class="font-ornate text-2xl md:text-3xl text-primary-950/60 leading-relaxed mb-4 tracking-wide"
+              class="font-ornate text-3xl md:text-4xl text-primary-950/60 leading-relaxed mb-6 tracking-wide"
               dir="rtl"
               lang="ar"
             >
               بِلِسَانٍ عَرَبِيٍّ مُبِينٍ
             </p>
-            <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-gold">{{ $t('home.quranVerseRef') }}</p>
+            <p class="text-xs font-bold uppercase tracking-[0.3em] text-gold">{{ $t('home.quranVerseRef') }}</p>
           </div>
         </div>
       </div>

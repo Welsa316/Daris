@@ -1,22 +1,19 @@
 <template>
   <div>
-    <!-- 1. Hero — brand-first, split-screen editorial -->
+    <!-- 1. Hero -->
     <ImmersiveHero />
 
-    <!-- 3. Quran — reverent, warm, centered, frosted backdrop -->
+    <!-- Sliver between hero and content -->
+    <div class="h-1 bg-cream" aria-hidden="true"></div>
+
+    <!-- 2. Quran -->
     <ImmersiveQuran />
 
-    <!-- Breathing space — clean gradient divider -->
-    <div class="h-px bg-gradient-to-r from-transparent via-slate-200/60 to-transparent" aria-hidden="true"></div>
-
-    <!-- 4. Arabic — scholarly, asymmetric left-aligned, calligraphy -->
-    <ImmersiveArabic />
-
-    <!-- Breathing space -->
-    <div class="h-px bg-gradient-to-r from-transparent via-slate-200/60 to-transparent" aria-hidden="true"></div>
-
-    <!-- 5. Fiqh — grounded, lower-third panel, mosque interior -->
+    <!-- 3. Fiqh -->
     <ImmersiveFiqh />
+
+    <!-- 4. Arabic — flows into AuthorityStats (both cream bg, no image) -->
+    <ImmersiveArabic />
 
     <!-- 6. Authority Stats -->
     <AuthorityStats />
