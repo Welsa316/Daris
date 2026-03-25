@@ -4,7 +4,7 @@
     :class="scrolled ? 'bg-white/95 backdrop-blur-md shadow-card' : 'bg-transparent'"
   >
     <nav
-      class="section-container flex items-center justify-between h-20"
+      class="w-full px-8 md:px-12 flex items-center justify-between h-20"
       aria-label="Main navigation"
     >
       <!-- Logo — fades in on scroll -->
