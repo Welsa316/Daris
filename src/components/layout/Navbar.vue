@@ -66,7 +66,7 @@
       <!-- Desktop nav -->
       <div
         id="primary-navigation"
-        class="hidden md:flex md:items-center md:gap-8 text-sm font-medium"
+        class="hidden md:flex md:items-center md:gap-8 text-sm md:text-base font-medium"
       >
         <RouterLink
           v-for="item in navItems"
