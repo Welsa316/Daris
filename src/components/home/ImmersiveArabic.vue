@@ -4,7 +4,7 @@
 
     <!-- Decorative mosque arch + Islamic geometric pattern OUTSIDE the arch -->
     <div class="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
-      <svg class="w-full h-full opacity-[0.07]" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+      <svg class="w-full h-full opacity-[0.14]" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
         <defs>
           <!-- Arch shape used as a clip mask — INVERTED so pattern fills OUTSIDE -->
           <path id="archInner" d="M350 900 L350 380 Q350 120 600 20 Q850 120 850 380 L850 900 Z" />
@@ -24,22 +24,17 @@
         <!-- Pattern filling area OUTSIDE the arch -->
         <rect width="1200" height="900" fill="url(#islamicPattern)" mask="url(#archMask)" />
         <!-- Arch stroke lines -->
-        <path d="M350 900 L350 380 Q350 120 600 20 Q850 120 850 380 L850 900" stroke="#C8A951" stroke-width="1.5" fill="none" />
-        <path d="M380 900 L380 390 Q380 145 600 50 Q820 145 820 390 L820 900" stroke="#C8A951" stroke-width="0.75" fill="none" />
+        <path d="M350 900 L350 380 Q350 120 600 20 Q850 120 850 380 L850 900" stroke="#C8A951" stroke-width="2.5" fill="none" />
+        <path d="M380 900 L380 390 Q380 145 600 50 Q820 145 820 390 L820 900" stroke="#C8A951" stroke-width="1.5" fill="none" />
       </svg>
     </div>
 
-    <!-- Organic background shapes -->
-    <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
-      <div class="absolute -top-20 ltr:-left-40 rtl:-right-40 w-[600px] h-[600px] bg-gold/5 rounded-full blur-[120px]"></div>
-      <div class="absolute bottom-0 ltr:right-0 rtl:left-0 w-full h-[40%] bg-gold/5" style="clip-path: polygon(0 15%, 20% 0, 50% 10%, 80% 0, 100% 20%, 100% 100%, 0% 100%);"></div>
-    </div>
 
     <!-- Content grid -->
     <div class="relative z-10 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-0">
 
       <!-- ─── Left column: paper pane ─── -->
-      <div class="lg:col-span-8 lg:pe-8">
+      <div class="lg:col-span-9 lg:pe-8">
         <div
           class="relative bg-white p-10 md:p-16 rounded-sm"
           style="box-shadow: 0 0 40px rgba(212, 175, 55, 0.08), inset 0 0 20px rgba(255, 255, 255, 0.3); border: 1px solid rgba(212, 175, 55, 0.25);"
@@ -99,7 +94,7 @@
       </div>
 
       <!-- ─── Right column: transparent glass card ─── -->
-      <div class="lg:col-span-4 flex flex-col justify-center">
+      <div class="lg:col-span-3 flex flex-col justify-center">
         <div
           class="relative w-full p-10 bg-primary-950/[0.04] backdrop-blur-md border border-gold/30 rounded-sm overflow-hidden shadow-[0_0_40px_rgba(212,175,55,0.06)]"
           data-reveal
@@ -115,13 +110,13 @@
           <div class="relative z-10">
             <!-- Quran verse — ornate font like the attribution labels -->
             <p
-              class="font-ornate text-xl md:text-2xl text-primary-950/60 leading-relaxed mb-4 tracking-wide"
+              class="font-ornate text-2xl md:text-3xl text-primary-950/60 leading-relaxed mb-4 tracking-wide"
               dir="rtl"
               lang="ar"
             >
               بِلِسَانٍ عَرَبِيٍّ مُبِينٍ
             </p>
-            <p class="font-ornate text-[10px] uppercase tracking-[0.3em] text-gold font-bold">{{ $t('home.quranVerseRef') }}</p>
+            <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-gold">{{ $t('home.quranVerseRef') }}</p>
           </div>
         </div>
       </div>
