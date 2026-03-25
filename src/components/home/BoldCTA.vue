@@ -38,11 +38,7 @@
 </template>
 
 <script setup>
-import { contactConfig } from '@/config/contactConfig';
+import { useWhatsApp } from '@/composables/useWhatsApp';
 
-const { whatsappNumber, whatsappMessage } = contactConfig;
-
-const whatsAppHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-  whatsappMessage
-)}`;
+const { whatsAppHref } = useWhatsApp();
 </script>

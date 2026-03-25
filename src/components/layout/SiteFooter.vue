@@ -95,12 +95,10 @@
 <script setup>
 import { RouterLink } from 'vue-router';
 import { contactConfig } from '@/config/contactConfig';
+import { useWhatsApp } from '@/composables/useWhatsApp';
 
-const { whatsappNumber, whatsappMessage, contactEmail } = contactConfig;
-
-const whatsAppHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-  whatsappMessage
-)}`;
+const { contactEmail } = contactConfig;
+const { whatsAppHref } = useWhatsApp();
 
 const quickLinks = [
   { to: '/', labelKey: 'nav.home' },
