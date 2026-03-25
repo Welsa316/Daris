@@ -15,6 +15,7 @@
     "titleHighlight": "Quran, Arabic & Fiqh",
     "titleRest": "guidance for serious learners.",
     "subtitle": "Online lessons with an Al-Azhar-trained Sheikh. Personalised, patient, and available worldwide.",
+    "description": "An educational platform offering a structured, progressive curriculum in Quran, Arabic language, and Islamic studies, following the methodology of Al-Azhar Al-Sharif, for men, women, and children, in Arabic and English.",
     "ctaWhatsApp": "Contact on WhatsApp",
     "ctaPrograms": "View programs",
     "cardTitle": "How to begin",
@@ -49,7 +50,7 @@
 
     "splitQuranEyebrow": "Tajwid · Tafsir · Memorisation",
     "splitQuranTitle": "Build a lasting relationship with the Quran",
-    "splitQuranBody": "Tajwid correction, structured memorisation, and tafsir — all in one program. Available in English and Arabic, for men and children.",
+    "splitQuranBody": "Recitation correction, learning tajwid rules, and understanding tafsir of the verses.",
     "splitQuranPlaceholder": "Add Quran study image",
 
     "splitArabicEyebrow": "Arabic for Non-Native Speakers",
@@ -76,6 +77,9 @@
     "stat3Label": "Countries reached",
     "stat4Value": "24/7",
     "stat4Label": "Timezone flexibility",
+
+    "countriesLabel": "Our students come from",
+    "countriesList": "Egypt, Poland, Uzbekistan, Pakistan, Saudi Arabia, Qatar, Netherlands, England, USA",
 
     "testimonialsEyebrow": "Testimonials",
     "testimonialsTitle": "What students say",
