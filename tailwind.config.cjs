@@ -41,7 +41,8 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'Noto Sans Arabic', 'system-ui', 'ui-sans-serif', 'sans-serif'],
-        display: ['Playfair Display', 'Noto Sans Arabic', 'Georgia', 'serif']
+        display: ['Playfair Display', 'Noto Sans Arabic', 'Georgia', 'serif'],
+        ornate: ['Cinzel Decorative', 'serif']
       },
       boxShadow: {
         soft: '0 2px 15px rgba(0,0,0,0.04)',

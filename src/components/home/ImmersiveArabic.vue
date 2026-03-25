@@ -1,6 +1,5 @@
 <template>
-  <!-- ARABIC — Asymmetric layout with paper pane + transparent verse card.
-       Cream bg, Tha'alibi quote on paper pane, Quran verse in glass card. -->
+  <!-- ARABIC — Ornate title + paper pane + transparent verse card. -->
   <section class="relative min-h-[900px] bg-cream flex flex-col justify-center py-24 px-6 md:px-24 overflow-hidden">
 
     <!-- Subtle star watermark (placeholder — to be replaced later) -->
@@ -20,9 +19,8 @@
     <!-- Content grid -->
     <div class="relative z-10 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-0">
 
-      <!-- ─── Left column: paper pane with quote ─── -->
+      <!-- ─── Left column: paper pane ─── -->
       <div class="lg:col-span-8 lg:pe-8">
-        <!-- Paper pane -->
         <div
           class="relative bg-white p-10 md:p-16 rounded-sm overflow-hidden"
           style="box-shadow: 0 0 40px rgba(212, 175, 55, 0.08), inset 0 0 20px rgba(255, 255, 255, 0.3); border: 1px solid rgba(212, 175, 55, 0.25);"
@@ -41,29 +39,31 @@
               {{ $t('home.splitArabicEyebrow') }}
             </p>
 
-            <!-- Tha'alibi quote — dominant headline -->
-            <div class="relative ltr:pl-12 rtl:pr-12 ltr:border-l-4 rtl:border-r-4 border-gold/30 mb-12">
-              <!-- Quote icon -->
-              <span
-                class="absolute ltr:-left-6 rtl:-right-6 -top-8 font-serif text-gold/20 text-7xl leading-none select-none pointer-events-none"
-                aria-hidden="true"
-              >&ldquo;</span>
-              <p class="font-display italic text-3xl md:text-4xl lg:text-5xl text-primary-950/90 leading-[1.2] max-w-2xl">
-                {{ $t('home.splitArabicQuote') }}
+            <!-- Ornate title — gradient forest green → gold -->
+            <h2 class="font-ornate text-5xl md:text-7xl lg:text-8xl leading-[0.9] tracking-tighter mb-12">
+              <span class="text-primary-950">{{ $t('home.splitArabicHeadline1') }}</span>
+              <br />
+              <span class="text-reveal block mt-2 font-black italic">{{ $t('home.splitArabicHeadline2') }}</span>
+            </h2>
+
+            <!-- Tha'alibi quote — smaller, under the title -->
+            <div class="relative ltr:pl-8 rtl:pr-8 ltr:border-l rtl:border-r border-gold/30 mb-12">
+              <p class="font-display italic text-2xl md:text-3xl text-primary-950/80 leading-snug max-w-2xl">
+                &ldquo;{{ $t('home.splitArabicQuote') }}&rdquo;
               </p>
-              <p class="text-sm uppercase tracking-[0.3em] text-gold mt-6 font-bold">
+              <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-gold mt-6">
                 {{ $t('home.splitArabicAttribution') }}
               </p>
             </div>
 
             <!-- Body description -->
             <div class="max-w-xl mb-12">
-              <p class="text-primary-950/70 text-xl leading-relaxed font-light">
+              <p class="text-primary-950/70 text-lg leading-relaxed font-light">
                 {{ $t('home.splitArabicBody') }}
               </p>
             </div>
 
-            <!-- CTA — "Begin Your Journey" style -->
+            <!-- CTA -->
             <a
               :href="whatsAppHref"
               target="_blank"
@@ -102,15 +102,7 @@
             >
               بِلِسَانٍ عَرَبِيٍّ مُبِينٍ
             </p>
-            <p class="text-[10px] uppercase tracking-[0.2em] text-gold mb-10">{{ $t('home.quranVerseRef') }}</p>
-
-            <!-- Section title -->
-            <div class="flex items-center gap-4">
-              <div class="w-16 h-px bg-gold"></div>
-              <h2 class="text-xs text-primary-950/40 tracking-[0.3em] uppercase font-bold">
-                {{ $t('home.splitArabicTitle') }}
-              </h2>
-            </div>
+            <p class="text-[10px] uppercase tracking-[0.2em] text-gold">{{ $t('home.quranVerseRef') }}</p>
           </div>
         </div>
       </div>
@@ -128,3 +120,12 @@ const whatsAppHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
   whatsappMessage
 )}`;
 </script>
+
+<style scoped>
+.text-reveal {
+  background: linear-gradient(to bottom, var(--color-primary-950) 0%, var(--color-gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+</style>
