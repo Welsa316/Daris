@@ -1,24 +1,23 @@
 <template>
   <!-- ARABIC — Scholarly & Refined
-       Warm parchment gradient background with decorative Quran verse.
-       Tha'alibi quote as the main focal text. -->
+       Asymmetric left-aligned text. Ancient calligraphy manuscript
+       background. Tha'alibi quote as the main focal element. -->
   <section class="relative overflow-hidden min-h-[70vh] md:min-h-[80vh] flex items-center">
-    <!-- Warm parchment gradient background -->
-    <div class="absolute inset-0 bg-gradient-to-br from-primary-950 via-primary-950 to-[#1a2e24]" aria-hidden="true"></div>
-
-    <!-- Decorative Quran verse — بِلِسَانٍ عَرَبِيٍّ مُبِينٍ -->
-    <div class="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none" aria-hidden="true">
-      <p
-        class="text-[8rem] sm:text-[12rem] md:text-[16rem] lg:text-[20rem] font-display text-gold/[0.06] leading-none whitespace-nowrap select-none"
-        dir="rtl"
-        lang="ar"
-      >بِلِسَانٍ عَرَبِيٍّ مُبِينٍ</p>
+    <!-- Photograph — ancient Arabic manuscript with gold illuminated calligraphy -->
+    <div class="absolute inset-0">
+      <img
+        src="/images/arabic-calligraphy.png"
+        alt="Arabic calligraphy in gold ink on warm parchment"
+        class="w-full h-full object-cover"
+        loading="lazy"
+      />
     </div>
-
-    <!-- Soft warm glow — shifted to the right for depth -->
-    <div class="absolute top-1/2 right-1/4 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-gold/[0.04] blur-[120px]" aria-hidden="true"></div>
-
-    <!-- Grain — lighter for tonal variety -->
+    <!-- Lateral gradient — heavier on the left to cradle text, lighter on right to show calligraphy -->
+    <div class="absolute inset-0 bg-gradient-to-r from-primary-950/90 via-primary-950/55 to-primary-950/20 ltr:block rtl:hidden" aria-hidden="true"></div>
+    <div class="absolute inset-0 bg-gradient-to-l from-primary-950/90 via-primary-950/55 to-primary-950/20 rtl:block ltr:hidden" aria-hidden="true"></div>
+    <!-- Soft bottom gradient -->
+    <div class="absolute inset-0 bg-gradient-to-b from-primary-950/20 via-transparent to-primary-950/40" aria-hidden="true"></div>
+    <!-- Grain — lighter than Quran for tonal variety -->
     <div class="absolute inset-0 grain-texture opacity-30" aria-hidden="true"></div>
 
     <!-- Left-aligned text with strong breathing space on right -->
@@ -34,8 +33,6 @@
         <!-- Tha'alibi quote — the main focal element -->
         <blockquote
           class="font-display text-2xl sm:text-3xl md:text-4xl text-cream/70 leading-[1.3] mb-8"
-          dir="rtl"
-          lang="ar"
           data-reveal="cinematic"
         >
           {{ $t('home.splitArabicQuote') }}
