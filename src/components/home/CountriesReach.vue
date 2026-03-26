@@ -1,6 +1,6 @@
 <template>
   <!-- COUNTRIES + CTA — One continuous dark section.
-       Large inline SVG world map with gold dot markers, flowing into "Ready to begin?" CTA. -->
+       3D spinning globe with gold markers, country names below, flowing into CTA. -->
   <section class="relative overflow-hidden bg-primary-950">
     <!-- Grain texture -->
     <div class="absolute inset-0 grain-texture opacity-30 pointer-events-none" aria-hidden="true"></div>
@@ -12,52 +12,36 @@
 
       <!-- ─── Large heading ─── -->
       <h2
-        class="heading-display text-4xl md:text-5xl lg:text-6xl text-cream text-center mb-16 md:mb-24 px-6"
+        class="heading-display text-4xl md:text-5xl lg:text-6xl text-cream text-center mb-12 md:mb-20 px-6"
         data-reveal
       >
         {{ $t('home.countriesLabel') }}
       </h2>
 
-      <!-- ─── DESKTOP: SVG world map with markers ─── -->
+      <!-- ─── DESKTOP: 3D Globe ─── -->
       <div
-        class="hidden md:block relative mx-auto max-w-5xl px-6"
-        dir="ltr"
+        class="hidden md:block mx-auto max-w-lg px-6"
         data-reveal
         data-reveal-delay="100"
       >
-        <div
-          class="relative w-full aspect-[3/2]"
-          role="img"
-          :aria-label="$t('home.countriesLabel') + ': ' + countryMarkers.map(m => $t('home.countries.' + m.key)).join(', ')"
-        >
-          <!-- Accurate Natural Earth world map SVG -->
-          <WorldMapSvg class="absolute inset-0 w-full h-full" aria-hidden="true" />
-
-          <!-- Country markers — static gold dots with labels -->
-          <div
-            v-for="marker in countryMarkers"
-            :key="marker.key"
-            class="absolute"
-            :style="{
-              top: marker.top + '%',
-              left: marker.left + '%',
-              transform: 'translate(-50%, -50%)',
-            }"
-          >
-            <!-- Radial glow ring -->
-            <span class="absolute w-7 h-7 -left-[10px] -top-[10px] rounded-full bg-gold/[0.12]" aria-hidden="true"></span>
-            <!-- Center dot -->
-            <span class="relative block w-2.5 h-2.5 rounded-full bg-gold shadow-[0_0_6px_rgba(200,169,81,0.4)]"></span>
-
-            <!-- Country label -->
-            <span
-              class="absolute whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.15em] text-cream/70"
-              :class="labelPositionClasses(marker.labelPos)"
-            >
-              {{ $t('home.countries.' + marker.key) }}
-            </span>
-          </div>
+        <div class="aspect-square">
+          <GlobeCanvas />
         </div>
+      </div>
+
+      <!-- Country names listed below globe (desktop) -->
+      <div
+        class="hidden md:flex flex-wrap justify-center gap-x-8 gap-y-3 mt-10 px-6"
+        data-reveal
+        data-reveal-delay="200"
+      >
+        <span
+          v-for="marker in countryKeys"
+          :key="marker"
+          class="text-cream/50 text-xs font-semibold uppercase tracking-[0.2em]"
+        >
+          {{ $t('home.countries.' + marker) }}
+        </span>
       </div>
 
       <!-- ─── MOBILE: Country chips fallback ─── -->
@@ -69,15 +53,15 @@
         data-reveal-delay="100"
       >
         <li
-          v-for="marker in countryMarkers"
-          :key="marker.key"
+          v-for="marker in countryKeys"
+          :key="marker"
           class="inline-flex items-center px-5 py-2.5 rounded-full border border-gold/25 bg-gold/[0.04] text-cream/80 font-display text-sm tracking-wide"
         >
-          {{ $t('home.countries.' + marker.key) }}
+          {{ $t('home.countries.' + marker) }}
         </li>
       </ul>
 
-      <!-- ─── CTA (was BoldCTA, now merged) ─── -->
+      <!-- ─── CTA (merged from BoldCTA) ─── -->
       <div class="section-wide relative text-center mt-24 md:mt-40 pb-16 md:pb-24">
         <div class="w-12 h-px bg-gold/40 mx-auto mb-12" data-reveal aria-hidden="true"></div>
 
@@ -116,33 +100,13 @@
 <script setup>
 import { useI18n } from 'vue-i18n';
 import { useWhatsApp } from '@/composables/useWhatsApp';
-import WorldMapSvg from './WorldMapSvg.vue';
+import GlobeCanvas from './GlobeCanvas.vue';
 
 const { t } = useI18n();
 const { whatsAppHref } = useWhatsApp();
 
-// Geographic positions (% based on equirectangular projection in 1000x500 viewBox)
-// lon_to_x = (lon + 180) / 360 * 100%
-// lat_to_y = (90 - lat) / 180 * 100%
-const countryMarkers = [
-  { key: 'usa',          top: 30, left: 29,  labelPos: 'bottom' },  // Washington DC
-  { key: 'england',      top: 21, left: 50,  labelPos: 'top' },     // London
-  { key: 'netherlands',  top: 19, left: 51,  labelPos: 'top' },     // Amsterdam
-  { key: 'poland',       top: 21, left: 56,  labelPos: 'bottom' },  // Warsaw
-  { key: 'egypt',        top: 37, left: 59,  labelPos: 'left' },    // Cairo
-  { key: 'saudiArabia',  top: 41, left: 63,  labelPos: 'right' },   // Riyadh
-  { key: 'qatar',        top: 43, left: 62,  labelPos: 'bottom' },  // Doha
-  { key: 'uzbekistan',   top: 29, left: 69,  labelPos: 'top' },     // Tashkent
-  { key: 'pakistan',      top: 34, left: 70,  labelPos: 'right' },   // Islamabad
+const countryKeys = [
+  'usa', 'england', 'netherlands', 'poland', 'egypt',
+  'saudiArabia', 'qatar', 'uzbekistan', 'pakistan',
 ];
-
-function labelPositionClasses(pos) {
-  switch (pos) {
-    case 'top':    return '-top-5 left-1/2 -translate-x-1/2';
-    case 'bottom': return 'top-5 left-1/2 -translate-x-1/2';
-    case 'left':   return 'top-1/2 -translate-y-1/2 right-5';
-    case 'right':  return 'top-1/2 -translate-y-1/2 left-5';
-    default:       return '-top-5 left-1/2 -translate-x-1/2';
-  }
-}
 </script>
