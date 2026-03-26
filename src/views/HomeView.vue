@@ -42,15 +42,8 @@
       <AuthorityStats />
     </div>
 
-    <!-- 6b. Countries Reach -->
+    <!-- 6b. Countries Reach + CTA (merged into one section) -->
     <CountriesReach />
-
-    <!-- 7. Testimonials — editorial, hairlines (commented out for future use)
-    <TestimonialSection />
-    -->
-
-    <!-- 8. Final CTA — cinematic close -->
-    <BoldCTA />
   </div>
 </template>
 
@@ -62,8 +55,6 @@ import ImmersiveArabic from '@/components/home/ImmersiveArabic.vue';
 import ImmersiveFiqh from '@/components/home/ImmersiveFiqh.vue';
 import AuthorityStats from '@/components/home/AuthorityStats.vue';
 import CountriesReach from '@/components/home/CountriesReach.vue';
-// import TestimonialSection from '@/components/home/TestimonialSection.vue';
-import BoldCTA from '@/components/home/BoldCTA.vue';
 
 useScrollReveal();
 </script>

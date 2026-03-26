@@ -61,8 +61,7 @@ module.exports = {
         'fade-in-up-delay': 'fadeInUp 0.8s ease-out 0.15s forwards',
         'fade-in-up-delay-2': 'fadeInUp 0.8s ease-out 0.3s forwards',
         'fade-in-up-delay-3': 'fadeInUp 0.8s ease-out 0.45s forwards',
-        'pulse-soft': 'pulseSoft 2.5s ease-in-out infinite',
-        'map-pulse': 'mapPulse 3s ease-in-out infinite'
+        'pulse-soft': 'pulseSoft 2.5s ease-in-out infinite'
       },
       keyframes: {
         fadeIn: {
@@ -81,16 +80,6 @@ module.exports = {
           '50%': {
             transform: 'scale(1.04)',
             boxShadow: '0 0 0 10px rgba(37, 211, 102, 0)'
-          }
-        },
-        mapPulse: {
-          '0%, 100%': {
-            boxShadow: '0 0 4px rgba(200, 169, 81, 0.3)',
-            transform: 'scale(1)'
-          },
-          '50%': {
-            boxShadow: '0 0 12px rgba(200, 169, 81, 0.6)',
-            transform: 'scale(1.3)'
           }
         }
       }
