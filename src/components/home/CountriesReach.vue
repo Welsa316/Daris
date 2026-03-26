@@ -142,12 +142,20 @@ const countryKeys = [
 <style scoped>
 .globe-label {
   position: absolute;
-  font-family: 'Cinzel Decorative', serif;
+  font-family: 'Cinzel Decorative', 'Cairo', serif;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: rgba(200, 169, 81, 0.5);
   white-space: nowrap;
+}
+
+/* Arabic fallback font renders smaller at same size — bump up */
+[dir="rtl"] .globe-label {
+  font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
 }
 </style>
