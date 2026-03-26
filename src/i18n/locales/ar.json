@@ -86,6 +86,17 @@
 
     "countriesLabel": "طلابنا من",
     "countriesList": "مصر، بولندا، أوزبكستان، باكستان، السعودية، قطر، هولندا، إنجلترا، أمريكا",
+    "countries": {
+      "egypt": "مصر",
+      "poland": "بولندا",
+      "uzbekistan": "أوزبكستان",
+      "pakistan": "باكستان",
+      "saudiArabia": "السعودية",
+      "qatar": "قطر",
+      "netherlands": "هولندا",
+      "england": "إنجلترا",
+      "usa": "أمريكا"
+    },
 
     "testimonialsEyebrow": "آراء الطلاب",
     "testimonialsTitle": "ماذا يقول طلابنا",

@@ -86,6 +86,17 @@
 
     "countriesLabel": "Our students come from",
     "countriesList": "Egypt, Poland, Uzbekistan, Pakistan, Saudi Arabia, Qatar, Netherlands, England, USA",
+    "countries": {
+      "egypt": "Egypt",
+      "poland": "Poland",
+      "uzbekistan": "Uzbekistan",
+      "pakistan": "Pakistan",
+      "saudiArabia": "Saudi Arabia",
+      "qatar": "Qatar",
+      "netherlands": "Netherlands",
+      "england": "England",
+      "usa": "USA"
+    },
 
     "testimonialsEyebrow": "Testimonials",
     "testimonialsTitle": "What students say",
