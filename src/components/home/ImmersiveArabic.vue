@@ -128,28 +128,19 @@
           </div>
 
           <div class="relative z-10">
-            <!-- Quran verse in gold -->
-            <p
-              class="font-display text-3xl md:text-4xl text-gold !leading-[1.6] mb-8"
-              dir="rtl"
-              lang="ar"
-            >
-              بِلِسَانٍ عَرَبِيٍّ مُبِينٍ
+            <!-- Quran verse — switches language with the site -->
+            <p class="font-display text-3xl md:text-4xl text-gold italic !leading-[1.6] mb-8">
+              {{ $t('home.quranVerseTranslation') }}
             </p>
 
             <!-- Gold divider with line and diamond -->
-            <div class="flex items-center gap-4 mb-8">
+            <div class="flex items-center gap-4 mb-6">
               <div class="w-16 h-px bg-gold/40"></div>
               <div class="w-1.5 h-1.5 rotate-45 bg-gold/30"></div>
             </div>
 
-            <!-- Translation -->
-            <p class="text-cream italic font-display text-lg leading-relaxed mb-2">
-              {{ $t('home.quranVerseTranslation') }}
-            </p>
-
             <!-- Surah reference -->
-            <p class="text-[10px] font-semibold uppercase tracking-[0.3em] text-gold/70 mt-4">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.3em] text-gold/70">
               {{ $t('home.quranVerseRef') }}
             </p>
           </div>
