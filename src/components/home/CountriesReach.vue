@@ -31,7 +31,7 @@
           :aria-label="$t('home.countriesLabel') + ': ' + countryMarkers.map(m => $t('home.countries.' + m.key)).join(', ')"
         >
           <!-- Accurate Natural Earth world map SVG -->
-          <WorldMapSvg class="absolute inset-0 w-full h-full opacity-[0.25]" aria-hidden="true" />
+          <WorldMapSvg class="absolute inset-0 w-full h-full" aria-hidden="true" />
 
           <!-- Country markers — static gold dots with labels -->
           <div
@@ -44,8 +44,10 @@
               transform: 'translate(-50%, -50%)',
             }"
           >
-            <!-- Static gold dot with glow -->
-            <span class="block w-2.5 h-2.5 rounded-full bg-gold shadow-[0_0_8px_rgba(200,169,81,0.5)]"></span>
+            <!-- Radial glow ring -->
+            <span class="absolute w-7 h-7 -left-[10px] -top-[10px] rounded-full bg-gold/[0.12]" aria-hidden="true"></span>
+            <!-- Center dot -->
+            <span class="relative block w-2.5 h-2.5 rounded-full bg-gold shadow-[0_0_6px_rgba(200,169,81,0.4)]"></span>
 
             <!-- Country label -->
             <span
