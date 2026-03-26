@@ -33,39 +33,39 @@
           <!-- Static country labels positioned around the globe edges -->
           <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
             <!-- Top-left cluster: Western countries -->
-            <span class="globe-label" style="top: 8%; left: 2%;">
+            <span class="globe-label" style="top: 6%; left: -2%;">
               {{ $t('home.countries.usa') }}
             </span>
-            <span class="globe-label" style="top: 18%; left: 0%;">
+            <span class="globe-label" style="top: 17%; left: -4%;">
               {{ $t('home.countries.england') }}
             </span>
 
             <!-- Top-right cluster: European countries -->
-            <span class="globe-label" style="top: 6%; right: 4%;">
+            <span class="globe-label" style="top: 4%; right: -2%;">
               {{ $t('home.countries.netherlands') }}
             </span>
-            <span class="globe-label" style="top: 16%; right: 0%;">
+            <span class="globe-label" style="top: 15%; right: -4%;">
               {{ $t('home.countries.poland') }}
             </span>
 
             <!-- Middle-right: Central Asian -->
-            <span class="globe-label" style="top: 38%; right: -2%;">
+            <span class="globe-label" style="top: 36%; right: -8%;">
               {{ $t('home.countries.uzbekistan') }}
             </span>
-            <span class="globe-label" style="top: 50%; right: 0%;">
+            <span class="globe-label" style="top: 48%; right: -6%;">
               {{ $t('home.countries.pakistan') }}
             </span>
 
             <!-- Bottom-right: Middle East -->
-            <span class="globe-label" style="bottom: 22%; right: 4%;">
+            <span class="globe-label" style="bottom: 24%; right: -2%;">
               {{ $t('home.countries.saudiArabia') }}
             </span>
-            <span class="globe-label" style="bottom: 12%; right: 10%;">
+            <span class="globe-label" style="bottom: 14%; right: 4%;">
               {{ $t('home.countries.qatar') }}
             </span>
 
             <!-- Bottom-left: North Africa -->
-            <span class="globe-label" style="bottom: 18%; left: 6%;">
+            <span class="globe-label" style="bottom: 20%; left: -2%;">
               {{ $t('home.countries.egypt') }}
             </span>
           </div>
@@ -143,7 +143,7 @@ const countryKeys = [
 .globe-label {
   position: absolute;
   font-family: 'Cinzel Decorative', serif;
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
