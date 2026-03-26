@@ -20,13 +20,13 @@
 
       <!-- ─── DESKTOP: SVG world map with markers ─── -->
       <div
-        class="hidden md:block relative mx-auto max-w-6xl px-6"
+        class="hidden md:block relative mx-auto max-w-5xl px-6"
         dir="ltr"
         data-reveal
         data-reveal-delay="100"
       >
         <div
-          class="relative w-full aspect-[5/3]"
+          class="relative w-full aspect-[2/1]"
           role="img"
           :aria-label="$t('home.countriesLabel') + ': ' + countryMarkers.map(m => $t('home.countries.' + m.key)).join(', ')"
         >
