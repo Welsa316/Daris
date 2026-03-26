@@ -26,7 +26,7 @@
         data-reveal-delay="100"
       >
         <div
-          class="relative w-full aspect-[5/3]"
+          class="relative w-full aspect-[3/2]"
           role="img"
           :aria-label="$t('home.countriesLabel') + ': ' + countryMarkers.map(m => $t('home.countries.' + m.key)).join(', ')"
         >
@@ -123,15 +123,15 @@ const { whatsAppHref } = useWhatsApp();
 // lon_to_x = (lon + 180) / 360 * 100%
 // lat_to_y = (90 - lat) / 180 * 100%
 const countryMarkers = [
-  { key: 'usa',          top: 28, left: 27,  labelPos: 'bottom' },  // Washington DC
-  { key: 'england',      top: 21, left: 38,  labelPos: 'top' },     // London
-  { key: 'netherlands',  top: 19, left: 38,  labelPos: 'top' },     // Amsterdam
-  { key: 'poland',       top: 21, left: 41,  labelPos: 'bottom' },  // Warsaw
-  { key: 'egypt',        top: 33, left: 53,  labelPos: 'left' },    // Cairo
-  { key: 'saudiArabia',  top: 37, left: 58,  labelPos: 'right' },   // Riyadh
-  { key: 'qatar',        top: 39, left: 57,  labelPos: 'bottom' },  // Doha
-  { key: 'uzbekistan',   top: 27, left: 56,  labelPos: 'top' },     // Tashkent
-  { key: 'pakistan',      top: 32, left: 61,  labelPos: 'right' },   // Islamabad
+  { key: 'usa',          top: 30, left: 29,  labelPos: 'bottom' },  // Washington DC
+  { key: 'england',      top: 21, left: 50,  labelPos: 'top' },     // London
+  { key: 'netherlands',  top: 19, left: 51,  labelPos: 'top' },     // Amsterdam
+  { key: 'poland',       top: 21, left: 56,  labelPos: 'bottom' },  // Warsaw
+  { key: 'egypt',        top: 37, left: 59,  labelPos: 'left' },    // Cairo
+  { key: 'saudiArabia',  top: 41, left: 63,  labelPos: 'right' },   // Riyadh
+  { key: 'qatar',        top: 43, left: 62,  labelPos: 'bottom' },  // Doha
+  { key: 'uzbekistan',   top: 29, left: 69,  labelPos: 'top' },     // Tashkent
+  { key: 'pakistan',      top: 34, left: 70,  labelPos: 'right' },   // Islamabad
 ];
 
 function labelPositionClasses(pos) {
