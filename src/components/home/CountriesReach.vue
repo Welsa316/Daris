@@ -1,6 +1,6 @@
 <template>
   <!-- COUNTRIES + CTA — One continuous dark section.
-       3D spinning globe with gold markers, country names below, flowing into CTA. -->
+       3D spinning globe with gold markers, country labels surrounding it, flowing into CTA. -->
   <section class="relative overflow-hidden bg-primary-950">
     <!-- Grain texture -->
     <div class="absolute inset-0 grain-texture opacity-30 pointer-events-none" aria-hidden="true"></div>
@@ -10,38 +10,66 @@
 
     <div class="relative z-10 py-24 md:py-32">
 
-      <!-- ─── Large heading ─── -->
+      <!-- ─── Large heading — Cinzel Decorative to match "Language of Revelation" ─── -->
       <h2
-        class="heading-display text-4xl md:text-5xl lg:text-6xl text-cream text-center mb-12 md:mb-20 px-6"
+        class="font-ornate text-4xl md:text-5xl lg:text-6xl text-cream text-center mb-12 md:mb-20 px-6 uppercase tracking-tighter"
         data-reveal
       >
         {{ $t('home.countriesLabel') }}
       </h2>
 
-      <!-- ─── DESKTOP: 3D Globe ─── -->
+      <!-- ─── DESKTOP: 3D Globe with surrounding labels ─── -->
       <div
-        class="hidden md:block mx-auto max-w-lg px-6"
+        class="hidden md:block mx-auto max-w-2xl px-6"
         data-reveal
         data-reveal-delay="100"
       >
-        <div class="aspect-square">
-          <GlobeCanvas />
-        </div>
-      </div>
+        <div class="relative">
+          <!-- Globe -->
+          <div class="aspect-square">
+            <GlobeCanvas />
+          </div>
 
-      <!-- Country names listed below globe (desktop) -->
-      <div
-        class="hidden md:flex flex-wrap justify-center gap-x-8 gap-y-3 mt-10 px-6"
-        data-reveal
-        data-reveal-delay="200"
-      >
-        <span
-          v-for="marker in countryKeys"
-          :key="marker"
-          class="text-cream/50 text-xs font-semibold uppercase tracking-[0.2em]"
-        >
-          {{ $t('home.countries.' + marker) }}
-        </span>
+          <!-- Static country labels positioned around the globe edges -->
+          <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+            <!-- Top-left cluster: Western countries -->
+            <span class="globe-label" style="top: 8%; left: 2%;">
+              {{ $t('home.countries.usa') }}
+            </span>
+            <span class="globe-label" style="top: 18%; left: 0%;">
+              {{ $t('home.countries.england') }}
+            </span>
+
+            <!-- Top-right cluster: European countries -->
+            <span class="globe-label" style="top: 6%; right: 4%;">
+              {{ $t('home.countries.netherlands') }}
+            </span>
+            <span class="globe-label" style="top: 16%; right: 0%;">
+              {{ $t('home.countries.poland') }}
+            </span>
+
+            <!-- Middle-right: Central Asian -->
+            <span class="globe-label" style="top: 38%; right: -2%;">
+              {{ $t('home.countries.uzbekistan') }}
+            </span>
+            <span class="globe-label" style="top: 50%; right: 0%;">
+              {{ $t('home.countries.pakistan') }}
+            </span>
+
+            <!-- Bottom-right: Middle East -->
+            <span class="globe-label" style="bottom: 22%; right: 4%;">
+              {{ $t('home.countries.saudiArabia') }}
+            </span>
+            <span class="globe-label" style="bottom: 12%; right: 10%;">
+              {{ $t('home.countries.qatar') }}
+            </span>
+
+            <!-- Bottom-left: North Africa -->
+            <span class="globe-label" style="bottom: 18%; left: 6%;">
+              {{ $t('home.countries.egypt') }}
+            </span>
+          </div>
+        </div>
       </div>
 
       <!-- ─── MOBILE: Country chips fallback ─── -->
@@ -110,3 +138,16 @@ const countryKeys = [
   'saudiArabia', 'qatar', 'uzbekistan', 'pakistan',
 ];
 </script>
+
+<style scoped>
+.globe-label {
+  position: absolute;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(200, 169, 81, 0.5);
+  white-space: nowrap;
+}
+</style>
