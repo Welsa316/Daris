@@ -26,7 +26,7 @@
         data-reveal-delay="100"
       >
         <div
-          class="relative w-full aspect-[2/1]"
+          class="relative w-full aspect-[5/3]"
           role="img"
           :aria-label="$t('home.countriesLabel') + ': ' + countryMarkers.map(m => $t('home.countries.' + m.key)).join(', ')"
         >
@@ -123,15 +123,15 @@ const { whatsAppHref } = useWhatsApp();
 // lon_to_x = (lon + 180) / 360 * 100%
 // lat_to_y = (90 - lat) / 180 * 100%
 const countryMarkers = [
-  { key: 'usa',          top: 28, left: 24,  labelPos: 'bottom' },  // Washington DC: 38.9°N, 77°W
-  { key: 'england',      top: 21, left: 50,  labelPos: 'top' },     // London: 51.5°N, 0.1°W
-  { key: 'netherlands',  top: 20, left: 51,  labelPos: 'top' },     // Amsterdam: 52.4°N, 4.9°E
-  { key: 'poland',       top: 21, left: 55,  labelPos: 'bottom' },  // Warsaw: 52.2°N, 21°E
-  { key: 'egypt',        top: 33, left: 59,  labelPos: 'left' },    // Cairo: 30.0°N, 31.2°E
-  { key: 'saudiArabia',  top: 36, left: 63,  labelPos: 'right' },   // Riyadh: 24.7°N, 46.7°E
-  { key: 'qatar',        top: 36, left: 64,  labelPos: 'bottom' },  // Doha: 25.3°N, 51.5°E
-  { key: 'uzbekistan',   top: 27, left: 68,  labelPos: 'top' },     // Tashkent: 41.3°N, 69.3°E
-  { key: 'pakistan',      top: 32, left: 70,  labelPos: 'bottom' },  // Islamabad: 33.7°N, 73.0°E
+  { key: 'usa',          top: 28, left: 27,  labelPos: 'bottom' },  // Washington DC
+  { key: 'england',      top: 21, left: 38,  labelPos: 'top' },     // London
+  { key: 'netherlands',  top: 19, left: 38,  labelPos: 'top' },     // Amsterdam
+  { key: 'poland',       top: 21, left: 41,  labelPos: 'bottom' },  // Warsaw
+  { key: 'egypt',        top: 33, left: 53,  labelPos: 'left' },    // Cairo
+  { key: 'saudiArabia',  top: 37, left: 58,  labelPos: 'right' },   // Riyadh
+  { key: 'qatar',        top: 39, left: 57,  labelPos: 'bottom' },  // Doha
+  { key: 'uzbekistan',   top: 27, left: 56,  labelPos: 'top' },     // Tashkent
+  { key: 'pakistan',      top: 32, left: 61,  labelPos: 'right' },   // Islamabad
 ];
 
 function labelPositionClasses(pos) {
