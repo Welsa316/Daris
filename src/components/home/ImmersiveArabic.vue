@@ -5,10 +5,10 @@
   <section class="relative flex flex-col justify-center py-24 px-6 md:px-24 overflow-visible">
 
     <!-- Content grid -->
-    <div class="relative z-10 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-0 items-center">
+    <div class="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-0 items-center">
 
       <!-- ─── Left column: paper pane ─── -->
-      <div class="lg:col-span-7 lg:pe-10">
+      <div class="lg:col-span-8 lg:pe-10">
         <div
           class="paper-pane relative bg-cream-50 p-10 md:p-16 rounded-sm overflow-visible"
           data-reveal
@@ -62,7 +62,7 @@
             </p>
 
             <!-- Ornate title — Cinzel Decorative (English) / Noto Sans Arabic fallback -->
-            <h2 class="font-ornate text-5xl md:text-7xl lg:text-8xl !leading-[1.15] tracking-tighter mb-14 pt-2 overflow-visible uppercase">
+            <h2 class="font-ornate text-5xl md:text-6xl lg:text-7xl !leading-[1.15] tracking-tighter mb-14 pt-2 overflow-visible uppercase">
               <span class="text-primary-950 block pb-1">{{ $t('home.splitArabicHeadline1') }}</span>
               <span class="text-reveal block font-black pb-8">{{ $t('home.splitArabicHeadline2') }}</span>
             </h2>
@@ -106,7 +106,7 @@
       </div>
 
       <!-- ─── Right column: translucent glass card with Quran verse ─── -->
-      <div class="lg:col-span-5 flex flex-col justify-center items-center">
+      <div class="lg:col-span-4 flex flex-col justify-center items-center">
         <div
           class="verse-card relative w-full max-w-md p-10 md:p-12 rounded-sm overflow-hidden"
           data-reveal
