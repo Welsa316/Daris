@@ -61,10 +61,10 @@
               {{ $t('home.splitArabicEyebrow') }}
             </p>
 
-            <!-- Ornate title — gradient forest green → gold -->
-            <h2 class="font-display text-5xl md:text-7xl lg:text-8xl !leading-[1.35] tracking-tight mb-14 pt-2 overflow-visible">
+            <!-- Ornate title — Cinzel Decorative (English) / Noto Sans Arabic fallback -->
+            <h2 class="font-ornate text-6xl md:text-8xl lg:text-9xl !leading-[1.3] tracking-tighter mb-14 pt-2 overflow-visible uppercase">
               <span class="text-primary-950 block pb-1">{{ $t('home.splitArabicHeadline1') }}</span>
-              <span class="text-reveal block font-bold pb-6">{{ $t('home.splitArabicHeadline2') }}</span>
+              <span class="text-reveal block font-black pb-8">{{ $t('home.splitArabicHeadline2') }}</span>
             </h2>
 
             <!-- Tha'alibi quote — ornate border with diamond flourish -->
