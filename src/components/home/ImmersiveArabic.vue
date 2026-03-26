@@ -62,9 +62,9 @@
             </p>
 
             <!-- Ornate title — Cinzel Decorative (English) / Noto Sans Arabic fallback -->
-            <h2 class="font-ornate text-6xl md:text-8xl lg:text-9xl !leading-[1.3] tracking-tighter mb-14 pt-2 overflow-visible uppercase">
+            <h2 class="font-ornate text-7xl md:text-9xl lg:text-[10rem] !leading-[1.2] tracking-tighter mb-14 pt-2 overflow-visible uppercase">
               <span class="text-primary-950 block pb-1">{{ $t('home.splitArabicHeadline1') }}</span>
-              <span class="text-reveal block font-black pb-8">{{ $t('home.splitArabicHeadline2') }}</span>
+              <span class="text-reveal block font-black pb-10">{{ $t('home.splitArabicHeadline2') }}</span>
             </h2>
 
             <!-- Tha'alibi quote — ornate border with diamond flourish -->
