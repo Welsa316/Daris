@@ -151,8 +151,8 @@ router.get('/dashboard', requireEnrolled, async (req, res, next) => {
         timezone: cls.timezone,
         rescheduled: cls.rescheduled,
         originalStartTime: cls.originalStartTime,
-        // Only reveal meeting link within 30 minutes of class start
-        meetingLink: timeUntilClass <= MEETING_LINK_WINDOW_MS && timeUntilClass > 0 ? link : null,
+        // Show meeting link from 30 min before start until class ends
+        meetingLink: timeUntilClass <= MEETING_LINK_WINDOW_MS && (new Date(cls.endTime).getTime() - now.getTime()) > 0 ? link : null,
         meetingLinkAvailableIn: timeUntilClass > MEETING_LINK_WINDOW_MS ? Math.ceil(timeUntilClass / 60000) : null,
       };
     });
@@ -270,7 +270,7 @@ router.get('/schedule', requireEnrolled, async (req, res, next) => {
         startTime: cls.startTime,
         endTime: cls.endTime,
         timezone: cls.timezone,
-        meetingLink: timeUntilClass <= MEETING_LINK_WINDOW_MS && timeUntilClass > 0 ? link : null,
+        meetingLink: timeUntilClass <= MEETING_LINK_WINDOW_MS && (new Date(cls.endTime).getTime() - now.getTime()) > 0 ? link : null,
         cancelled: cls.cancelled,
         recurrence: cls.recurrence,
       };
