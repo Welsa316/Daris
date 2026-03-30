@@ -12,10 +12,12 @@ import { cleanExpiredSessions } from './services/tokenService.js';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
+import fs from 'node:fs';
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
 import studentRoutes from './routes/student.js';
 import publicRoutes from './routes/public.js';
+import { buildMetaHtml } from './seoMeta.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -57,11 +59,35 @@ app.use('/api', publicRoutes);
 const frontendDist = path.resolve(__dirname, '../../dist');
 app.use(express.static(frontendDist));
 
-// SPA fallback: any non-API route serves index.html
+// Read index.html once at startup for SEO meta injection
+let indexHtml = '';
+try {
+  indexHtml = fs.readFileSync(path.join(frontendDist, 'index.html'), 'utf-8');
+} catch {
+  // dist may not exist in dev — that's fine, fallback will 404
+}
+
+// SPA fallback with server-side SEO meta injection.
+// For marketing routes (/, /about, /programs, /contact), inject route-specific
+// <title>, <meta>, and JSON-LD into the HTML so crawlers see full SEO content
+// without needing JavaScript execution.
 app.get(/^\/(?!api).*/, (req, res, next) => {
-  res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
-    if (err) next(); // If dist doesn't exist, fall through to 404
-  });
+  if (!indexHtml) {
+    return res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
+      if (err) next();
+    });
+  }
+
+  const metaHtml = buildMetaHtml(req.path);
+
+  if (metaHtml) {
+    // Inject route-specific meta right before </head>
+    const injected = indexHtml.replace('</head>', `${metaHtml}\n  </head>`);
+    res.type('html').send(injected);
+  } else {
+    // Non-marketing routes (auth, dashboard) — serve default HTML
+    res.type('html').send(indexHtml);
+  }
 });
 
 // --- Error handling ---
