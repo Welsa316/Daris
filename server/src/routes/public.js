@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getStudentCount } from '../services/enrollmentService.js';
+import { verifySmtpConnection } from '../services/emailService.js';
 
 const router = Router();
 
@@ -29,6 +30,16 @@ router.get('/student-count', async (req, res, next) => {
 router.get('/health', (req, res) => {
   res.json({
     status: 'ok',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// --- Email SMTP Health Check ---
+router.get('/health/email', async (req, res) => {
+  const result = await verifySmtpConnection();
+  res.status(result.ok ? 200 : 503).json({
+    smtp: result.ok ? 'connected' : 'disconnected',
+    error: result.error || undefined,
     timestamp: new Date().toISOString(),
   });
 });

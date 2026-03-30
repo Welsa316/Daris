@@ -6,9 +6,12 @@ let transporter;
 
 function getTransporter() {
   if (!transporter) {
-    if (isDev && (!env.SMTP_USER || !env.SMTP_PASS)) {
-      // In development without SMTP credentials, log emails to console
-      logger.info('Email service: No SMTP credentials, emails will be logged to console');
+    if (!env.SMTP_USER || !env.SMTP_PASS) {
+      if (isDev) {
+        logger.info('Email service: No SMTP credentials, emails will be logged to console');
+      } else {
+        logger.error('Email service: SMTP_USER or SMTP_PASS not set — emails will NOT be sent!');
+      }
       return null;
     }
     transporter = nodemailer.createTransport({
@@ -20,8 +23,26 @@ function getTransporter() {
         pass: env.SMTP_PASS,
       },
     });
+    logger.info(`Email service: SMTP transporter created → ${env.SMTP_HOST}:${env.SMTP_PORT} (secure: ${env.SMTP_SECURE})`);
   }
   return transporter;
+}
+
+/**
+ * Test SMTP connection without sending an email.
+ * Returns { ok: true } or { ok: false, error: '...' }
+ */
+export async function verifySmtpConnection() {
+  const transport = getTransporter();
+  if (!transport) {
+    return { ok: false, error: 'No SMTP credentials configured' };
+  }
+  try {
+    await transport.verify();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
 }
 
 async function sendEmail({ to, subject, html }) {
@@ -34,15 +55,22 @@ async function sendEmail({ to, subject, html }) {
   }
 
   try {
-    await transport.sendMail({
+    const info = await transport.sendMail({
       from: env.EMAIL_FROM,
       to,
       subject,
       html,
     });
-    logger.info(`Email sent to ${to.substring(0, 3)}***`);
+    logger.info(`Email sent to ${to.substring(0, 3)}*** | subject: "${subject}" | messageId: ${info.messageId}`);
   } catch (error) {
-    logger.error('Failed to send email', { error: error.message });
+    logger.error('Failed to send email', {
+      to: to.substring(0, 3) + '***',
+      subject,
+      smtpHost: env.SMTP_HOST,
+      errorCode: error.code,
+      errorMessage: error.message,
+      responseCode: error.responseCode,
+    });
     throw error;
   }
 }
