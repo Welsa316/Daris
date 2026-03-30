@@ -1,77 +1,81 @@
-import nodemailer from 'nodemailer';
 import { env, isDev } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 
-let transporter;
-
-function getTransporter() {
-  if (!transporter) {
-    if (!env.SMTP_USER || !env.SMTP_PASS) {
-      if (isDev) {
-        logger.info('Email service: No SMTP credentials, emails will be logged to console');
-      } else {
-        logger.error('Email service: SMTP_USER or SMTP_PASS not set — emails will NOT be sent!');
-      }
-      return null;
-    }
-    transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_SECURE,
-      auth: {
-        user: env.SMTP_USER,
-        pass: env.SMTP_PASS,
-      },
-    });
-    logger.info(`Email service: SMTP transporter created → ${env.SMTP_HOST}:${env.SMTP_PORT} (secure: ${env.SMTP_SECURE})`);
-  }
-  return transporter;
-}
+const RESEND_API_URL = 'https://api.resend.com/emails';
 
 /**
- * Test SMTP connection without sending an email.
- * Returns { ok: true } or { ok: false, error: '...' }
+ * Send an email via Resend HTTPS API.
+ * No SMTP needed — uses fetch() on port 443, which works on all Railway plans.
  */
-export async function verifySmtpConnection() {
-  const transport = getTransporter();
-  if (!transport) {
-    return { ok: false, error: 'No SMTP credentials configured' };
-  }
-  try {
-    await transport.verify();
-    return { ok: true };
-  } catch (error) {
-    return { ok: false, error: error.message };
-  }
-}
-
-async function sendEmail({ to, subject, html }) {
-  const transport = getTransporter();
-  if (!transport) {
-    // Dev fallback: log to console
-    logger.info(`EMAIL TO: ${to} | SUBJECT: ${subject}`);
-    logger.debug(`EMAIL BODY: ${html}`);
+export async function sendEmail({ to, subject, html }) {
+  if (!env.RESEND_API_KEY) {
+    if (isDev) {
+      logger.info(`[DEV] EMAIL TO: ${to} | SUBJECT: ${subject}`);
+      logger.debug(`[DEV] EMAIL BODY: ${html}`);
+      return;
+    }
+    logger.error('Email service: RESEND_API_KEY not set — emails will NOT be sent!');
     return;
   }
 
   try {
-    const info = await transport.sendMail({
-      from: env.EMAIL_FROM,
-      to,
-      subject,
-      html,
+    const response = await fetch(RESEND_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: env.EMAIL_FROM,
+        to: [to],
+        subject,
+        html,
+      }),
     });
-    logger.info(`Email sent to ${to.substring(0, 3)}*** | subject: "${subject}" | messageId: ${info.messageId}`);
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      logger.error('Resend API error', {
+        to: to.substring(0, 3) + '***',
+        subject,
+        status: response.status,
+        body: errorBody,
+      });
+      throw new Error(`Resend API ${response.status}: ${errorBody}`);
+    }
+
+    const data = await response.json();
+    logger.info(`Email sent to ${to.substring(0, 3)}*** | subject: "${subject}" | id: ${data.id}`);
   } catch (error) {
     logger.error('Failed to send email', {
       to: to.substring(0, 3) + '***',
       subject,
-      smtpHost: env.SMTP_HOST,
-      errorCode: error.code,
       errorMessage: error.message,
-      responseCode: error.responseCode,
     });
     throw error;
+  }
+}
+
+/**
+ * Test Resend API connection without sending an email.
+ * Calls the Resend domains endpoint to verify the API key works.
+ */
+export async function verifyEmailConnection() {
+  if (!env.RESEND_API_KEY) {
+    return { ok: false, error: 'RESEND_API_KEY not configured' };
+  }
+  try {
+    const response = await fetch('https://api.resend.com/domains', {
+      headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}` },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      const domains = data.data?.map(d => d.name) || [];
+      return { ok: true, domains };
+    }
+    return { ok: false, error: `API returned ${response.status}` };
+  } catch (error) {
+    return { ok: false, error: error.message };
   }
 }
 

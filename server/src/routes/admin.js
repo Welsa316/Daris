@@ -8,7 +8,7 @@ import { prisma } from '../config/database.js';
 import { sendClassCancelledEmail, sendClassRescheduledEmail } from '../services/emailService.js';
 import { t, getLang } from '../utils/i18n.js';
 import { auditLog } from '../utils/logger.js';
-import nodemailer from 'nodemailer';
+import { sendEmail } from '../services/emailService.js';
 import { env } from '../config/env.js';
 
 const router = Router();
@@ -709,19 +709,7 @@ router.post('/students/:id/message', validate(messageStudentSchema), async (req,
       return res.status(404).json({ error: t('student.notFound', lang) });
     }
 
-    // Send email via the configured transport
-    const { sendEmail } = await import('../services/emailService.js');
-
-    // We'll use nodemailer directly since sendEmail is not exported
-    const transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_SECURE,
-      auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-    });
-
-    await transporter.sendMail({
-      from: env.EMAIL_FROM,
+    await sendEmail({
       to: student.email,
       subject: req.body.subject,
       html: `
