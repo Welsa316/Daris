@@ -49,6 +49,7 @@
 
 <script setup>
 import { useScrollReveal } from '@/composables/useScrollReveal';
+import { usePageSeo } from '@/composables/usePageSeo';
 import ImmersiveHero from '@/components/home/ImmersiveHero.vue';
 import ImmersiveQuran from '@/components/home/ImmersiveQuran.vue';
 import ImmersiveArabic from '@/components/home/ImmersiveArabic.vue';
@@ -57,4 +58,5 @@ import AuthorityStats from '@/components/home/AuthorityStats.vue';
 import CountriesReach from '@/components/home/CountriesReach.vue';
 
 useScrollReveal();
+usePageSeo('home');
 </script>

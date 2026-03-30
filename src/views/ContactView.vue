@@ -68,11 +68,13 @@
 </template>
 
 <script setup>
+import { usePageSeo } from '@/composables/usePageSeo';
 import SectionBanner from '@/components/common/SectionBanner.vue';
 import ContactForm from '@/components/contact/ContactForm.vue';
 import { contactConfig } from '@/config/contactConfig';
 import { useWhatsApp } from '@/composables/useWhatsApp';
 
+usePageSeo('contact');
 const { contactEmail } = contactConfig;
 const { whatsAppHref } = useWhatsApp();
 </script>

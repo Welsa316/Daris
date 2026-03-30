@@ -10,6 +10,7 @@
     "lint": "echo \"No linter configured\""
   },
   "dependencies": {
+    "@unhead/vue": "^2.1.12",
     "cobe": "^2.0.1",
     "vue": "^3.5.0",
     "vue-i18n": "^10.0.8",

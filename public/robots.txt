@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /enrollment-status
+Disallow: /change-password
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: https://daris.education/sitemap.xml

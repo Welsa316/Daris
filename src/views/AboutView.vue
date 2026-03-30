@@ -173,10 +173,12 @@
 
 <script setup>
 import { useScrollReveal } from '@/composables/useScrollReveal';
+import { usePageSeo } from '@/composables/usePageSeo';
 import CTAButton from '@/components/common/CTAButton.vue';
 import { contactConfig } from '@/config/contactConfig';
 import { useWhatsApp } from '@/composables/useWhatsApp';
 
+usePageSeo('about');
 const { contactEmail } = contactConfig;
 const { whatsAppHref } = useWhatsApp();
 

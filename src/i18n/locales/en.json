@@ -1,4 +1,22 @@
 {
+  "seo": {
+    "home": {
+      "title": "Daris | Quran, Arabic & Fiqh Guidance Online",
+      "description": "Personalised online Quran, Arabic language, and Islamic studies lessons with an Al-Azhar-trained Sheikh. Available worldwide for men, women, and children."
+    },
+    "about": {
+      "title": "About Daris | Al-Azhar Methodology Online",
+      "description": "Learn about Daris and our Al-Azhar-trained instructor. Over 12 years of teaching experience, 500+ students across 30+ countries."
+    },
+    "programs": {
+      "title": "Programs | Quran, Arabic & Fiqh Courses — Daris",
+      "description": "Explore our structured programs in Quran recitation and tajwid, classical Arabic language, and Hanafi fiqh. Group and individual sessions available."
+    },
+    "contact": {
+      "title": "Contact Daris | Start Your Learning Journey",
+      "description": "Get in touch with Daris via WhatsApp for personalised Quran, Arabic, and Islamic studies guidance. English and Arabic support available."
+    }
+  },
   "nav": {
     "home": "Home",
     "about": "About",
