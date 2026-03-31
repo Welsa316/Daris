@@ -52,19 +52,8 @@
             </div>
           </div>
 
-          <!-- Right: photo + credential card -->
-          <aside class="space-y-8" data-reveal data-reveal-delay="150">
-            <figure class="relative w-full rounded-2xl overflow-hidden shadow-card bg-white">
-              <img
-                src="/images/sheikh-placeholder.svg"
-                :alt="$t('about.photoAlt')"
-                class="h-72 w-full object-cover"
-              />
-              <figcaption class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/80 to-transparent text-xs text-cream px-6 py-6">
-                {{ $t('about.photoCaption') }}
-              </figcaption>
-            </figure>
-
+          <!-- Right: credential card -->
+          <aside data-reveal data-reveal-delay="150">
             <div class="rounded-2xl bg-cream-50 border border-cream-200/60 p-7 text-sm text-slate-600">
               <h3 class="text-[10px] font-semibold tracking-[0.3em] uppercase text-gold mb-5">
                 {{ $t('about.credentialsTitle') }}
