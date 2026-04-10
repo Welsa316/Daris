@@ -7,6 +7,9 @@
         </RouterLink>
         <h1 class="text-2xl font-display font-bold text-primary">{{ $t('auth.loginTitle') }}</h1>
         <p class="text-slate-500 mt-1">{{ $t('auth.loginSubtitle') }}</p>
+        <div class="mt-4 flex justify-center">
+          <LanguageSwitcher />
+        </div>
       </div>
 
       <form @submit.prevent="handleLogin" class="bg-white rounded-2xl shadow-card p-8 space-y-5">
@@ -69,6 +72,7 @@
 import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '@/composables/useAuth.js';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 
 const router = useRouter();
 const { login, isAdmin } = useAuth();

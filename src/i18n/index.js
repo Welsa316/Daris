@@ -2,13 +2,20 @@ import { createI18n } from 'vue-i18n';
 import en from './locales/en.json';
 import ar from './locales/ar.json';
 
-const savedLocale = typeof localStorage !== 'undefined'
-  ? localStorage.getItem('daris-locale')
-  : null;
+function detectInitialLocale() {
+  if (typeof window === 'undefined') return 'en';
+  const saved = localStorage.getItem('daris-locale');
+  if (saved === 'en' || saved === 'ar') return saved;
+  const nav = (navigator.language || navigator.userLanguage || '').toLowerCase();
+  const detected = nav.startsWith('ar') ? 'ar' : 'en';
+  // Persist so api.js sends the matching Accept-Language header from the first request
+  localStorage.setItem('daris-locale', detected);
+  return detected;
+}
 
 export const i18n = createI18n({
   legacy: false,
-  locale: savedLocale || 'en',
+  locale: detectInitialLocale(),
   fallbackLocale: 'en',
   messages: { en, ar }
 });

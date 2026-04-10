@@ -1,4 +1,10 @@
 import rateLimit from 'express-rate-limit';
+import { t, getLang } from '../utils/i18n.js';
+
+const tooManyHandler = (req, res) => {
+  const lang = getLang(req);
+  res.status(429).json({ error: t('error.tooManyRequests', lang) });
+};
 
 /**
  * Login endpoint: max 15 per IP per 15 minutes
@@ -8,7 +14,7 @@ export const loginLimiter = rateLimit({
   max: 15,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests. Please try again later.', ar: 'طلبات كثيرة جداً. يرجى المحاولة لاحقاً.' },
+  handler: tooManyHandler,
   keyGenerator: (req) => req.ip,
 });
 
@@ -20,7 +26,7 @@ export const registerLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests. Please try again later.', ar: 'طلبات كثيرة جداً. يرجى المحاولة لاحقاً.' },
+  handler: tooManyHandler,
   keyGenerator: (req) => req.ip,
 });
 
@@ -32,7 +38,7 @@ export const passwordResetLimiter = rateLimit({
   max: 3,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests. Please try again later.', ar: 'طلبات كثيرة جداً. يرجى المحاولة لاحقاً.' },
+  handler: tooManyHandler,
   keyGenerator: (req) => req.ip,
 });
 
@@ -44,7 +50,7 @@ export const verificationResendLimiter = rateLimit({
   max: 3,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests. Please try again later.', ar: 'طلبات كثيرة جداً. يرجى المحاولة لاحقاً.' },
+  handler: tooManyHandler,
   keyGenerator: (req) => req.ip,
 });
 
@@ -56,6 +62,6 @@ export const generalLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests. Please try again later.', ar: 'طلبات كثيرة جداً. يرجى المحاولة لاحقاً.' },
+  handler: tooManyHandler,
   keyGenerator: (req) => req.user?.id || req.ip,
 });

@@ -36,9 +36,11 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth.js';
 
 const route = useRoute();
+const { t } = useI18n();
 const { verifyEmail } = useAuth();
 
 const loading = ref(true);
@@ -48,7 +50,7 @@ const error = ref('');
 onMounted(async () => {
   const token = route.query.token;
   if (!token) {
-    error.value = 'No verification token provided.';
+    error.value = t('auth.noVerificationToken');
     loading.value = false;
     return;
   }

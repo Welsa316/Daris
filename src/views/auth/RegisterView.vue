@@ -7,9 +7,12 @@
         </RouterLink>
         <h1 class="text-2xl font-display font-bold text-primary">{{ $t('auth.registerTitle') }}</h1>
         <p class="text-slate-500 mt-1">{{ $t('auth.registerSubtitle') }}</p>
+        <div class="mt-4 flex justify-center">
+          <LanguageSwitcher />
+        </div>
       </div>
 
-      <form v-if="!success" @submit.prevent="handleRegister" class="bg-white rounded-2xl shadow-card p-8 space-y-5">
+      <form v-if="!success" @submit.prevent="handleRegister" novalidate class="bg-white rounded-2xl shadow-card p-8 space-y-5">
         <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
           {{ error }}
         </div>
@@ -17,28 +20,28 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label for="firstName" class="block text-sm font-medium text-slate-700 mb-1">{{ $t('auth.firstName') }}</label>
-            <input id="firstName" v-model="form.firstName" type="text" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition" />
+            <input id="firstName" v-model="form.firstName" type="text" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition" />
           </div>
           <div>
             <label for="lastName" class="block text-sm font-medium text-slate-700 mb-1">{{ $t('auth.lastName') }}</label>
-            <input id="lastName" v-model="form.lastName" type="text" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition" />
+            <input id="lastName" v-model="form.lastName" type="text" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition" />
           </div>
         </div>
 
         <div>
           <label for="email" class="block text-sm font-medium text-slate-700 mb-1">{{ $t('auth.email') }}</label>
-          <input id="email" v-model="form.email" type="email" required autocomplete="email" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition" />
+          <input id="email" v-model="form.email" type="email" autocomplete="email" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition" />
         </div>
 
         <div>
           <label for="password" class="block text-sm font-medium text-slate-700 mb-1">{{ $t('auth.password') }}</label>
-          <input id="password" v-model="form.password" type="password" required autocomplete="new-password" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition" />
+          <input id="password" v-model="form.password" type="password" autocomplete="new-password" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition" />
           <PasswordStrength :password="form.password" />
         </div>
 
         <div>
           <label for="country" class="block text-sm font-medium text-slate-700 mb-1">{{ $t('auth.country') }}</label>
-          <select id="country" v-model="form.country" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition bg-white">
+          <select id="country" v-model="form.country" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition bg-white">
             <option value="">{{ $t('auth.selectCountry') }}</option>
             <option v-for="c in countries" :key="c" :value="c">{{ c }}</option>
           </select>
@@ -93,9 +96,12 @@
 
 <script setup>
 import { ref, reactive } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth.js';
 import PasswordStrength from '@/components/auth/PasswordStrength.vue';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 
+const { t } = useI18n();
 const { register } = useAuth();
 
 const form = reactive({
@@ -124,8 +130,44 @@ const countries = [
   'United Kingdom', 'United States', 'Uzbekistan', 'Yemen', 'Other',
 ];
 
+function validateForm() {
+  const missing = [];
+  if (!form.firstName.trim()) missing.push(t('auth.firstName'));
+  if (!form.lastName.trim()) missing.push(t('auth.lastName'));
+  if (!form.email.trim()) missing.push(t('auth.email'));
+  if (!form.password) missing.push(t('auth.password'));
+  if (!form.country) missing.push(t('auth.country'));
+
+  if (missing.length > 0) {
+    return t('auth.missingFields', { fields: missing.join('، ') });
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+    return t('auth.invalidEmail');
+  }
+
+  // Backend requires 8+ chars, uppercase, lowercase, number, special
+  const pw = form.password;
+  if (pw.length < 8 || !/[A-Z]/.test(pw) || !/[a-z]/.test(pw) || !/[0-9]/.test(pw) || !/[^A-Za-z0-9]/.test(pw)) {
+    return t('auth.passwordTooShort');
+  }
+
+  if (!form.phone?.trim() && !form.whatsapp?.trim() && !form.telegram?.trim()) {
+    return t('auth.missingContactMethod');
+  }
+
+  return null;
+}
+
 async function handleRegister() {
   error.value = '';
+
+  const validationError = validateForm();
+  if (validationError) {
+    error.value = validationError;
+    return;
+  }
+
   submitting.value = true;
 
   try {

@@ -5,7 +5,9 @@
 **Always run these skills when writing or modifying code:**
 
 1. **`/simplify`** — Run after making code changes to review for reuse, quality, and efficiency. Fix any issues found.
-2. **Code Refinery & Review** — Call code refinery and review skills to check your work after writing code. This ensures code is clean, follows best practices, and avoids duplication.
+2. **`/audit`** — Run after making code changes to audit for correctness, security, and best practices.
+3. **`/clarify`** — Run after making code changes to review UX copy for clarity and consistency.
+4. **Code Refinery & Review** — Call code refinery and review skills to check your work after writing code. This ensures code is clean, follows best practices, and avoids duplication.
 
 These are mandatory steps, not optional. Never skip them when writing code.
 
