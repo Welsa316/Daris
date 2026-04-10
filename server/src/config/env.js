@@ -10,7 +10,6 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().default(''),            // Resend API key (starts with re_)
   EMAIL_FROM: z.string().default('Daris <noreply@daris.education>'),
   ADMIN_EMAIL: z.string().default(''),
-  FORMSPREE_ENDPOINT: z.string().default(''), // e.g. https://formspree.io/f/xABCDEFG
   CSRF_SECRET: z.string().min(16).default('dev-csrf-secret-change-me'),
 });
 

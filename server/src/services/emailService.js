@@ -248,41 +248,83 @@ export async function sendClassRescheduledEmail(email, firstName, classTitle, ol
   await sendEmail({ to: email, subject, html });
 }
 
-const FORMSPREE_URL = 'https://formspree.io/f/maqpkzka';
-
+/**
+ * Notify the admin (sheikh) via Resend that a new student has verified
+ * their email and is waiting for enrollment review.
+ *
+ * Uses the same RESEND_API_KEY as verification emails. Recipient is taken
+ * from env.ADMIN_EMAIL — if that isn't set we log loudly and skip rather
+ * than crashing the verify-email flow.
+ */
 export async function sendNewEnrollmentNotification(student) {
-  const endpoint = env.FORMSPREE_ENDPOINT || FORMSPREE_URL;
-
-  const reviewUrl = env.FRONTEND_URL ? `${env.FRONTEND_URL}/admin` : '';
-  const name = `${student.firstName} ${student.lastName}`;
-
-  const lines = [
-    'طالب جديد سجّل وعايز مراجعة:',
-    '',
-    `الاسم: ${name}`,
-    `الإيميل: ${student.email}`,
-  ];
-  if (student.phone) lines.push(`الموبايل: ${student.phone}`);
-  if (student.whatsapp) lines.push(`واتساب: ${student.whatsapp}`);
-  if (student.telegram) lines.push(`تليجرام: ${student.telegram}`);
-  if (student.country) lines.push(`البلد: ${student.country}`);
-  if (student.enrollmentMessage) lines.push(`\nرسالة الطالب: ${student.enrollmentMessage}`);
-  if (reviewUrl) lines.push(`\nراجع الطلب: ${reviewUrl}`);
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({
-      subject: 'دارس — طلب تسجيل جديد',
-      message: lines.join('\n'),
-      _subject: 'دارس — طلب تسجيل جديد',
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Formspree error ${response.status}: ${text}`);
+  if (!env.ADMIN_EMAIL) {
+    logger.error('ADMIN_EMAIL not configured — cannot send enrollment notification', {
+      studentId: student.id,
+      studentEmail: student.email,
+    });
+    return;
   }
 
-  logger.info('Formspree enrollment notification sent');
+  const reviewUrl = env.FRONTEND_URL ? `${env.FRONTEND_URL}/admin` : '';
+  const name = `${student.firstName ?? ''} ${student.lastName ?? ''}`.trim() || student.email;
+
+  const rows = [
+    ['الاسم', name],
+    ['البريد', student.email],
+  ];
+  if (student.phone) rows.push(['الموبايل', student.phone]);
+  if (student.whatsapp) rows.push(['واتساب', student.whatsapp]);
+  if (student.telegram) rows.push(['تليجرام', student.telegram]);
+  if (student.country) rows.push(['البلد', student.country]);
+
+  const tableHtml = rows
+    .map(
+      ([label, value]) => `
+        <tr>
+          <td style="padding: 8px 12px; color: #666; font-weight: 600; white-space: nowrap;">${label}</td>
+          <td style="padding: 8px 12px; color: #1a1a1a;">${escapeHtml(value)}</td>
+        </tr>`
+    )
+    .join('');
+
+  const messageBlock = student.enrollmentMessage
+    ? `
+      <div style="margin: 16px 0; padding: 12px 16px; background: #f5f1e8; border-left: 3px solid #C8A951; border-radius: 6px;">
+        <div style="color: #666; font-size: 12px; font-weight: 600; margin-bottom: 4px;">رسالة الطالب</div>
+        <div style="color: #1a1a1a; white-space: pre-wrap;">${escapeHtml(student.enrollmentMessage)}</div>
+      </div>`
+    : '';
+
+  const ctaButton = reviewUrl
+    ? `<a href="${reviewUrl}" style="display: inline-block; background: #1F4D3A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">مراجعة الطلب</a>`
+    : '';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl;">
+      <h2 style="color: #1F4D3A; margin-bottom: 8px;">طلب تسجيل جديد</h2>
+      <p style="color: #666; margin-top: 0;">طالب جديد أكّد بريده الإلكتروني وفي انتظار مراجعتك.</p>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 12px; background: #fff; border: 1px solid #eee; border-radius: 6px;">
+        ${tableHtml}
+      </table>
+      ${messageBlock}
+      ${ctaButton}
+    </div>
+  `;
+
+  await sendEmail({
+    to: env.ADMIN_EMAIL,
+    subject: `دارس — طلب تسجيل جديد: ${name}`,
+    html,
+  });
+
+  logger.info('Admin enrollment notification sent', { studentId: student.id });
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
