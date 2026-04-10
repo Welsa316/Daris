@@ -60,8 +60,12 @@ const messages = {
     ar: 'يوجد حساب بهذا البريد الإلكتروني بالفعل.',
   },
   'register.contactRequired': {
-    en: 'At least one contact method is required (phone, WhatsApp, or Telegram).',
-    ar: 'يجب توفير طريقة تواصل واحدة على الأقل (هاتف، واتساب، أو تيليجرام).',
+    en: 'A phone number is required.',
+    ar: 'رقم الهاتف مطلوب.',
+  },
+  'register.emailDeliveryFailed': {
+    en: "Your account was created, but we couldn't send the verification email. Please use the 'Resend verification' option on the login page in a few minutes.",
+    ar: 'تم إنشاء حسابك، لكن لم نستطع إرسال بريد التحقق. يرجى استخدام خيار "إعادة إرسال رابط التحقق" في صفحة تسجيل الدخول بعد دقائق.',
   },
 
   // Email verification

@@ -9,22 +9,15 @@ const passwordSchema = z
   .regex(/[0-9]/, 'Password must contain at least one number')
   .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character');
 
-export const registerSchema = z
-  .object({
-    firstName: z.string().min(1, 'First name is required').max(100).trim(),
-    lastName: z.string().min(1, 'Last name is required').max(100).trim(),
-    email: z.string().email('Invalid email address').max(255).trim().toLowerCase(),
-    password: passwordSchema,
-    country: z.string().min(1, 'Country is required').max(100).trim(),
-    phone: z.string().max(20).optional().nullable(),
-    whatsapp: z.string().max(20).optional().nullable(),
-    telegram: z.string().max(50).optional().nullable(),
-    enrollmentMessage: z.string().max(500).optional().nullable(),
-  })
-  .refine(
-    (data) => data.phone || data.whatsapp || data.telegram,
-    { message: 'At least one contact method is required (phone, WhatsApp, or Telegram)', path: ['phone'] }
-  );
+export const registerSchema = z.object({
+  firstName: z.string().min(1, 'First name is required').max(100).trim(),
+  lastName: z.string().min(1, 'Last name is required').max(100).trim(),
+  email: z.string().email('Invalid email address').max(255).trim().toLowerCase(),
+  password: passwordSchema,
+  country: z.string().min(1, 'Country is required').max(100).trim(),
+  phone: z.string().min(1, 'Phone number is required').max(20).trim(),
+  enrollmentMessage: z.string().max(500).optional().nullable(),
+});
 
 export const loginSchema = z.object({
   email: z.string().email('Invalid email address').max(255).trim().toLowerCase(),

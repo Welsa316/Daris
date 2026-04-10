@@ -14,8 +14,12 @@ export async function sendEmail({ to, subject, html }) {
       logger.debug(`[DEV] EMAIL BODY: ${html}`);
       return;
     }
-    logger.error('Email service: RESEND_API_KEY not set — emails will NOT be sent!');
-    return;
+    // In production this is fatal — surface it instead of silently dropping the email.
+    logger.error('Email service: RESEND_API_KEY not set — refusing to send email', {
+      to: to.substring(0, 3) + '***',
+      subject,
+    });
+    throw new Error('RESEND_API_KEY not configured');
   }
 
   try {

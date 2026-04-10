@@ -31,7 +31,11 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
       return res.status(400).json({ error: t(result.error, lang) });
     }
 
-    res.status(201).json({ message: t('register.success', lang) });
+    res.status(201).json({
+      message: t('register.success', lang),
+      emailSent: result.emailSent !== false,
+      warning: result.emailSent === false ? t('register.emailDeliveryFailed', lang) : undefined,
+    });
   } catch (error) {
     console.error('Registration error:', error.message, error.stack);
     next(error);

@@ -12,7 +12,7 @@ const VERIFICATION_TOKEN_EXPIRY_HOURS = 24;
 /**
  * Register a new user account
  */
-export async function registerUser({ firstName, lastName, email, password, country, phone, whatsapp, telegram, enrollmentMessage }, { ipAddress, lang }) {
+export async function registerUser({ firstName, lastName, email, password, country, phone, enrollmentMessage }, { ipAddress, lang }) {
   const normalizedEmail = email.toLowerCase().trim();
 
   // Check email uniqueness
@@ -35,9 +35,9 @@ export async function registerUser({ firstName, lastName, email, password, count
       firstName: sanitizeText(firstName),
       lastName: sanitizeText(lastName),
       country: sanitizeText(country),
-      phone: phone || null,
-      whatsapp: whatsapp || null,
-      telegram: telegram || null,
+      phone: phone.trim(),
+      whatsapp: null,
+      telegram: null,
       enrollmentMessage: enrollmentMessage ? sanitizeText(enrollmentMessage).substring(0, 500) : null,
       role: 'pending',
     },
@@ -56,14 +56,25 @@ export async function registerUser({ firstName, lastName, email, password, count
     },
   });
 
-  // Send verification email (async, don't block)
-  sendVerificationEmail(normalizedEmail, rawToken, lang).catch((err) =>
-    logger.error('Failed to send verification email', { error: err.message })
-  );
+  // Send verification email synchronously so failures surface to the client
+  // (and so we never silently create accounts that can't be activated).
+  let emailSent = true;
+  try {
+    await sendVerificationEmail(normalizedEmail, rawToken, lang);
+  } catch (err) {
+    emailSent = false;
+    logger.error('REGISTRATION: failed to send verification email', {
+      userId: user.id,
+      email: normalizedEmail,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      error: err.message,
+    });
+  }
 
-  auditLog('USER_REGISTERED', { userId: user.id, ip: ipAddress });
+  auditLog('USER_REGISTERED', { userId: user.id, ip: ipAddress, emailSent });
 
-  return { success: true, userId: user.id };
+  return { success: true, userId: user.id, emailSent };
 }
 
 /**
