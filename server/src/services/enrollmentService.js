@@ -162,6 +162,11 @@ export async function removeStudent(studentId, adminId) {
     return { error: 'student.notFound' };
   }
 
+  // Hard-delete class assignments so the student stops appearing in any
+  // admin "upcoming classes" view. The class sessions themselves are kept
+  // (admin may want to reassign or audit them); only the link is removed.
+  await prisma.classAssignment.deleteMany({ where: { studentId } });
+
   await prisma.user.update({
     where: { id: studentId },
     data: { deletedAt: new Date(), role: 'suspended' },

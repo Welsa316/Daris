@@ -1,6 +1,9 @@
 <template>
   <div class="min-h-screen bg-cream flex items-center justify-center px-4 pt-24 pb-12">
     <div class="w-full max-w-md">
+      <div class="mb-6 flex justify-center">
+        <LanguageSwitcher />
+      </div>
       <div class="bg-white rounded-2xl shadow-card p-8 text-center">
         <div v-if="loading" class="animate-pulse">
           <div class="w-16 h-16 bg-slate-100 rounded-full mx-auto mb-4"></div>
@@ -38,6 +41,7 @@ import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth.js';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 
 const route = useRoute();
 const { t } = useI18n();

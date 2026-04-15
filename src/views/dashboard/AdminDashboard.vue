@@ -4,10 +4,7 @@
       <!-- Header -->
       <div class="flex items-center justify-between mb-8">
         <h1 class="text-2xl font-display font-bold text-primary">{{ $t('admin.title') }}</h1>
-        <div class="flex items-center gap-3">
-          <LanguageSwitcher />
-          <button @click="handleLogout" class="text-sm text-slate-400 hover:text-primary transition">{{ $t('auth.logout') }}</button>
-        </div>
+        <button @click="handleLogout" class="text-sm text-slate-400 hover:text-primary transition">{{ $t('auth.logout') }}</button>
       </div>
 
       <!-- Stats -->
@@ -449,7 +446,6 @@ import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth.js';
 import { api } from '@/config/api.js';
 import { setLocale } from '@/i18n/index.js';
-import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 
 const { locale, t } = useI18n();
 const { logout } = useAuth();
@@ -551,7 +547,14 @@ const upcomingClasses = computed(() => {
   const now = new Date();
   const threeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
   return classes.value
-    .filter(cls => !cls.cancelled && new Date(cls.startTime) >= now && new Date(cls.startTime) <= threeDays)
+    .filter(cls =>
+      !cls.cancelled
+      && new Date(cls.startTime) >= now
+      && new Date(cls.startTime) <= threeDays
+      // Drop classes whose only students have been removed — backend already
+      // strips soft-deleted assignments, so length === 0 means nobody is left.
+      && (cls.assignments?.length ?? 0) > 0
+    )
     .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
     .slice(0, 10);
 });

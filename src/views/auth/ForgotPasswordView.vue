@@ -7,6 +7,9 @@
         </RouterLink>
         <h1 class="text-2xl font-display font-bold text-primary">{{ $t('auth.forgotPasswordTitle') }}</h1>
         <p class="text-slate-500 mt-1">{{ $t('auth.forgotPasswordSubtitle') }}</p>
+        <div class="mt-4 flex justify-center">
+          <LanguageSwitcher />
+        </div>
       </div>
 
       <form v-if="!sent" @submit.prevent="handleSubmit" class="bg-white rounded-2xl shadow-card p-8 space-y-5">
@@ -43,6 +46,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useAuth } from '@/composables/useAuth.js';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 
 const { forgotPassword } = useAuth();
 const email = ref('');

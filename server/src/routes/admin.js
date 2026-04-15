@@ -362,6 +362,9 @@ router.get('/classes', validate(paginationSchema, 'query'), async (req, res, nex
         orderBy: { startTime: 'asc' },
         include: {
           assignments: {
+            // Hide assignments belonging to soft-deleted students so removed
+            // students don't keep haunting the upcoming-classes list.
+            where: { student: { deletedAt: null } },
             include: {
               student: {
                 select: { id: true, firstName: true, lastName: true },

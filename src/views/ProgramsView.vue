@@ -59,12 +59,20 @@
               </div>
 
               <div class="p-8 text-sm text-slate-600 leading-relaxed">
-                <ul class="space-y-3 mb-5">
+                <ul v-if="program.bulletKeys" class="space-y-3 mb-5">
                   <li v-for="bk in program.bulletKeys" :key="bk" class="flex gap-3 items-start">
                     <span class="mt-1.5 h-1 w-1 rounded-full bg-gold/50 flex-shrink-0" aria-hidden="true"></span>
                     <span>{{ $t(bk) }}</span>
                   </li>
                 </ul>
+                <div v-else-if="program.groups" class="space-y-5 mb-5">
+                  <div v-for="g in program.groups" :key="g.labelKey">
+                    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-primary/70 mb-2">
+                      {{ $t(g.labelKey) }}
+                    </p>
+                    <p class="text-sm text-slate-600 leading-relaxed">{{ $t(g.itemsKey) }}</p>
+                  </div>
+                </div>
                 <p class="text-xs text-slate-400 pt-5 border-t border-slate-200/40 leading-relaxed">
                   {{ $t(program.noteKey) }}
                 </p>
@@ -153,7 +161,10 @@ const programs = [
   {
     titleKey: 'programs.fiqhTitle',
     tagKey: 'programs.fiqhTag',
-    bulletKeys: ['programs.fiqhBullet1', 'programs.fiqhBullet2', 'programs.fiqhBullet3'],
+    groups: [
+      { labelKey: 'programs.fiqhAdultsLabel', itemsKey: 'programs.fiqhAdultsItems' },
+      { labelKey: 'programs.fiqhChildrenLabel', itemsKey: 'programs.fiqhChildrenItems' }
+    ],
     noteKey: 'programs.fiqhNote',
     icon: '<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" /></svg>'
   }

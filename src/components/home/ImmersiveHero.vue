@@ -32,13 +32,18 @@
         <!-- Liquid glass box — dark tinted, gold outline, rounded -->
         <div class="hero-entrance hero-entrance-1 bg-black/50 backdrop-blur-md border border-gold/30 rounded-2xl p-8 md:p-12 lg:p-14 max-w-2xl">
 
-          <!-- Brand name -->
-          <h1 class="font-display text-gold text-6xl sm:text-7xl md:text-8xl lg:text-9xl tracking-[0.1em] leading-none mb-0">
-            {{ $t('hero.eyebrow') }}
-          </h1>
+          <!-- Brand name + motto walking side by side -->
+          <div class="flex items-end flex-wrap gap-x-5 gap-y-2">
+            <h1 class="font-display text-gold text-5xl sm:text-6xl md:text-7xl lg:text-8xl tracking-[0.1em] leading-none mb-0">
+              {{ $t('hero.eyebrow') }}
+            </h1>
+            <p class="hero-entrance hero-entrance-2 font-display italic text-cream/70 text-sm sm:text-base md:text-lg leading-snug max-w-[12rem] sm:max-w-[14rem] mb-1 sm:mb-2 md:mb-3">
+              {{ $t('hero.motto') }}
+            </p>
+          </div>
 
           <!-- Book divider — gold line / open book icon / gold line -->
-          <div class="flex items-center mt-3 mb-6 max-w-[200px]" aria-hidden="true">
+          <div class="flex items-center mt-8 md:mt-10 mb-8 max-w-[200px]" aria-hidden="true">
             <div class="h-px bg-gold flex-grow"></div>
             <div class="mx-2 text-gold">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -47,11 +52,6 @@
             </div>
             <div class="h-px bg-gold flex-grow"></div>
           </div>
-
-          <!-- Motto -->
-          <p class="hero-entrance hero-entrance-2 font-display italic text-cream/70 text-xl sm:text-2xl md:text-3xl leading-relaxed mb-8">
-            {{ $t('hero.motto') }}
-          </p>
 
           <!-- Platform description -->
           <p class="hero-entrance hero-entrance-3 text-base sm:text-lg text-cream/80 leading-relaxed max-w-lg mb-10">

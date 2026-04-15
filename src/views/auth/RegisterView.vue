@@ -170,9 +170,8 @@ function validateForm() {
     return t('auth.invalidEmail');
   }
 
-  // Backend requires 8+ chars, uppercase, lowercase, number, special
-  const pw = form.password;
-  if (pw.length < 8 || !/[A-Z]/.test(pw) || !/[a-z]/.test(pw) || !/[0-9]/.test(pw) || !/[^A-Za-z0-9]/.test(pw)) {
+  // Backend only requires 8+ chars; strength is the user's responsibility.
+  if (form.password.length < 8) {
     return t('auth.passwordTooShort');
   }
 

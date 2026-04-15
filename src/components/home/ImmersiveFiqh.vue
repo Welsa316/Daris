@@ -21,7 +21,7 @@
     <!-- Upper panel — text anchored to the top, image breathes below -->
     <div class="relative w-full">
       <!-- Soft frosted panel with hard bottom edge for documentary feel -->
-      <div class="bg-gradient-to-t from-primary-950/80 via-primary-950/90 to-primary-950 backdrop-blur-sm border-b border-white/[0.05]">
+      <div class="bg-gradient-to-t from-primary-950/65 via-primary-950/45 to-primary-950/25 backdrop-blur-[2px] border-b border-white/[0.05]">
         <div class="section-wide py-8 md:py-12">
           <div class="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-10 md:gap-16 items-end">
             <!-- Text — left column of the panel -->
