@@ -64,8 +64,8 @@
         <div v-if="!upcomingClasses.length" class="text-slate-400 text-sm py-4 text-center">{{ $t('admin.noUpcomingClasses') }}</div>
         <div v-else class="space-y-3">
           <div v-for="cls in upcomingClasses" :key="cls.id"
-            class="flex items-center justify-between border border-slate-100 rounded-xl p-4 hover:border-primary/30 transition-colors">
-            <div>
+            class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border border-slate-100 rounded-xl p-4 hover:border-primary/30 transition-colors">
+            <div class="min-w-0 flex-1">
               <h3 class="font-semibold text-primary">{{ classDisplayName(cls) }}</h3>
               <p class="text-sm text-slate-500 mt-0.5">
                 {{ formatClassTime(cls.startTime) }}
@@ -83,15 +83,15 @@
             <template v-if="cls.meetingLink || globalMeetingLink">
               <button v-if="isJoinable(cls)"
                 @click="joinClass(cls)"
-                class="bg-green-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-green-700 transition-colors shrink-0 flex items-center gap-2">
+                class="w-full sm:w-auto bg-green-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-green-700 transition-colors sm:shrink-0 flex items-center justify-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                 {{ $t('admin.joinClass') }}
               </button>
-              <span v-else class="text-xs text-slate-400 italic shrink-0 text-end whitespace-nowrap" :title="new Date(cls.startTime).toLocaleString()">
+              <span v-else class="text-xs text-slate-400 italic sm:shrink-0 sm:text-end whitespace-nowrap" :title="new Date(cls.startTime).toLocaleString()">
                 {{ joinAvailabilityLabel(cls) }}
               </span>
             </template>
-            <span v-else class="text-xs text-slate-400 italic shrink-0">{{ $t('admin.noMeetingLink') }}</span>
+            <span v-else class="text-xs text-slate-400 italic sm:shrink-0">{{ $t('admin.noMeetingLink') }}</span>
           </div>
         </div>
       </div>
@@ -175,9 +175,9 @@
 
       <!-- Students -->
       <div v-if="activeTab === 'students'" class="bg-white rounded-2xl shadow-card p-6">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <h2 class="text-lg font-bold text-primary">{{ $t('admin.enrolledStudents') }}</h2>
-          <input v-model="studentSearch" type="text" :placeholder="$t('admin.searchStudents')" class="px-4 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" />
+          <input v-model="studentSearch" type="text" :placeholder="$t('admin.searchStudents')" class="w-full sm:w-auto px-4 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" />
         </div>
         <div v-if="!students.length" class="text-center py-10">
           <p class="text-slate-400 text-sm">{{ $t('admin.noStudents') }}</p>
@@ -220,12 +220,12 @@
       <div v-if="activeTab === 'scheduling'" class="space-y-4">
         <!-- Global Meeting Link -->
         <div class="bg-white rounded-2xl shadow-card p-4">
-          <div class="flex items-center gap-3">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3">
             <label class="text-sm font-medium text-primary whitespace-nowrap">{{ $t('admin.globalMeetingLink') }}</label>
             <input v-model="globalMeetingLink" type="url" :placeholder="$t('admin.meetingLinkPlaceholder')"
-              class="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+              class="flex-1 w-full min-w-0 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
             <button @click="saveMeetingLink" :disabled="savingLink"
-              class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition-colors disabled:opacity-50 shrink-0">
+              class="w-full sm:w-auto bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition-colors disabled:opacity-50 sm:shrink-0">
               {{ savingLink ? $t('admin.saving') : $t('admin.save') }}
             </button>
           </div>
@@ -271,21 +271,23 @@
 
           <!-- Calendar View -->
           <div v-if="calendarView">
-            <!-- Week navigation -->
-            <div class="flex items-center justify-between mb-4">
-              <button @click="prevWeek" class="text-slate-500 hover:text-primary text-sm font-medium">&larr; {{ $t('admin.prevWeek') }}</button>
-              <div class="flex items-center gap-3">
+            <!-- Week navigation. The full date range can get long once
+                 translated or year-spanning, so we allow the middle block
+                 to wrap below the arrows on narrow phones. -->
+            <div class="flex items-center justify-between gap-2 flex-wrap mb-4">
+              <button @click="prevWeek" class="text-slate-500 hover:text-primary text-sm font-medium shrink-0">&larr; {{ $t('admin.prevWeek') }}</button>
+              <div class="flex items-center gap-2 flex-wrap justify-center order-last sm:order-none w-full sm:w-auto">
                 <button v-if="!isThisWeek" @click="calendarWeekStart = getMonday(new Date()); selectedClass = null"
                   class="text-xs text-primary border border-primary/30 px-2 py-0.5 rounded-full hover:bg-primary/5 transition-colors">
                   {{ $t('admin.today') }}
                 </button>
-                <span class="text-sm font-medium text-primary">
+                <span class="text-sm font-medium text-primary text-center">
                   {{ calendarWeekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }}
                   &ndash;
                   {{ new Date(calendarWeekStart.getTime() + 6 * 86400000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) }}
                 </span>
               </div>
-              <button @click="nextWeek" class="text-slate-500 hover:text-primary text-sm font-medium">{{ $t('admin.nextWeek') }} &rarr;</button>
+              <button @click="nextWeek" class="text-slate-500 hover:text-primary text-sm font-medium shrink-0">{{ $t('admin.nextWeek') }} &rarr;</button>
             </div>
 
             <!-- Subject legend — small cheatsheet so the sheikh always knows
@@ -306,39 +308,48 @@
               </span>
             </div>
 
-            <!-- 7-day grid — wider cells, bigger type, and below the Tailwind
-                 sm breakpoint we fall back to a 3-across grid so the blocks
-                 stay tappable on phones. -->
-            <div class="grid grid-cols-3 sm:grid-cols-7 gap-3">
-              <!-- Day headers -->
-              <div v-for="(day, i) in calendarDays" :key="'h'+i"
-                class="text-center text-sm font-medium pb-2 border-b border-slate-100"
-                :class="day.toDateString() === new Date().toDateString() ? 'text-primary' : 'text-slate-500'">
-                {{ $t('admin.' + DAY_KEYS[(day.getDay())]) }}
-                <span class="block text-2xl font-bold tabular-nums" :class="day.toDateString() === new Date().toDateString() ? 'text-primary' : 'text-slate-700'">{{ day.getDate() }}</span>
-              </div>
-
-              <!-- Day columns — taller by default, even taller in fullscreen mode -->
-              <div
-                v-for="(day, i) in calendarDays"
-                :key="'d'+i"
-                :class="calendarFullscreen ? 'min-h-[260px]' : 'min-h-[180px]'"
-              >
-                <div v-for="cls in classesByDay[localDateKey(day)] || []" :key="cls.id"
-                  @click="selectedClass = cls"
-                  class="mb-2 rounded-lg p-2.5 text-sm cursor-pointer hover:ring-2 hover:ring-primary/30 transition-colors"
-                  :class="calendarBlockClass(cls)">
-                  <p class="font-semibold truncate text-balance">{{ classDisplayName(cls) }}</p>
-                  <p class="text-xs opacity-75 mt-1 flex items-center gap-1.5 tabular-nums">
-                    <span v-if="subjectStyle(cls.subject)"
-                      class="text-[11px] uppercase tracking-wide font-semibold">
-                      {{ $t('admin.subject_' + cls.subject) }}
-                    </span>
-                    <span v-if="subjectStyle(cls.subject)" class="opacity-60">·</span>
-                    {{ formatClassTimeShort(cls.startTime) }}
-                  </p>
+            <!-- 7-day calendar. On mobile we stack one day per row so the
+                 header sits directly above its own classes (the previous
+                 grid-cols-3 layout scrambled headers and bodies across
+                 rows). On sm+ we return to a proper 7-column week grid. -->
+            <div class="grid grid-cols-1 sm:grid-cols-7 gap-3">
+              <div v-for="(day, i) in calendarDays" :key="i" class="sm:min-w-0">
+                <!-- Day header: inline on mobile (day name · date), stacked on sm+ -->
+                <div
+                  class="flex sm:block items-baseline justify-between sm:text-center pb-2 mb-2 border-b border-slate-100"
+                  :class="day.toDateString() === new Date().toDateString() ? 'text-primary' : 'text-slate-500'"
+                >
+                  <span class="text-sm font-medium">
+                    {{ $t('admin.' + DAY_KEYS[(day.getDay())]) }}
+                  </span>
+                  <span
+                    class="text-xl sm:text-2xl font-bold tabular-nums sm:block sm:mt-0.5"
+                    :class="day.toDateString() === new Date().toDateString() ? 'text-primary' : 'text-slate-700'"
+                  >
+                    {{ day.getDate() }}
+                  </span>
                 </div>
-                <div v-if="!(classesByDay[localDateKey(day)] || []).length" class="text-xs text-slate-300 text-center pt-6">—</div>
+
+                <!-- Day body: min-height only applies at sm+ so empty days
+                     don't leave giant gaps in the mobile stack. -->
+                <div :class="calendarFullscreen ? 'sm:min-h-[260px]' : 'sm:min-h-[180px]'">
+                  <div v-for="cls in classesByDay[localDateKey(day)] || []" :key="cls.id"
+                    @click="selectedClass = cls"
+                    class="mb-2 rounded-lg p-2.5 text-sm cursor-pointer hover:ring-2 hover:ring-primary/30 transition-colors"
+                    :class="calendarBlockClass(cls)">
+                    <p class="font-semibold truncate text-balance">{{ classDisplayName(cls) }}</p>
+                    <p class="text-xs opacity-75 mt-1 flex items-center gap-1.5 tabular-nums">
+                      <span v-if="subjectStyle(cls.subject)"
+                        class="text-[11px] uppercase tracking-wide font-semibold">
+                        {{ $t('admin.subject_' + cls.subject) }}
+                      </span>
+                      <span v-if="subjectStyle(cls.subject)" class="opacity-60">·</span>
+                      {{ formatClassTimeShort(cls.startTime) }}
+                    </p>
+                  </div>
+                  <div v-if="!(classesByDay[localDateKey(day)] || []).length"
+                    class="text-xs text-slate-300 text-center py-2 sm:py-0 sm:pt-6">—</div>
+                </div>
               </div>
             </div>
 
@@ -792,8 +803,9 @@
 
             <!-- Time + timezone. The time is always interpreted as wall-clock
                  in the selected timezone, regardless of where the admin
-                 physically is. -->
-            <div class="grid grid-cols-2 gap-3">
+                 physically is. Stack these on mobile so the IANA timezone
+                 names (e.g., "America/New_York") don't overflow. -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.classTime') }}</label>
                 <input v-model="scheduleForm.time" type="time" required dir="ltr" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none text-sm" />
