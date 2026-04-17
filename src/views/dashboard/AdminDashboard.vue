@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-cream pt-24 pb-12 px-4">
-    <div class="max-w-6xl mx-auto">
+    <div class="max-w-screen-2xl mx-auto">
       <!-- Header -->
       <div class="flex items-center justify-between mb-8">
         <h1 class="text-2xl font-display font-bold text-primary">{{ $t('admin.title') }}</h1>
@@ -99,7 +99,7 @@
       <!-- First-run checklist. Shown when the dashboard is effectively empty
            so the sheikh isn't staring at blank tabs on day one. Dismisses
            itself once all three steps are done. -->
-      <div v-if="showFirstRunChecklist" class="bg-gradient-to-br from-primary/5 to-gold/5 border border-primary/10 rounded-2xl p-6 mb-8">
+      <div v-if="showFirstRunChecklist" class="bg-primary/5 border border-primary/10 rounded-2xl p-6 mb-8">
         <h2 class="text-lg font-bold text-primary mb-1">{{ $t('admin.firstRun.title') }}</h2>
         <p class="text-sm text-slate-500 mb-5">{{ $t('admin.firstRun.subtitle') }}</p>
         <ol class="space-y-3">
@@ -223,25 +223,38 @@
           <p class="text-xs text-slate-400 mt-1">{{ $t('admin.meetingLinkHint') }}</p>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-card p-6">
-          <div class="flex items-center justify-between mb-4">
+        <div class="bg-white rounded-2xl shadow-card p-6"
+          :class="calendarFullscreen ? 'fixed inset-0 z-50 rounded-none overflow-y-auto' : ''"
+        >
+          <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
             <h2 class="text-lg font-bold text-primary">{{ $t('admin.classes') }}</h2>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <!-- Calendar/List toggle -->
               <div class="flex bg-slate-100 rounded-lg p-0.5">
-                <button @click="calendarView = true" class="px-3 py-1 rounded-md text-xs font-medium transition"
+                <button @click="calendarView = true" class="px-3 py-1 rounded-md text-xs font-medium transition-colors"
                   :class="calendarView ? 'bg-white text-primary shadow-sm' : 'text-slate-500'">
                   {{ $t('admin.calendarView') }}
                 </button>
-                <button @click="calendarView = false" class="px-3 py-1 rounded-md text-xs font-medium transition"
+                <button @click="calendarView = false" class="px-3 py-1 rounded-md text-xs font-medium transition-colors"
                   :class="!calendarView ? 'bg-white text-primary shadow-sm' : 'text-slate-500'">
                   {{ $t('admin.listView') }}
                 </button>
               </div>
-              <button @click="showScheduleForm = true" class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition">
+              <!-- Fullscreen toggle: expands the calendar to the whole viewport. -->
+              <button
+                v-if="calendarView"
+                @click="calendarFullscreen = !calendarFullscreen"
+                :aria-label="calendarFullscreen ? $t('admin.exitFullscreen') : $t('admin.enterFullscreen')"
+                :title="calendarFullscreen ? $t('admin.exitFullscreen') : $t('admin.enterFullscreen')"
+                class="size-9 rounded-full border border-slate-200 hover:bg-slate-50 transition-colors flex items-center justify-center"
+              >
+                <svg v-if="!calendarFullscreen" class="size-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" /></svg>
+                <svg v-else class="size-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V5M9 9H5M9 9L4 4m11 5V5m0 4h4m0-4l-5 5M9 15v4m0-4H5m0 0l5 5m6-5v4m0-4h4m0 0l-5 5" /></svg>
+              </button>
+              <button @click="showScheduleForm = true" class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition-colors">
                 {{ $t('admin.scheduleStudent') }}
               </button>
-              <button v-if="classes.length" @click="deleteAllClasses" class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-200 transition">
+              <button v-if="classes.length" @click="deleteAllClasses" class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-200 transition-colors">
                 {{ $t('admin.deleteAll') }}
               </button>
             </div>
@@ -284,33 +297,39 @@
               </span>
             </div>
 
-            <!-- 7-day grid -->
-            <div class="grid grid-cols-7 gap-2">
+            <!-- 7-day grid — wider cells, bigger type, and below the Tailwind
+                 sm breakpoint we fall back to a 3-across grid so the blocks
+                 stay tappable on phones. -->
+            <div class="grid grid-cols-3 sm:grid-cols-7 gap-3">
               <!-- Day headers -->
               <div v-for="(day, i) in calendarDays" :key="'h'+i"
-                class="text-center text-xs font-medium pb-1 border-b border-slate-100"
+                class="text-center text-sm font-medium pb-2 border-b border-slate-100"
                 :class="day.toDateString() === new Date().toDateString() ? 'text-primary' : 'text-slate-500'">
                 {{ $t('admin.' + DAY_KEYS[(day.getDay())]) }}
-                <span class="block text-lg font-bold" :class="day.toDateString() === new Date().toDateString() ? 'text-primary' : 'text-slate-700'">{{ day.getDate() }}</span>
+                <span class="block text-2xl font-bold tabular-nums" :class="day.toDateString() === new Date().toDateString() ? 'text-primary' : 'text-slate-700'">{{ day.getDate() }}</span>
               </div>
 
-              <!-- Day columns -->
-              <div v-for="(day, i) in calendarDays" :key="'d'+i" class="min-h-[100px]">
+              <!-- Day columns — taller by default, even taller in fullscreen mode -->
+              <div
+                v-for="(day, i) in calendarDays"
+                :key="'d'+i"
+                :class="calendarFullscreen ? 'min-h-[260px]' : 'min-h-[180px]'"
+              >
                 <div v-for="cls in classesByDay[localDateKey(day)] || []" :key="cls.id"
                   @click="selectedClass = cls"
-                  class="mb-1 rounded-lg p-2 text-xs cursor-pointer hover:ring-2 hover:ring-primary/30 transition"
+                  class="mb-2 rounded-lg p-2.5 text-sm cursor-pointer hover:ring-2 hover:ring-primary/30 transition-colors"
                   :class="calendarBlockClass(cls)">
-                  <p class="font-medium truncate">{{ classDisplayName(cls) }}</p>
-                  <p class="text-[10px] opacity-70 flex items-center gap-1.5">
+                  <p class="font-semibold truncate text-balance">{{ classDisplayName(cls) }}</p>
+                  <p class="text-xs opacity-75 mt-1 flex items-center gap-1.5 tabular-nums">
                     <span v-if="subjectStyle(cls.subject)"
-                      class="text-[9px] uppercase tracking-wide font-semibold">
+                      class="text-[11px] uppercase tracking-wide font-semibold">
                       {{ $t('admin.subject_' + cls.subject) }}
                     </span>
                     <span v-if="subjectStyle(cls.subject)" class="opacity-60">·</span>
                     {{ formatClassTimeShort(cls.startTime) }}
                   </p>
                 </div>
-                <div v-if="!(classesByDay[localDateKey(day)] || []).length" class="text-[10px] text-slate-300 text-center pt-4">—</div>
+                <div v-if="!(classesByDay[localDateKey(day)] || []).length" class="text-xs text-slate-300 text-center pt-6">—</div>
               </div>
             </div>
 
@@ -350,7 +369,7 @@
                   <button v-if="!selectedClass.cancelled" @click="openReschedule(selectedClass)" class="text-amber-600 hover:text-amber-700 text-xs font-medium">{{ $t('admin.reschedule') }}</button>
                   <button v-if="!selectedClass.cancelled" @click="cancelClass(selectedClass.id); selectedClass = null" class="text-red-500 hover:text-red-700 text-xs font-medium">{{ $t('admin.cancelOnlyThis') }}</button>
                   <button v-if="!selectedClass.cancelled && selectedClass.seriesId" @click="cancelSeriesFromHere(selectedClass); selectedClass = null" class="text-red-500 hover:text-red-700 text-xs font-medium">{{ $t('admin.cancelSeries') }}</button>
-                  <button @click="selectedClass = null" class="text-slate-400 hover:text-slate-600">&times;</button>
+                  <button @click="selectedClass = null" :aria-label="$t('admin.close')" class="text-slate-400 hover:text-slate-600">&times;</button>
                 </div>
               </div>
             </div>
@@ -413,7 +432,7 @@
                 <BalancePill :student="balancePillStudent" />
               </div>
             </div>
-            <button @click="selectedStudent = null" class="text-slate-400 hover:text-slate-600 shrink-0">&times;</button>
+            <button @click="selectedStudent = null" :aria-label="$t('admin.close')" class="text-slate-400 hover:text-slate-600 shrink-0">&times;</button>
           </div>
           <div class="space-y-2 text-sm">
             <p><span class="text-slate-400">{{ $t('admin.emailLabel') }}:</span> {{ selectedStudent.email }}</p>
@@ -881,7 +900,7 @@
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
           <div class="flex items-start justify-between mb-4">
             <h2 class="text-lg font-bold text-primary">{{ $t('admin.rescheduleTitle') }}</h2>
-            <button @click="showRescheduleModal = false" class="text-slate-400 hover:text-slate-600">&times;</button>
+            <button @click="showRescheduleModal = false" :aria-label="$t('admin.close')" class="text-slate-400 hover:text-slate-600">&times;</button>
           </div>
           <p class="text-sm text-slate-500 mb-4">{{ rescheduleTarget.title }}</p>
           <div class="space-y-4">
@@ -1055,6 +1074,7 @@ function calendarBlockClass(cls) {
 
 // Calendar state
 const calendarView = ref(true); // true = calendar, false = list
+const calendarFullscreen = ref(false);
 const calendarWeekStart = ref(getMonday(new Date()));
 
 function getMonday(d) {
@@ -2013,6 +2033,7 @@ function handleGlobalKeydown(e) {
   if (showPaymentForm.value) { showPaymentForm.value = false; return; }
   if (selectedStudent.value) { selectedStudent.value = null; return; }
   if (selectedClass.value) { selectedClass.value = null; return; }
+  if (calendarFullscreen.value) { calendarFullscreen.value = false; return; }
 }
 
 onMounted(() => {

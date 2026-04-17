@@ -583,6 +583,13 @@ router.put('/classes/:id', validate(classSessionUpdateSchema), async (req, res, 
     const lang = getLang(req);
     const { studentIds, ...updateData } = req.body;
 
+    // Prevent admin A from editing admin B's classes.
+    const owned = await prisma.classSession.findFirst({
+      where: { id: req.params.id, createdByAdminId: req.user.id },
+      select: { id: true },
+    });
+    if (!owned) return res.status(404).json({ error: 'Class not found' });
+
     if (updateData.startTime) updateData.startTime = new Date(updateData.startTime);
     if (updateData.endTime) updateData.endTime = new Date(updateData.endTime);
     if (updateData.recurrenceEnd) updateData.recurrenceEnd = new Date(updateData.recurrenceEnd);
@@ -617,6 +624,13 @@ router.put('/classes/:id', validate(classSessionUpdateSchema), async (req, res, 
 router.post('/classes/:id/cancel', async (req, res, next) => {
   try {
     const lang = getLang(req);
+
+    // Prevent admin A from cancelling admin B's classes.
+    const owned = await prisma.classSession.findFirst({
+      where: { id: req.params.id, createdByAdminId: req.user.id },
+      select: { id: true },
+    });
+    if (!owned) return res.status(404).json({ error: 'Class not found' });
 
     const classSession = await prisma.classSession.update({
       where: { id: req.params.id },
@@ -722,8 +736,10 @@ router.post('/classes/:id/reschedule', validate(rescheduleClassSchema), async (r
     const lang = getLang(req);
     const { startTime, endTime } = req.body;
 
-    // Fetch current class to preserve original times
-    const existing = await prisma.classSession.findUnique({ where: { id: req.params.id } });
+    // Fetch current class to preserve original times AND assert ownership.
+    const existing = await prisma.classSession.findFirst({
+      where: { id: req.params.id, createdByAdminId: req.user.id },
+    });
     if (!existing) return res.status(404).json({ error: 'Class not found' });
 
     // Preserve the first original times (don't overwrite on subsequent reschedules)
@@ -782,7 +798,12 @@ router.post('/classes/:id/reschedule', validate(rescheduleClassSchema), async (r
 router.delete('/classes/:id', async (req, res, next) => {
   try {
     const lang = getLang(req);
-    await prisma.classSession.delete({ where: { id: req.params.id } });
+    // Scope the delete to classes this admin owns — a stranger can't nuke
+    // another admin's class by guessing the ID.
+    const result = await prisma.classSession.deleteMany({
+      where: { id: req.params.id, createdByAdminId: req.user.id },
+    });
+    if (result.count === 0) return res.status(404).json({ error: 'Class not found' });
     auditLog('CLASS_DELETED', { classId: req.params.id, adminId: req.user.id });
     res.json({ message: t('schedule.deleted', lang) });
   } catch (error) {

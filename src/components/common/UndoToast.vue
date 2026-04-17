@@ -3,7 +3,7 @@
     <Transition name="slide-up">
       <div
         v-if="undoToastState.visible"
-        class="fixed bottom-6 ltr:left-1/2 rtl:right-1/2 ltr:-translate-x-1/2 rtl:translate-x-1/2 z-[90] bg-slate-900 text-white text-sm shadow-xl rounded-full flex items-center gap-3 py-2 ps-5 pe-2"
+        class="fixed bottom-6 ltr:left-1/2 rtl:right-1/2 ltr:-translate-x-1/2 rtl:translate-x-1/2 z-50 bg-slate-900 text-white text-sm shadow-xl rounded-full flex items-center gap-3 py-2 ps-5 pe-2"
         role="status"
       >
         <span>{{ undoToastState.label }}</span>
