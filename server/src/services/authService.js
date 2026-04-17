@@ -9,6 +9,18 @@ const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 const LOCKOUT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const VERIFICATION_TOKEN_EXPIRY_HOURS = 24;
 
+// Arab-world countries — used only as a fallback when we can't derive the
+// user's preferred language from the Accept-Language / UI locale.
+const ARAB_COUNTRIES = new Set([
+  'Egypt', 'Saudi Arabia', 'United Arab Emirates', 'Jordan', 'Lebanon',
+  'Syria', 'Iraq', 'Kuwait', 'Qatar', 'Bahrain', 'Oman', 'Yemen',
+  'Libya', 'Sudan', 'Tunisia', 'Algeria', 'Morocco', 'Mauritania',
+  'Djibouti', 'Somalia', 'Palestine', 'Comoros',
+]);
+function arabicSpeakingCountry(country) {
+  return ARAB_COUNTRIES.has((country || '').trim());
+}
+
 /**
  * Register a new user account
  */
@@ -27,6 +39,13 @@ export async function registerUser({ firstName, lastName, email, password, count
   // Hash password
   const passwordHash = await hashPassword(password);
 
+  // Infer preferredLanguage from the registration context. The `lang` arg
+  // reflects which version of the site they were on when they submitted.
+  // Fall back to Arabic for Arab-world countries; English otherwise.
+  const preferredLanguage = lang === 'ar' || lang === 'en'
+    ? lang
+    : arabicSpeakingCountry(country) ? 'ar' : 'en';
+
   // Create user
   const user = await prisma.user.create({
     data: {
@@ -39,6 +58,7 @@ export async function registerUser({ firstName, lastName, email, password, count
       whatsapp: null,
       telegram: null,
       enrollmentMessage: enrollmentMessage ? sanitizeText(enrollmentMessage).substring(0, 500) : null,
+      preferredLanguage,
       role: 'pending',
     },
   });

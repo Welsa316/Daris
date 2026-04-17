@@ -289,7 +289,10 @@ router.delete('/students/:id/future-assignments', async (req, res, next) => {
 
     const student = await prisma.user.findUnique({
       where: { id: studentId },
-      select: { id: true, email: true, firstName: true, lastName: true, deletedAt: true },
+      select: {
+        id: true, email: true, firstName: true, lastName: true,
+        deletedAt: true, preferredLanguage: true,
+      },
     });
     if (!student || student.deletedAt) {
       return res.status(404).json({ error: t('student.notFound', lang) });
@@ -312,9 +315,11 @@ router.delete('/students/:id/future-assignments', async (req, res, next) => {
       adminId: req.user.id,
     });
 
-    // Fire-and-forget email; don't block the response on mail delivery.
+    // Fire-and-forget email in the STUDENT's preferred language — not the
+    // admin's current UI language.
     if (result.count > 0) {
-      sendFutureAssignmentsClearedEmail(student, result.count, lang).catch((err) =>
+      const studentLang = student.preferredLanguage === 'en' ? 'en' : 'ar';
+      sendFutureAssignmentsClearedEmail(student, result.count, studentLang).catch((err) =>
         logger.error('future-assignments email failed', { error: err.message })
       );
     }
@@ -520,21 +525,23 @@ router.post('/classes/:id/cancel', async (req, res, next) => {
       data: { cancelled: true, cancelledAt: new Date() },
       include: {
         assignments: {
+          where: { student: { deletedAt: null } },
           include: {
-            student: { select: { email: true, firstName: true } },
+            student: { select: { email: true, firstName: true, preferredLanguage: true } },
           },
         },
       },
     });
 
-    // Notify assigned students
+    // Notify each assigned student in their own preferred language.
     for (const assignment of classSession.assignments) {
+      const studentLang = assignment.student.preferredLanguage === 'en' ? 'en' : 'ar';
       sendClassCancelledEmail(
         assignment.student.email,
         assignment.student.firstName,
         classSession.title,
         classSession.startTime.toISOString(),
-        lang
+        studentLang
       ).catch(() => {});
     }
 
@@ -579,22 +586,24 @@ router.post('/classes/:id/reschedule', validate(rescheduleClassSchema), async (r
       },
       include: {
         assignments: {
+          where: { student: { deletedAt: null } },
           include: {
-            student: { select: { email: true, firstName: true } },
+            student: { select: { email: true, firstName: true, preferredLanguage: true } },
           },
         },
       },
     });
 
-    // Notify assigned students
+    // Notify each assigned student in their own preferred language.
     for (const assignment of classSession.assignments) {
+      const studentLang = assignment.student.preferredLanguage === 'en' ? 'en' : 'ar';
       sendClassRescheduledEmail(
         assignment.student.email,
         assignment.student.firstName,
         classSession.title,
         existing.startTime.toISOString(),
         new Date(startTime).toISOString(),
-        lang
+        studentLang
       ).catch(() => {});
     }
 
@@ -680,10 +689,11 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
       let skipped = 0;
 
       for (const session of sessions) {
-        // The resolution map is keyed by the ISO start-time the admin saw in
-        // the conflict modal; fall back to a plain "create" if the admin
-        // didn't need to resolve anything.
-        const key = new Date(session.startTime).toISOString();
+        // The resolution map is keyed by startMs-endMs. We used ISO strings
+        // before, but any client that serializes with a non-UTC offset would
+        // produce a string the backend doesn't recognize — numbers are
+        // canonical and survive any serializer.
+        const key = `${new Date(session.startTime).getTime()}-${new Date(session.endTime).getTime()}`;
         const resolution = resolutions[key] || 'create';
 
         if (resolution === 'skip') {

@@ -321,31 +321,44 @@ export async function sendNewEnrollmentNotification(student) {
 }
 
 /**
- * Format a class's start time for the student's time zone the best we can.
- * Falls back to UTC if the session has no explicit timezone. The reminder
- * emails intentionally show the date in a human-friendly short form.
+ * Format a class's start time. Honors both the class's configured timezone
+ * (so a Riyadh student sees Riyadh time regardless of where the server is)
+ * and the recipient's locale (Arabic uses ar-EG numerals + weekday names).
  */
-function formatClassDateTime(date, lang = 'en') {
+function formatClassDateTime(date, lang = 'en', timeZone = 'UTC') {
   const locale = lang === 'ar' ? 'ar-EG' : 'en-GB';
   try {
-    return new Date(date).toLocaleString(locale, {
+    return new Intl.DateTimeFormat(locale, {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    });
+      timeZone,
+    }).format(new Date(date));
   } catch {
-    return new Date(date).toISOString();
+    // Invalid timezone string — retry without it so we still return something.
+    try {
+      return new Intl.DateTimeFormat(locale, {
+        weekday: 'short', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      }).format(new Date(date));
+    } catch {
+      return new Date(date).toISOString();
+    }
   }
 }
 
 /**
  * Class reminder to a student: "Your class is in 30 minutes" / "tomorrow".
+ *
+ * The student's `preferredLanguage` decides the language of the email, and
+ * the class's stored `timezone` decides which timezone the time is shown in.
  */
 export async function sendClassReminderStudent(student, classSession, label) {
-  const lang = 'en'; // User model has no preferredLanguage yet; default EN.
-  const when = formatClassDateTime(classSession.startTime, lang);
+  const lang = student.preferredLanguage === 'en' ? 'en' : 'ar';
+  const tz = classSession.timezone || 'UTC';
+  const when = formatClassDateTime(classSession.startTime, lang, tz);
   const title = classSession.title || (lang === 'ar' ? 'حصتك' : 'Your class');
   const firstName = student.firstName || (lang === 'ar' ? 'طالبنا' : 'student');
   const meetingLink = classSession.meetingLink || '';
@@ -399,7 +412,8 @@ export async function sendClassReminderAdmin(classSession, studentNames) {
     return;
   }
 
-  const when = formatClassDateTime(classSession.startTime, 'ar');
+  // Admin always reads Arabic. Use the class's configured timezone.
+  const when = formatClassDateTime(classSession.startTime, 'ar', classSession.timezone || 'UTC');
   const title = classSession.title || 'حصة';
   const students = studentNames.length
     ? studentNames.join('، ')

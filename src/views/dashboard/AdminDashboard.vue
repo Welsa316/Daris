@@ -13,19 +13,47 @@
       <!-- Stats -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div class="bg-white rounded-2xl shadow-card p-5 text-center">
-          <p class="text-3xl font-bold text-primary">{{ stats?.totalEnrolled ?? '-' }}</p>
+          <template v-if="statsError">
+            <button @click="loadStats" class="text-xs text-red-600 hover:text-red-700 underline">
+              {{ $t('admin.statsFailed') }}
+            </button>
+          </template>
+          <template v-else>
+            <p class="text-3xl font-bold text-primary">{{ stats?.totalEnrolled ?? '-' }}</p>
+          </template>
           <p class="text-sm text-slate-500 mt-1">{{ $t('admin.totalEnrolled') }}</p>
         </div>
         <div class="bg-white rounded-2xl shadow-card p-5 text-center">
-          <p class="text-3xl font-bold text-amber-600">{{ stats?.totalPending ?? '-' }}</p>
+          <template v-if="statsError">
+            <button @click="loadStats" class="text-xs text-red-600 hover:text-red-700 underline">
+              {{ $t('admin.statsFailed') }}
+            </button>
+          </template>
+          <template v-else>
+            <p class="text-3xl font-bold text-amber-600">{{ stats?.totalPending ?? '-' }}</p>
+          </template>
           <p class="text-sm text-slate-500 mt-1">{{ $t('admin.totalPending') }}</p>
         </div>
         <div class="bg-white rounded-2xl shadow-card p-5 text-center">
-          <p class="text-3xl font-bold text-blue-600">{{ stats?.upcomingClasses ?? '-' }}</p>
+          <template v-if="statsError">
+            <button @click="loadStats" class="text-xs text-red-600 hover:text-red-700 underline">
+              {{ $t('admin.statsFailed') }}
+            </button>
+          </template>
+          <template v-else>
+            <p class="text-3xl font-bold text-blue-600">{{ stats?.upcomingClasses ?? '-' }}</p>
+          </template>
           <p class="text-sm text-slate-500 mt-1">{{ $t('admin.upcomingClasses') }}</p>
         </div>
         <div class="bg-white rounded-2xl shadow-card p-5 text-center">
-          <p class="text-3xl font-bold text-green-600">{{ stats?.recentActivity?.length ?? 0 }}</p>
+          <template v-if="statsError">
+            <button @click="loadStats" class="text-xs text-red-600 hover:text-red-700 underline">
+              {{ $t('admin.statsFailed') }}
+            </button>
+          </template>
+          <template v-else>
+            <p class="text-3xl font-bold text-green-600">{{ stats?.recentActivity?.length ?? 0 }}</p>
+          </template>
           <p class="text-sm text-slate-500 mt-1">{{ $t('admin.recentActions') }}</p>
         </div>
       </div>
@@ -445,7 +473,7 @@
                 </div>
                 <div>
                   <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.payments.paidAt') }}</label>
-                  <input v-model="paymentForm.paidAt" type="date"
+                  <input v-model="paymentForm.paidAt" type="date" dir="ltr"
                     class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white" />
                 </div>
                 <div>
@@ -486,7 +514,7 @@
       </div>
 
       <!-- Schedule Student Modal -->
-      <div v-if="showScheduleForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showScheduleForm = false">
+      <div v-if="showScheduleForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="closeScheduleForm">
         <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
           <h2 class="text-lg font-bold text-primary mb-4">{{ $t('admin.scheduleStudent') }}</h2>
           <form @submit.prevent="scheduleStudent" class="space-y-4">
@@ -515,7 +543,7 @@
             <!-- Time -->
             <div>
               <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.classTime') }}</label>
-              <input v-model="scheduleForm.time" type="time" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none text-sm" />
+              <input v-model="scheduleForm.time" type="time" required dir="ltr" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none text-sm" />
             </div>
 
             <!-- Duration -->
@@ -547,85 +575,76 @@
               {{ schedulePreview }}
             </div>
 
+            <!-- Inline conflict banner. Appears after check-conflicts finds
+                 overlaps; stays inside this same form so there's no modal-stack. -->
+            <div v-if="conflictModal.conflicts.length" class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+              <div>
+                <p class="text-sm font-semibold text-amber-900">{{ $t('admin.conflict.title') }}</p>
+                <p class="text-xs text-amber-800 mt-0.5">{{ $t('admin.conflict.subtitle') }}</p>
+              </div>
+
+              <!-- Existing-slot group: merge / create separate / skip -->
+              <div v-if="existingSlotConflicts.length" class="bg-white/70 border border-amber-100 rounded-lg p-3">
+                <p class="text-xs font-medium text-primary mb-1">
+                  {{ $t('admin.conflict.existingSlotGroup').replace('{count}', existingSlotConflicts.length) }}
+                </p>
+                <p class="text-[11px] text-slate-500 mb-2">{{ conflictGroupPreview(existingSlotConflicts) }}</p>
+                <div class="space-y-1.5 text-sm">
+                  <label class="flex items-start gap-2 cursor-pointer">
+                    <input type="radio" name="bulk-existing" value="merge" v-model="conflictModal.bulkExisting" class="mt-0.5" />
+                    <span>{{ $t('admin.conflict.merge') }}</span>
+                  </label>
+                  <label class="flex items-start gap-2 cursor-pointer">
+                    <input type="radio" name="bulk-existing" value="create" v-model="conflictModal.bulkExisting" class="mt-0.5" />
+                    <span>{{ $t('admin.conflict.createSeparate') }}</span>
+                  </label>
+                  <label class="flex items-start gap-2 cursor-pointer">
+                    <input type="radio" name="bulk-existing" value="skip" v-model="conflictModal.bulkExisting" class="mt-0.5" />
+                    <span>{{ $t('admin.conflict.skip') }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Same-student group: skip / force -->
+              <div v-if="sameStudentConflicts.length" class="bg-white/70 border border-amber-100 rounded-lg p-3">
+                <p class="text-xs font-medium text-amber-800 mb-1">
+                  {{ $t('admin.conflict.sameStudentGroup').replace('{count}', sameStudentConflicts.length) }}
+                </p>
+                <p class="text-[11px] text-amber-700 mb-2">{{ conflictGroupPreview(sameStudentConflicts) }}</p>
+                <div class="space-y-1.5 text-sm">
+                  <label class="flex items-start gap-2 cursor-pointer">
+                    <input type="radio" name="bulk-same" value="skip" v-model="conflictModal.bulkSame" class="mt-0.5" />
+                    <span>{{ $t('admin.conflict.skip') }}</span>
+                  </label>
+                  <label class="flex items-start gap-2 cursor-pointer">
+                    <input type="radio" name="bulk-same" value="force" v-model="conflictModal.bulkSame" class="mt-0.5" />
+                    <span>{{ $t('admin.conflict.scheduleAnyway') }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <details class="text-xs text-amber-800">
+                <summary class="cursor-pointer hover:text-amber-900">
+                  {{ $t('admin.conflict.showSessions').replace('{count}', conflictModal.conflicts.length) }}
+                </summary>
+                <ul class="mt-2 space-y-1 list-disc list-inside">
+                  <li v-for="c in conflictModal.conflicts" :key="c.startTime">
+                    {{ formatConflictTime(c.startTime) }}
+                  </li>
+                </ul>
+              </details>
+            </div>
+
             <div class="flex gap-3 justify-end">
-              <button type="button" @click="showScheduleForm = false" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $t('admin.cancel') }}</button>
+              <button type="button" @click="closeScheduleForm" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $t('admin.cancel') }}</button>
               <button type="submit" :disabled="creatingClass || !scheduleForm.days.length || !scheduleForm.studentId"
                 class="bg-primary text-cream px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
-                {{ creatingClass ? $t('admin.creating') : $t('admin.scheduleNow') }}
+                <template v-if="creatingClass">{{ $t('admin.creating') }}</template>
+                <template v-else-if="conflictModal.conflicts.length">{{ $t('admin.conflict.confirm') }}</template>
+                <template v-else>{{ $t('admin.scheduleNow') }}</template>
               </button>
             </div>
           </form>
-        </div>
-      </div>
-
-      <!-- Conflict Resolution Modal — grouped by kind, one decision per group -->
-      <div v-if="conflictModal.open" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" @click.self="cancelConflictResolution">
-        <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-6">
-          <h2 class="text-lg font-bold text-primary mb-2">{{ $t('admin.conflict.title') }}</h2>
-          <p class="text-sm text-slate-500 mb-4">{{ $t('admin.conflict.subtitle') }}</p>
-
-          <!-- Existing-slot group: merge / create separate / skip -->
-          <div v-if="existingSlotConflicts.length" class="border border-slate-200 rounded-xl p-4 mb-4 bg-slate-50/50">
-            <p class="text-sm font-medium text-primary mb-1">
-              {{ $t('admin.conflict.existingSlotGroup').replace('{count}', existingSlotConflicts.length) }}
-            </p>
-            <p class="text-xs text-slate-500 mb-3">{{ conflictGroupPreview(existingSlotConflicts) }}</p>
-            <div class="space-y-2 text-sm">
-              <label class="flex items-start gap-2 cursor-pointer">
-                <input type="radio" name="bulk-existing" value="merge" v-model="conflictModal.bulkExisting" class="mt-1" />
-                <span>{{ $t('admin.conflict.merge') }}</span>
-              </label>
-              <label class="flex items-start gap-2 cursor-pointer">
-                <input type="radio" name="bulk-existing" value="create" v-model="conflictModal.bulkExisting" class="mt-1" />
-                <span>{{ $t('admin.conflict.createSeparate') }}</span>
-              </label>
-              <label class="flex items-start gap-2 cursor-pointer">
-                <input type="radio" name="bulk-existing" value="skip" v-model="conflictModal.bulkExisting" class="mt-1" />
-                <span>{{ $t('admin.conflict.skip') }}</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Same-student group: skip / force -->
-          <div v-if="sameStudentConflicts.length" class="border border-amber-200 rounded-xl p-4 mb-4 bg-amber-50/50">
-            <p class="text-sm font-medium text-amber-800 mb-1">
-              {{ $t('admin.conflict.sameStudentGroup').replace('{count}', sameStudentConflicts.length) }}
-            </p>
-            <p class="text-xs text-amber-700 mb-3">{{ conflictGroupPreview(sameStudentConflicts) }}</p>
-            <div class="space-y-2 text-sm">
-              <label class="flex items-start gap-2 cursor-pointer">
-                <input type="radio" name="bulk-same" value="skip" v-model="conflictModal.bulkSame" class="mt-1" />
-                <span>{{ $t('admin.conflict.skip') }}</span>
-              </label>
-              <label class="flex items-start gap-2 cursor-pointer">
-                <input type="radio" name="bulk-same" value="force" v-model="conflictModal.bulkSame" class="mt-1" />
-                <span>{{ $t('admin.conflict.scheduleAnyway') }}</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Collapsed per-session list for full transparency -->
-          <details class="text-xs text-slate-500 mb-4">
-            <summary class="cursor-pointer hover:text-primary">
-              {{ $t('admin.conflict.showSessions').replace('{count}', conflictModal.conflicts.length) }}
-            </summary>
-            <ul class="mt-2 space-y-1 list-disc list-inside">
-              <li v-for="c in conflictModal.conflicts" :key="c.startTime">
-                {{ formatConflictTime(c.startTime) }}
-              </li>
-            </ul>
-          </details>
-
-          <div class="flex justify-end gap-3">
-            <button @click="cancelConflictResolution"
-              class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">
-              {{ $t('admin.cancel') }}
-            </button>
-            <button @click="submitConflictResolution" :disabled="creatingClass"
-              class="bg-primary text-cream px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
-              {{ creatingClass ? $t('admin.creating') : $t('admin.conflict.confirm') }}
-            </button>
-          </div>
         </div>
       </div>
 
@@ -640,11 +659,11 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.newDate') }}</label>
-              <input v-model="rescheduleDate" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+              <input v-model="rescheduleDate" type="date" dir="ltr" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
             </div>
             <div>
               <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.newTime') }}</label>
-              <input v-model="rescheduleTime" type="time" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+              <input v-model="rescheduleTime" type="time" dir="ltr" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
             </div>
           </div>
           <div class="flex gap-3 justify-end mt-6">
@@ -674,6 +693,7 @@ import { useAuth } from '@/composables/useAuth.js';
 import { api } from '@/config/api.js';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 import { confirmDialog, promptDialog } from '@/composables/useConfirmDialog.js';
+import { queueUndoable } from '@/composables/useUndoToast.js';
 
 const { locale, t } = useI18n();
 const { logout } = useAuth();
@@ -687,6 +707,7 @@ const isAr = computed(() => locale.value === 'ar');
 
 const activeTab = ref('enrollments');
 const stats = ref(null);
+const statsError = ref(false);
 const enrollments = ref([]);
 const students = ref([]);
 const classes = ref([]);
@@ -732,8 +753,10 @@ const clearingUpcoming = ref(false);
 // asked to pick 12x "merge" in a row for a recurring class — so now the
 // modal asks once for all existing_slot conflicts and once for all
 // same_student conflicts.
+// Inline conflict banner state. Conflict modal no longer opens — the banner
+// lives inside the schedule form itself. `conflicts.length > 0` is what
+// drives the banner's visibility.
 const conflictModal = reactive({
-  open: false,
   conflicts: [], // raw array from /classes/check-conflicts
   bulkExisting: 'merge', // merge | create | skip — applied to every existing_slot conflict
   bulkSame: 'skip',      // skip | force — applied to every same_student conflict
@@ -875,13 +898,20 @@ const sameStudentConflicts = computed(() =>
   (conflictModal.conflicts || []).filter((c) => c.kind === 'same_student')
 );
 
+// Reads naturally in both directions instead of forcing an English-structured
+// sentence into Arabic. Uses a single key per locale with placeholders.
 const schedulePreview = computed(() => {
   const weeks = parseInt(scheduleForm.weeks) || 12;
   const totalSessions = scheduleForm.days.length * weeks;
-  const dayNames = scheduleForm.days.map(d => t('admin.' + FULL_DAY_KEYS[d])).join(', ');
+  const separator = isAr.value ? '، ' : ', ';
+  const dayNames = scheduleForm.days.map(d => t('admin.' + FULL_DAY_KEYS[d])).join(separator);
   const student = students.value.find(s => s.id === scheduleForm.studentId);
   const name = student ? `${student.firstName} ${student.lastName}` : '';
-  return `${totalSessions} ${t('admin.classesFor')} ${name} — ${dayNames} ${t('admin.at')} ${scheduleForm.time}`;
+  return t('admin.schedulePreview')
+    .replace('{count}', totalSessions)
+    .replace('{name}', name)
+    .replace('{days}', dayNames)
+    .replace('{time}', scheduleForm.time);
 });
 
 const tabs = [
@@ -891,23 +921,40 @@ const tabs = [
   { key: 'activity', label: 'admin.activity' },
 ];
 
-function showToast(err) {
+// `action` is a key under `admin.actionFailed.*`. When provided, the toast
+// is prefixed with that label so the sheikh knows *which* action blew up,
+// not just the raw server message. Pass a plain string instead of an error
+// object to show an info toast without any prefix.
+function showToast(err, action) {
+  if (typeof err === 'string') {
+    toast.value = err;
+    setTimeout(() => { toast.value = ''; }, 3000);
+    return;
+  }
   const msg = err?.data?.error || err?.message || t('admin.error');
-  toast.value = msg;
-  setTimeout(() => { toast.value = ''; }, 3000);
+  toast.value = action
+    ? `${t('admin.actionFailed.' + action)}: ${msg}`
+    : msg;
+  setTimeout(() => { toast.value = ''; }, 5000);
 }
 
 async function handleLogout() { await logout(); }
 
 async function loadStats() {
-  try { stats.value = await api.get('/api/admin/stats'); } catch (e) { showToast(e); }
+  statsError.value = false;
+  try {
+    stats.value = await api.get('/api/admin/stats');
+  } catch (e) {
+    statsError.value = true;
+    showToast(e, 'loadStats');
+  }
 }
 
 async function loadEnrollments() {
   try {
     const data = await api.get('/api/admin/enrollments/pending');
     enrollments.value = data.requests;
-  } catch (e) { showToast(e); }
+  } catch (e) { showToast(e, 'loadEnrollments'); }
 }
 
 async function loadStudents() {
@@ -915,14 +962,14 @@ async function loadStudents() {
     const query = studentSearch.value ? `?search=${encodeURIComponent(studentSearch.value)}` : '';
     const data = await api.get(`/api/admin/students${query}`);
     students.value = data.students;
-  } catch (e) { showToast(e); }
+  } catch (e) { showToast(e, 'loadStudents'); }
 }
 
 async function loadClasses() {
   try {
     const data = await api.get('/api/admin/classes?limit=200');
     classes.value = data.classes;
-  } catch (e) { showToast(e); }
+  } catch (e) { showToast(e, 'loadClasses'); }
 }
 
 async function loadSettings() {
@@ -937,7 +984,7 @@ async function saveMeetingLink() {
   savingLink.value = true;
   try {
     await api.put('/api/admin/settings/meeting-link', { meetingLink: globalMeetingLink.value });
-  } catch (e) { showToast(e); } finally {
+  } catch (e) { showToast(e, 'saveMeetingLink'); } finally {
     savingLink.value = false;
   }
 }
@@ -948,7 +995,7 @@ async function handleApprove(id) {
     enrollments.value = enrollments.value.filter((e) => e.id !== id);
     loadStats();
     loadStudents();
-  } catch (e) { showToast(e); }
+  } catch (e) { showToast(e, 'approve'); }
 }
 
 async function handleReject(id) {
@@ -964,7 +1011,7 @@ async function handleReject(id) {
     await api.post(`/api/admin/enrollments/${id}/reject`, { message: message || null });
     enrollments.value = enrollments.value.filter((e) => e.id !== id);
     loadStats();
-  } catch (e) { showToast(e); }
+  } catch (e) { showToast(e, 'reject'); }
 }
 
 async function viewStudent(id) {
@@ -975,7 +1022,7 @@ async function viewStudent(id) {
     expandedLogClassId.value = null;
     showPaymentForm.value = false;
     await loadStudentDetailData(id);
-  } catch (e) { showToast(e); }
+  } catch (e) { showToast(e, 'viewStudent'); }
 }
 
 // Legacy AdminNote textbox was replaced by the Classes / Payments tabs.
@@ -995,22 +1042,41 @@ async function handleSuspend(id) {
     selectedStudent.value = null;
     loadStudents();
     loadStats();
-  } catch (e) { showToast(e); }
+  } catch (e) { showToast(e, 'suspend'); }
 }
 
-async function cancelClass(id) {
-  const ok = await confirmDialog({
-    title: t('admin.cancelClassTitle'),
-    message: t('admin.cancelConfirm'),
-    confirmLabel: t('admin.cancel'),
-    cancelLabel: t('admin.continue'),
-    danger: true,
+function cancelClass(id) {
+  // Optimistic UI: mark the class cancelled locally, fire the real API call
+  // after a 6-second undo window. If the admin hits "Undo" in that window
+  // we restore the previous state and skip the API call — no "are you
+  // sure?" modal at all.
+  const cls = classes.value.find((c) => c.id === id);
+  if (!cls) return;
+  const previousValue = cls.cancelled;
+  cls.cancelled = true;
+  if (selectedClass.value && selectedClass.value.id === id) {
+    selectedClass.value = { ...selectedClass.value, cancelled: true };
+  }
+
+  queueUndoable({
+    label: t('admin.cancelClassDone'),
+    undoLabel: t('admin.undo'),
+    action: async () => {
+      try {
+        await api.post(`/api/admin/classes/${id}/cancel`);
+        loadClasses();
+      } catch (e) {
+        cls.cancelled = previousValue;
+        showToast(e, 'cancelClass');
+      }
+    },
+    onUndo: () => {
+      cls.cancelled = previousValue;
+      if (selectedClass.value && selectedClass.value.id === id) {
+        selectedClass.value = { ...selectedClass.value, cancelled: previousValue };
+      }
+    },
   });
-  if (!ok) return;
-  try {
-    await api.post(`/api/admin/classes/${id}/cancel`);
-    loadClasses();
-  } catch (e) { showToast(e); }
 }
 
 function openReschedule(cls) {
@@ -1037,7 +1103,7 @@ async function rescheduleClass() {
     rescheduleTarget.value = null;
     selectedClass.value = null;
     loadClasses();
-  } catch (e) { showToast(e); }
+  } catch (e) { showToast(e, 'reschedule'); }
 }
 
 async function deleteAllClasses() {
@@ -1053,7 +1119,7 @@ async function deleteAllClasses() {
     await api.delete('/api/admin/classes');
     selectedClass.value = null;
     loadClasses();
-  } catch (e) { showToast(e); }
+  } catch (e) { showToast(e, 'deleteAll'); }
 }
 
 function getNextDayOfWeek(dayOfWeek, timeStr) {
@@ -1070,6 +1136,14 @@ function getNextDayOfWeek(dayOfWeek, timeStr) {
 
 async function scheduleStudent() {
   if (creatingClass.value) return;
+
+  // Second pass: conflicts already surfaced inline, admin picked their
+  // resolution, and clicked the same submit button. Ship it.
+  if (conflictModal.conflicts.length && conflictModal.pendingPayload) {
+    await submitConflictResolution();
+    return;
+  }
+
   creatingClass.value = true;
   try {
     const student = students.value.find(s => s.id === scheduleForm.studentId);
@@ -1087,8 +1161,6 @@ async function scheduleStudent() {
       }
     }
 
-    // Ask the backend to look for conflicts before committing anything. If
-    // any come back we open the resolution modal instead of submitting.
     const { conflicts } = await api.post('/api/admin/classes/check-conflicts', {
       studentId: scheduleForm.studentId,
       sessions,
@@ -1097,52 +1169,58 @@ async function scheduleStudent() {
     const payload = { studentId: scheduleForm.studentId, title, sessions };
 
     if (conflicts?.length) {
-      // Group-level defaults: merge existing slots (co-taught) and skip
-      // same-student double-bookings unless the admin explicitly flips it.
-      conflictModal.open = true;
+      // Surface the conflicts inline in the same form; defaults are the
+      // "safe" picks. The admin picks, then hits the same submit button.
       conflictModal.conflicts = conflicts;
       conflictModal.bulkExisting = 'merge';
       conflictModal.bulkSame = 'skip';
       conflictModal.pendingPayload = payload;
-      return; // wait for the user to resolve
+      return;
     }
 
     const result = await api.post('/api/admin/classes/batch', payload);
     showBatchOutcomeToast(result);
-
-    showScheduleForm.value = false;
-    Object.assign(scheduleForm, { studentId: '', days: [], time: '15:00', duration: '60', weeks: '12' });
+    closeScheduleForm();
     loadClasses();
-  } catch (e) { showToast(e); } finally {
+  } catch (e) { showToast(e, 'scheduleStudent'); } finally {
     creatingClass.value = false;
   }
 }
 
 // Build the per-session resolution map from the two group choices and POST.
 async function submitConflictResolution() {
-  if (creatingClass.value) return;
   const payload = conflictModal.pendingPayload;
   if (!payload) return;
   creatingClass.value = true;
   try {
+    // Key by startMs-endMs (matches the backend) so no ISO-string
+    // serialization difference can drop a resolution silently.
     const resolutions = {};
     for (const c of conflictModal.conflicts) {
-      resolutions[c.startTime] =
+      const key = `${new Date(c.startTime).getTime()}-${new Date(c.endTime).getTime()}`;
+      resolutions[key] =
         c.kind === 'existing_slot' ? conflictModal.bulkExisting : conflictModal.bulkSame;
     }
     const result = await api.post('/api/admin/classes/batch', { ...payload, resolutions });
     showBatchOutcomeToast(result);
-    conflictModal.open = false;
-    conflictModal.conflicts = [];
-    conflictModal.pendingPayload = null;
-    showScheduleForm.value = false;
-    Object.assign(scheduleForm, { studentId: '', days: [], time: '15:00', duration: '60', weeks: '12' });
+    closeScheduleForm();
     loadClasses();
   } catch (e) {
-    showToast(e);
+    showToast(e, 'scheduleStudent');
   } finally {
     creatingClass.value = false;
   }
+}
+
+// Reset the schedule form + any inline conflicts so opening it again starts
+// from a clean slate.
+function closeScheduleForm() {
+  showScheduleForm.value = false;
+  Object.assign(scheduleForm, {
+    studentId: '', days: [], time: '15:00', duration: '60', weeks: '12',
+  });
+  conflictModal.conflicts = [];
+  conflictModal.pendingPayload = null;
 }
 
 // Read the backend's { created, merged, skipped } shape and surface it so the
@@ -1156,12 +1234,6 @@ function showBatchOutcomeToast(result) {
     .replace('{merged}', merged)
     .replace('{skipped}', skipped);
   setTimeout(() => { toast.value = ''; }, 5000);
-}
-
-function cancelConflictResolution() {
-  conflictModal.open = false;
-  conflictModal.conflicts = [];
-  conflictModal.pendingPayload = null;
 }
 
 // A ticking "now" ref so Join-button visibility and countdown labels update
@@ -1239,7 +1311,7 @@ async function loadStudentDetailData(studentId) {
     studentPayments.value = payments.payments || [];
     studentPaymentTotals.value = payments.totals || {};
   } catch (e) {
-    showToast(e);
+    showToast(e, 'loadStudentData');
   } finally {
     studentDetailLoading.value = false;
   }
@@ -1279,7 +1351,7 @@ async function saveClassLog(classSessionId, studentId) {
     }
     expandedLogClassId.value = null;
   } catch (e) {
-    showToast(e);
+    showToast(e, 'saveClassLog');
   } finally {
     savingLog.value = false;
   }
@@ -1328,27 +1400,45 @@ async function savePayment(studentId) {
     showPaymentForm.value = false;
     await loadStudentDetailData(studentId);
   } catch (e) {
-    showToast(e);
+    showToast(e, 'savePayment');
   } finally {
     savingPayment.value = false;
   }
 }
 
-async function deletePayment(paymentId, studentId) {
-  const ok = await confirmDialog({
-    title: t('admin.deletePaymentTitle'),
-    message: t('admin.payments.deleteConfirm'),
-    confirmLabel: t('admin.delete'),
-    cancelLabel: t('admin.cancel'),
-    danger: true,
-  });
-  if (!ok) return;
-  try {
-    await api.delete(`/api/admin/payments/${paymentId}`);
-    await loadStudentDetailData(studentId);
-  } catch (e) {
-    showToast(e);
+function deletePayment(paymentId, studentId) {
+  // Optimistic remove from the list + undo window.
+  const idx = studentPayments.value.findIndex((p) => p.id === paymentId);
+  if (idx === -1) return;
+  const [removed] = studentPayments.value.splice(idx, 1);
+  // Deduct from totals immediately so the running total reflects reality.
+  if (removed && studentPaymentTotals.value[removed.currency] != null) {
+    studentPaymentTotals.value[removed.currency] -= removed.amount;
   }
+
+  queueUndoable({
+    label: t('admin.deletePaymentDone'),
+    undoLabel: t('admin.undo'),
+    action: async () => {
+      try {
+        await api.delete(`/api/admin/payments/${paymentId}`);
+        await loadStudentDetailData(studentId);
+      } catch (e) {
+        showToast(e, 'deletePayment');
+        // Re-insert so the UI matches backend reality.
+        studentPayments.value.splice(idx, 0, removed);
+        if (removed && studentPaymentTotals.value[removed.currency] != null) {
+          studentPaymentTotals.value[removed.currency] += removed.amount;
+        }
+      }
+    },
+    onUndo: () => {
+      studentPayments.value.splice(idx, 0, removed);
+      if (removed && studentPaymentTotals.value[removed.currency] != null) {
+        studentPaymentTotals.value[removed.currency] += removed.amount;
+      }
+    },
+  });
 }
 
 async function clearUpcomingClasses(studentId) {
@@ -1372,7 +1462,7 @@ async function clearUpcomingClasses(studentId) {
     // Refresh the student detail so the classes list updates in place.
     await viewStudent(studentId);
   } catch (e) {
-    showToast(e);
+    showToast(e, 'clearUpcoming');
   } finally {
     clearingUpcoming.value = false;
   }
@@ -1406,8 +1496,7 @@ watch(showScheduleForm, (v) => { if (v && !students.value.length) loadStudents()
 // handles its own escape — so we don't touch it here.
 function handleGlobalKeydown(e) {
   if (e.key !== 'Escape') return;
-  if (conflictModal.open) { cancelConflictResolution(); return; }
-  if (showScheduleForm.value) { showScheduleForm.value = false; return; }
+  if (showScheduleForm.value) { closeScheduleForm(); return; }
   if (showRescheduleModal.value) { showRescheduleModal.value = false; return; }
   if (showPaymentForm.value) { showPaymentForm.value = false; return; }
   if (selectedStudent.value) { selectedStudent.value = null; return; }
