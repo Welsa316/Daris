@@ -571,6 +571,11 @@ router.post('/classes/:id/reschedule', validate(rescheduleClassSchema), async (r
         // Clear cancelled status if it was cancelled
         cancelled: false,
         cancelledAt: null,
+        // Reset reminder timestamps so the reminder job re-fires for the
+        // new time. Without this, a rescheduled class silently skips both
+        // its 30-min and 24-hr reminders forever.
+        reminder30SentAt: null,
+        reminder24SentAt: null,
       },
       include: {
         assignments: {

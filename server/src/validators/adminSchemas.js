@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+// Shared refinement: endTime must be strictly after startTime. Applied to every
+// schema that accepts a time range so the admin can't accidentally create an
+// inverted class (which also breaks conflict-detection math).
+const endAfterStart = (d) => new Date(d.endTime) > new Date(d.startTime);
+const endAfterStartErr = {
+  message: 'End time must be after start time',
+  path: ['endTime'],
+};
+
 export const enrollmentDecisionSchema = z.object({
   message: z.string().max(1000).optional().nullable(),
 });
@@ -8,26 +17,39 @@ export const adminNoteSchema = z.object({
   content: z.string().min(1, 'Note content is required').max(10000),
 });
 
-export const classSessionSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(200).trim(),
-  titleAr: z.string().max(200).trim().optional().nullable(),
-  description: z.string().max(5000).trim().optional().nullable(),
-  descriptionAr: z.string().max(5000).trim().optional().nullable(),
-  startTime: z.string().datetime({ message: 'Invalid start time' }),
-  endTime: z.string().datetime({ message: 'Invalid end time' }),
-  timezone: z.string().default('UTC'),
-  meetingLink: z.string().url('Invalid meeting link').optional().nullable(),
-  recurrence: z.enum(['weekly', 'biweekly', 'custom']).optional().nullable(),
-  recurrenceEnd: z.string().datetime().optional().nullable(),
-  studentIds: z.array(z.string().uuid()).optional(), // Empty = all enrolled students
-});
+export const classSessionSchema = z
+  .object({
+    title: z.string().min(1, 'Title is required').max(200).trim(),
+    titleAr: z.string().max(200).trim().optional().nullable(),
+    description: z.string().max(5000).trim().optional().nullable(),
+    descriptionAr: z.string().max(5000).trim().optional().nullable(),
+    startTime: z.string().datetime({ message: 'Invalid start time' }),
+    endTime: z.string().datetime({ message: 'Invalid end time' }),
+    timezone: z.string().default('UTC'),
+    meetingLink: z.string().url('Invalid meeting link').optional().nullable(),
+    recurrence: z.enum(['weekly', 'biweekly', 'custom']).optional().nullable(),
+    recurrenceEnd: z.string().datetime().optional().nullable(),
+    studentIds: z.array(z.string().uuid()).optional(), // Empty = all enrolled students
+  })
+  .refine(endAfterStart, endAfterStartErr);
 
-export const classSessionUpdateSchema = classSessionSchema.partial();
+// `.partial()` strips the refine; re-apply conditionally so a partial update
+// touching only one of the two fields isn't blocked, but a PATCH with both
+// still gets validated.
+export const classSessionUpdateSchema = classSessionSchema
+  .innerType()
+  .partial()
+  .refine(
+    (d) => d.startTime == null || d.endTime == null || endAfterStart(d),
+    endAfterStartErr
+  );
 
-export const rescheduleClassSchema = z.object({
-  startTime: z.string().datetime({ message: 'Invalid start time' }),
-  endTime: z.string().datetime({ message: 'Invalid end time' }),
-});
+export const rescheduleClassSchema = z
+  .object({
+    startTime: z.string().datetime({ message: 'Invalid start time' }),
+    endTime: z.string().datetime({ message: 'Invalid end time' }),
+  })
+  .refine(endAfterStart, endAfterStartErr);
 
 export const announcementSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200).trim(),
@@ -66,10 +88,17 @@ export const batchClassSchema = z.object({
   studentId: z.string().uuid(),
   title: z.string().min(1).max(200).trim(),
   titleAr: z.string().max(200).trim().optional().nullable(),
-  sessions: z.array(z.object({
-    startTime: z.string().datetime(),
-    endTime: z.string().datetime(),
-  })).min(1).max(200),
+  sessions: z
+    .array(
+      z
+        .object({
+          startTime: z.string().datetime(),
+          endTime: z.string().datetime(),
+        })
+        .refine(endAfterStart, endAfterStartErr)
+    )
+    .min(1)
+    .max(200),
   // Optional per-session resolutions for detected conflicts. Key is the session
   // startTime ISO string, value is the action the admin chose in the UI.
   resolutions: z
@@ -81,10 +110,12 @@ export const checkConflictsSchema = z.object({
   studentId: z.string().uuid(),
   sessions: z
     .array(
-      z.object({
-        startTime: z.string().datetime(),
-        endTime: z.string().datetime(),
-      })
+      z
+        .object({
+          startTime: z.string().datetime(),
+          endTime: z.string().datetime(),
+        })
+        .refine(endAfterStart, endAfterStartErr)
     )
     .min(1)
     .max(200),
@@ -95,11 +126,19 @@ export const classLogSchema = z.object({
   nextSteps: z.string().max(20000).default(''),
 });
 
+// Payment amounts are stored in minor units (piastres / cents). Cap at
+// 10,000,000 = 100,000 major units per row — well above realistic tuition so
+// a fat-finger can't create a nine-figure entry.
+// paidAt must be on or before now so "future" payments can't land in the
+// ledger from a typo on the date picker.
 export const paymentSchema = z.object({
-  amount: z.number().int().positive().max(100_000_000), // up to 1 million major units
+  amount: z.number().int().positive().max(10_000_000),
   currency: z.string().min(1).max(10).default('EGP'),
   period: z.string().min(1).max(100).trim(),
-  paidAt: z.string().datetime(),
+  paidAt: z.string().datetime().refine(
+    (d) => new Date(d).getTime() <= Date.now() + 60_000, // 60s clock-skew tolerance
+    { message: 'Payment date cannot be in the future', path: ['paidAt'] }
+  ),
   notes: z.string().max(2000).optional().nullable(),
 });
 

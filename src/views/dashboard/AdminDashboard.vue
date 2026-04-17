@@ -32,8 +32,8 @@
 
       <!-- Upcoming Classes (always visible) -->
       <div class="bg-white rounded-2xl shadow-card p-6 mb-8">
-        <h2 class="text-lg font-bold text-primary mb-4">{{ $t('admin.upcomingClassesTitle') || 'Upcoming Classes' }}</h2>
-        <div v-if="!upcomingClasses.length" class="text-slate-400 text-sm py-4 text-center">{{ $t('admin.noUpcomingClasses') || 'No upcoming classes' }}</div>
+        <h2 class="text-lg font-bold text-primary mb-4">{{ $t('admin.upcomingClassesTitle') }}</h2>
+        <div v-if="!upcomingClasses.length" class="text-slate-400 text-sm py-4 text-center">{{ $t('admin.noUpcomingClasses') }}</div>
         <div v-else class="space-y-3">
           <div v-for="cls in upcomingClasses" :key="cls.id"
             class="flex items-center justify-between border border-slate-100 rounded-xl p-4 hover:border-primary/30 transition">
@@ -47,13 +47,13 @@
                 :href="cls.meetingLink || globalMeetingLink" target="_blank" rel="noopener"
                 class="bg-green-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-green-700 transition shrink-0 flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                {{ $t('admin.joinClass') || 'Join' }}
+                {{ $t('admin.joinClass') }}
               </a>
               <span v-else class="text-xs text-slate-400 italic shrink-0 text-end" :title="new Date(cls.startTime).toLocaleString()">
                 {{ joinAvailabilityLabel(cls) }}
               </span>
             </template>
-            <span v-else class="text-xs text-slate-400 italic shrink-0">{{ $t('admin.noMeetingLink') || 'No meeting link set' }}</span>
+            <span v-else class="text-xs text-slate-400 italic shrink-0">{{ $t('admin.noMeetingLink') }}</span>
           </div>
         </div>
       </div>
@@ -164,7 +164,7 @@
                 {{ $t('admin.scheduleStudent') }}
               </button>
               <button v-if="classes.length" @click="deleteAllClasses" class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-200 transition">
-                {{ $t('admin.deleteAll') || 'Delete All' }}
+                {{ $t('admin.deleteAll') }}
               </button>
             </div>
           </div>
@@ -304,8 +304,15 @@
             </button>
           </div>
 
+          <!-- Loading skeleton shown across all tabs while fetching -->
+          <div v-if="studentDetailLoading" class="mt-4 space-y-2" aria-hidden="true">
+            <div class="h-12 bg-slate-100 rounded-lg animate-pulse"></div>
+            <div class="h-12 bg-slate-100 rounded-lg animate-pulse"></div>
+            <div class="h-12 bg-slate-100 rounded-lg animate-pulse"></div>
+          </div>
+
           <!-- Classes tab: list + per-class log expander -->
-          <div v-if="studentDetailTab === 'classes'" class="mt-4">
+          <div v-else-if="studentDetailTab === 'classes'" class="mt-4">
             <div v-if="!studentClasses.length" class="text-slate-400 text-sm py-4">{{ $t('admin.noStudentClasses') }}</div>
             <div v-else class="space-y-2 max-h-80 overflow-y-auto">
               <div v-for="a in studentClasses" :key="a.id" class="border border-slate-100 rounded-lg p-3 text-sm"
@@ -380,7 +387,7 @@
           </div>
 
           <!-- Payments tab -->
-          <div v-if="studentDetailTab === 'payments'" class="mt-4">
+          <div v-else-if="studentDetailTab === 'payments'" class="mt-4">
             <div v-if="Object.keys(studentPaymentTotals).length" class="mb-4 bg-primary/5 rounded-lg p-3 text-sm">
               <span class="text-slate-500">{{ $t('admin.payments.total') }}:</span>
               <span v-for="(minor, cur) in studentPaymentTotals" :key="cur" class="ms-2 font-medium text-primary">
@@ -460,7 +467,7 @@
           </div>
 
           <!-- Export tab -->
-          <div v-if="studentDetailTab === 'export'" class="mt-4 space-y-3">
+          <div v-else-if="studentDetailTab === 'export'" class="mt-4 space-y-3">
             <p class="text-sm text-slate-500">{{ $t('admin.export.desc') }}</p>
             <button @click="downloadStudentCsv(selectedStudent.id)"
               class="w-full bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition">
@@ -666,6 +673,7 @@ import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth.js';
 import { api } from '@/config/api.js';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
+import { confirmDialog, promptDialog } from '@/composables/useConfirmDialog.js';
 
 const { locale, t } = useI18n();
 const { logout } = useAuth();
@@ -699,6 +707,7 @@ const rescheduleTime = ref('');
 // The old modal had a single free-form notes textbox. It's now replaced with
 // a Classes / Payments / Export tab switcher, backed by the server.
 const studentDetailTab = ref('classes');
+const studentDetailLoading = ref(false);
 const studentClassLogs = ref([]);
 const studentPayments = ref([]);
 const studentPaymentTotals = ref({});
@@ -814,10 +823,20 @@ function formatClassTime(iso) {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  if (d.toDateString() === today.toDateString()) return `Today, ${timeStr}`;
-  if (d.toDateString() === tomorrow.toDateString()) return `Tomorrow, ${timeStr}`;
-  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) + ', ' + timeStr;
+  const localeTag = isAr.value ? 'ar-EG' : undefined;
+  const timeStr = d.toLocaleTimeString(localeTag, { hour: '2-digit', minute: '2-digit' });
+  if (d.toDateString() === today.toDateString()) {
+    return t('admin.relativeToday').replace('{time}', timeStr);
+  }
+  if (d.toDateString() === tomorrow.toDateString()) {
+    return t('admin.relativeTomorrow').replace('{time}', timeStr);
+  }
+  const dateStr = d.toLocaleDateString(localeTag, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+  return `${dateStr}, ${timeStr}`;
 }
 
 function classTimeLabel(cls) {
@@ -826,9 +845,21 @@ function classTimeLabel(cls) {
   const end = new Date(cls.endTime);
   const diffMin = Math.round((start - now) / 60000);
 
-  if (now >= start && now <= end) return { text: 'Live now', color: 'text-green-600 font-semibold' };
-  if (diffMin <= 30 && diffMin > 0) return { text: `Starts in ${diffMin} min`, color: 'text-amber-600 font-medium' };
-  if (diffMin <= 60 && diffMin > 0) return { text: `In ${diffMin} minutes`, color: 'text-blue-600' };
+  if (now >= start && now <= end) {
+    return { text: t('admin.liveNow'), color: 'text-green-600 font-semibold' };
+  }
+  if (diffMin <= 30 && diffMin > 0) {
+    return {
+      text: t('admin.startsInMin').replace('{n}', diffMin),
+      color: 'text-amber-600 font-medium',
+    };
+  }
+  if (diffMin <= 60 && diffMin > 0) {
+    return {
+      text: t('admin.inMinutes').replace('{n}', diffMin),
+      color: 'text-blue-600',
+    };
+  }
   return { text: '', color: '' };
 }
 
@@ -861,7 +892,7 @@ const tabs = [
 ];
 
 function showToast(err) {
-  const msg = err?.message || err?.data?.error || t('admin.error') || 'Error';
+  const msg = err?.data?.error || err?.message || t('admin.error');
   toast.value = msg;
   setTimeout(() => { toast.value = ''; }, 3000);
 }
@@ -921,9 +952,16 @@ async function handleApprove(id) {
 }
 
 async function handleReject(id) {
-  const message = prompt(t('admin.rejectPrompt'));
+  const message = await promptDialog({
+    title: t('admin.rejectEnrollmentTitle'),
+    message: t('admin.rejectEnrollmentPrompt'),
+    placeholder: t('admin.rejectEnrollmentPlaceholder'),
+    confirmLabel: t('admin.reject'),
+    cancelLabel: t('admin.cancel'),
+  });
+  if (message === null) return; // user cancelled
   try {
-    await api.post(`/api/admin/enrollments/${id}/reject`, { message });
+    await api.post(`/api/admin/enrollments/${id}/reject`, { message: message || null });
     enrollments.value = enrollments.value.filter((e) => e.id !== id);
     loadStats();
   } catch (e) { showToast(e); }
@@ -944,7 +982,14 @@ async function viewStudent(id) {
 // Keeping the endpoints but no longer calling them from the UI.
 
 async function handleSuspend(id) {
-  if (!confirm(t('admin.suspendConfirm'))) return;
+  const ok = await confirmDialog({
+    title: t('admin.suspendTitle'),
+    message: t('admin.suspendConfirm'),
+    confirmLabel: t('admin.suspendStudent'),
+    cancelLabel: t('admin.cancel'),
+    danger: true,
+  });
+  if (!ok) return;
   try {
     await api.post(`/api/admin/students/${id}/suspend`);
     selectedStudent.value = null;
@@ -954,7 +999,14 @@ async function handleSuspend(id) {
 }
 
 async function cancelClass(id) {
-  if (!confirm(t('admin.cancelConfirm'))) return;
+  const ok = await confirmDialog({
+    title: t('admin.cancelClassTitle'),
+    message: t('admin.cancelConfirm'),
+    confirmLabel: t('admin.cancel'),
+    cancelLabel: t('admin.continue'),
+    danger: true,
+  });
+  if (!ok) return;
   try {
     await api.post(`/api/admin/classes/${id}/cancel`);
     loadClasses();
@@ -989,7 +1041,14 @@ async function rescheduleClass() {
 }
 
 async function deleteAllClasses() {
-  if (!confirm(t('admin.deleteAllConfirm') || 'Are you sure you want to delete ALL classes? This cannot be undone.')) return;
+  const ok = await confirmDialog({
+    title: t('admin.deleteAllTitle'),
+    message: t('admin.deleteAllConfirm'),
+    confirmLabel: t('admin.deleteAll'),
+    cancelLabel: t('admin.cancel'),
+    danger: true,
+  });
+  if (!ok) return;
   try {
     await api.delete('/api/admin/classes');
     selectedClass.value = null;
@@ -1048,7 +1107,8 @@ async function scheduleStudent() {
       return; // wait for the user to resolve
     }
 
-    await api.post('/api/admin/classes/batch', payload);
+    const result = await api.post('/api/admin/classes/batch', payload);
+    showBatchOutcomeToast(result);
 
     showScheduleForm.value = false;
     Object.assign(scheduleForm, { studentId: '', days: [], time: '15:00', duration: '60', weeks: '12' });
@@ -1070,7 +1130,8 @@ async function submitConflictResolution() {
       resolutions[c.startTime] =
         c.kind === 'existing_slot' ? conflictModal.bulkExisting : conflictModal.bulkSame;
     }
-    await api.post('/api/admin/classes/batch', { ...payload, resolutions });
+    const result = await api.post('/api/admin/classes/batch', { ...payload, resolutions });
+    showBatchOutcomeToast(result);
     conflictModal.open = false;
     conflictModal.conflicts = [];
     conflictModal.pendingPayload = null;
@@ -1082,6 +1143,19 @@ async function submitConflictResolution() {
   } finally {
     creatingClass.value = false;
   }
+}
+
+// Read the backend's { created, merged, skipped } shape and surface it so the
+// sheikh can see exactly what happened to the 12-week batch he just submitted.
+function showBatchOutcomeToast(result) {
+  const created = result?.created ?? 0;
+  const merged = result?.merged ?? 0;
+  const skipped = result?.skipped ?? 0;
+  toast.value = t('admin.batchSummary')
+    .replace('{created}', created)
+    .replace('{merged}', merged)
+    .replace('{skipped}', skipped);
+  setTimeout(() => { toast.value = ''; }, 5000);
 }
 
 function cancelConflictResolution() {
@@ -1111,14 +1185,14 @@ function isJoinable(cls) {
 function joinAvailabilityLabel(cls) {
   const start = new Date(cls.startTime).getTime();
   const end = new Date(cls.endTime).getTime();
-  if (now.value > end) return t('admin.joinEnded') || 'Class ended';
+  if (now.value > end) return t('admin.joinEnded');
   const minsUntilOpen = Math.ceil((start - JOIN_WINDOW_MIN * 60_000 - now.value) / 60_000);
-  if (minsUntilOpen <= 0) return t('admin.joinLive') || 'Live now';
+  if (minsUntilOpen <= 0) return t('admin.joinLive');
   if (minsUntilOpen < 60) {
-    return (t('admin.joinOpensInMin') || 'Opens in {n} min').replace('{n}', minsUntilOpen);
+    return t('admin.joinOpensInMin').replace('{n}', minsUntilOpen);
   }
   const hours = Math.ceil(minsUntilOpen / 60);
-  return (t('admin.joinOpensInHr') || 'Opens in {n}h').replace('{n}', hours);
+  return t('admin.joinOpensInHr').replace('{n}', hours);
 }
 
 // Display name for a class. When multiple students share a class (co-taught),
@@ -1155,6 +1229,7 @@ function formatConflictTime(iso) {
 // --- Student detail: class logs + payments -------------------------------
 
 async function loadStudentDetailData(studentId) {
+  studentDetailLoading.value = true;
   try {
     const [logs, payments] = await Promise.all([
       api.get(`/api/admin/students/${studentId}/class-logs`),
@@ -1165,6 +1240,8 @@ async function loadStudentDetailData(studentId) {
     studentPaymentTotals.value = payments.totals || {};
   } catch (e) {
     showToast(e);
+  } finally {
+    studentDetailLoading.value = false;
   }
 }
 
@@ -1231,7 +1308,7 @@ async function savePayment(studentId) {
   if (savingPayment.value) return;
   const amountMinor = Math.round(parseFloat(paymentForm.amount) * 100);
   if (!amountMinor || amountMinor <= 0 || !paymentForm.period.trim()) {
-    showToast(t('admin.payments.missingFields') || 'Amount and period are required');
+    showToast(t('admin.payments.missingFields'));
     return;
   }
   savingPayment.value = true;
@@ -1258,7 +1335,14 @@ async function savePayment(studentId) {
 }
 
 async function deletePayment(paymentId, studentId) {
-  if (!confirm(t('admin.payments.deleteConfirm') || 'Delete this payment?')) return;
+  const ok = await confirmDialog({
+    title: t('admin.deletePaymentTitle'),
+    message: t('admin.payments.deleteConfirm'),
+    confirmLabel: t('admin.delete'),
+    cancelLabel: t('admin.cancel'),
+    danger: true,
+  });
+  if (!ok) return;
   try {
     await api.delete(`/api/admin/payments/${paymentId}`);
     await loadStudentDetailData(studentId);
@@ -1272,13 +1356,18 @@ async function clearUpcomingClasses(studentId) {
   const upcomingCount = studentClasses.value.filter(
     (a) => new Date(a.classSession.startTime) > new Date() && !a.classSession.cancelled
   ).length;
-  const msg = (t('admin.clearUpcomingConfirm') || 'Remove this student from {count} upcoming classes?')
-    .replace('{count}', upcomingCount);
-  if (!confirm(msg)) return;
+  const ok = await confirmDialog({
+    title: t('admin.clearUpcomingTitle'),
+    message: t('admin.clearUpcomingConfirm').replace('{count}', upcomingCount),
+    confirmLabel: t('admin.clearUpcoming'),
+    cancelLabel: t('admin.cancel'),
+    danger: true,
+  });
+  if (!ok) return;
   clearingUpcoming.value = true;
   try {
     const data = await api.delete(`/api/admin/students/${studentId}/future-assignments`);
-    showToast((t('admin.clearUpcomingDone') || 'Removed {count} upcoming classes').replace('{count}', data.removed));
+    showToast(t('admin.clearUpcomingDone').replace('{count}', data.removed));
     await loadClasses();
     // Refresh the student detail so the classes list updates in place.
     await viewStudent(studentId);
@@ -1313,15 +1402,29 @@ watch(activeTab, (tab) => {
 watch(studentSearch, () => { loadStudents(); });
 watch(showScheduleForm, (v) => { if (v && !students.value.length) loadStudents(); });
 
+// Escape key closes the topmost open modal. The ConfirmDialog component
+// handles its own escape — so we don't touch it here.
+function handleGlobalKeydown(e) {
+  if (e.key !== 'Escape') return;
+  if (conflictModal.open) { cancelConflictResolution(); return; }
+  if (showScheduleForm.value) { showScheduleForm.value = false; return; }
+  if (showRescheduleModal.value) { showRescheduleModal.value = false; return; }
+  if (showPaymentForm.value) { showPaymentForm.value = false; return; }
+  if (selectedStudent.value) { selectedStudent.value = null; return; }
+  if (selectedClass.value) { selectedClass.value = null; return; }
+}
+
 onMounted(() => {
   loadStats();
   loadEnrollments();
   loadClasses();
   loadSettings();
+  window.addEventListener('keydown', handleGlobalKeydown);
 });
 
 onBeforeUnmount(() => {
   clearInterval(nowTick);
+  window.removeEventListener('keydown', handleGlobalKeydown);
 });
 </script>
 
