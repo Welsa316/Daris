@@ -87,7 +87,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                 {{ $t('admin.joinClass') }}
               </button>
-              <span v-else class="text-xs text-slate-400 italic shrink-0 text-end" :title="new Date(cls.startTime).toLocaleString()">
+              <span v-else class="text-xs text-slate-400 italic shrink-0 text-end whitespace-nowrap" :title="new Date(cls.startTime).toLocaleString()">
                 {{ joinAvailabilityLabel(cls) }}
               </span>
             </template>
@@ -1700,15 +1700,27 @@ function joinAvailabilityLabel(cls) {
     return t('admin.joinOpensInMin').replace('{n}', minsUntilOpen);
   }
   // Further out: show the actual clock time the link opens, in the
-  // viewer's timezone (the sheikh is looking at his own clock right now,
-  // not the class's).
-  const openTime = new Intl.DateTimeFormat(isAr.value ? 'ar-EG' : 'en-US', {
-    timeZone: viewerTz,
-    weekday: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  }).format(new Date(opens));
+  // viewer's timezone.
+  let openTime = '';
+  try {
+    openTime = new Intl.DateTimeFormat(isAr.value ? 'ar-EG' : 'en-US', {
+      timeZone: viewerTz,
+      weekday: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(new Date(opens));
+  } catch {
+    // Some browsers throw on malformed TZ strings — fall back to the raw
+    // locale string so we still say SOMETHING useful.
+    openTime = new Date(opens).toLocaleString();
+  }
+  // If the formatter somehow returns empty, don't leave the admin with a
+  // dangling "Opens " label. Fall back to an hour-based countdown.
+  if (!openTime) {
+    const hours = Math.ceil(minsUntilOpen / 60);
+    return t('admin.joinOpensInMin').replace('{n}', hours * 60);
+  }
   return t('admin.joinOpensAt').replace('{time}', openTime);
 }
 
