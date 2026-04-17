@@ -449,7 +449,7 @@
     "classesFor": "classes for",
     "at": "at",
     "globalMeetingLink": "Meeting Link",
-    "meetingLinkPlaceholder": "https://zoom.us/j/...",
+    "meetingLinkPlaceholder": "https://meet.google.com/xxx-xxxx-xxx",
     "meetingLinkHint": "This link is shared with students 15 minutes before each class",
     "upcomingClassesTitle": "Upcoming Classes",
     "noUpcomingClasses": "No upcoming classes",
