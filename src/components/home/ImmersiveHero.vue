@@ -1,10 +1,17 @@
 <template>
   <section class="relative min-h-screen bg-black overflow-hidden">
-    <!-- Full-width background photograph with warm gold tint -->
+    <!-- Full-width background photograph with warm gold tint.
+         This is the LCP element on the homepage — explicit width/height
+         + fetchpriority="high" so the browser fetches it eagerly and
+         layout doesn't shift once it loads. -->
     <div class="absolute inset-0">
       <img
         src="/images/HeroBanner.jpeg"
         alt="Children studying in a mosque with light rays streaming through an archway"
+        width="1920"
+        height="1280"
+        fetchpriority="high"
+        decoding="async"
         class="hero-image w-full h-full object-cover object-[center_80%]"
       />
     </div>
@@ -32,10 +39,13 @@
         <!-- Liquid glass box — dark tinted, gold outline, rounded -->
         <div class="hero-entrance hero-entrance-1 bg-black/50 backdrop-blur-md border border-gold/30 rounded-2xl p-8 md:p-12 lg:p-14 max-w-2xl">
 
-          <!-- Brand name + motto walking side by side -->
+          <!-- Brand name + motto walking side by side.
+               The H1 visually shows the brand wordmark ("DARIS") but includes
+               a screen-reader-only keyword subtitle so crawlers pick up the
+               page's real intent (Online Quran/Arabic/Fiqh lessons). -->
           <div class="flex items-end flex-wrap gap-x-5 gap-y-2">
             <h1 class="font-display text-gold text-5xl sm:text-6xl md:text-7xl lg:text-8xl tracking-[0.1em] leading-none mb-0">
-              {{ $t('hero.eyebrow') }}
+              {{ $t('hero.eyebrow') }}<span class="sr-only"> — {{ $t('hero.srSubtitle') }}</span>
             </h1>
             <p class="hero-entrance hero-entrance-2 font-display italic text-cream/70 text-sm sm:text-base md:text-lg leading-snug max-w-[12rem] sm:max-w-[14rem] mb-1 sm:mb-2 md:mb-3">
               {{ $t('hero.motto') }}
@@ -72,7 +82,7 @@
             </a>
             <!-- View programs — solid dark green pill -->
             <RouterLink
-              to="/programs"
+              :to="programsPath"
               class="inline-flex items-center justify-between gap-6 rounded-full bg-primary-950 px-6 py-3 text-sm font-semibold text-cream hover:bg-primary-900 transition-all duration-200"
             >
               {{ $t('hero.ctaPrograms') }}
@@ -88,10 +98,17 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useWhatsApp } from '@/composables/useWhatsApp';
 
 const { whatsAppHref } = useWhatsApp();
+const { locale } = useI18n();
+
+// Every marketing link picks up the current locale so Google indexes the
+// locale-scoped URL (not the bare /programs path, which 301s anyway).
+const programsPath = computed(() => `/${locale.value}/programs`);
 </script>
 
 <style scoped>

@@ -2,8 +2,7 @@
   <div>
     <!-- ═══════════════════════════════════════════
          SECTION 1: Editorial Hero
-         Dark surface, large serif brand statement,
-         no generic banner. Confident and human.
+         Dark surface, large serif brand statement.
          ═══════════════════════════════════════════ -->
     <section class="relative overflow-hidden bg-primary-950 py-32 md:py-44">
       <!-- Subtle radial glow — warm, off-center -->
@@ -20,13 +19,13 @@
             {{ $t('about.eyebrow') }}
           </p>
 
-          <!-- Brand statement — large serif, confident -->
-          <h1 class="font-display text-4xl sm:text-5xl md:text-6xl text-cream leading-[1.08] mb-8 hero-entrance hero-entrance-2">
+          <!-- Brand statement — large serif -->
+          <h1 class="font-display text-4xl sm:text-5xl md:text-6xl text-cream leading-[1.08] mb-8 hero-entrance hero-entrance-2 text-balance">
             {{ $t('about.title') }}
           </h1>
 
           <!-- Mission — generous, understated -->
-          <p class="text-lg md:text-xl text-cream/40 leading-relaxed max-w-xl hero-entrance hero-entrance-3">
+          <p class="text-lg md:text-xl text-cream/40 leading-relaxed max-w-xl hero-entrance hero-entrance-3 text-pretty">
             {{ $t('about.description') }}
           </p>
         </div>
@@ -34,9 +33,10 @@
     </section>
 
     <!-- ═══════════════════════════════════════════
-         SECTION 2: Story + Credentials
-         Two-column editorial. Generous whitespace.
-         Text left, photo + credentials right.
+         SECTION 2: Narrative + Methodology card
+         Five-paragraph org story, left column. The
+         "Methodology & tradition" card (right) is
+         organisation-level — no personal credentials.
          ═══════════════════════════════════════════ -->
     <section class="bg-cream py-24 md:py-36">
       <div class="section-wide">
@@ -46,38 +46,28 @@
             <!-- Thin rule above text -->
             <div class="w-10 h-px bg-gold/40 mb-10" aria-hidden="true"></div>
 
-            <div class="space-y-6 text-base md:text-lg text-slate-600 leading-[1.8]">
-              <p>{{ $t('about.text1') }}</p>
-              <p>{{ $t('about.text2') }}</p>
+            <div class="space-y-6 text-base md:text-lg text-slate-600 leading-[1.8] text-pretty">
+              <p>{{ $t('about.story1') }}</p>
+              <p>{{ $t('about.story2') }}</p>
+              <p>{{ $t('about.story3') }}</p>
+              <p>{{ $t('about.story4') }}</p>
+              <p>{{ $t('about.story5') }}</p>
             </div>
           </div>
 
-          <!-- Right: credential card -->
+          <!-- Right: methodology card -->
           <aside data-reveal data-reveal-delay="150">
             <div class="rounded-2xl bg-cream-50 border border-cream-200/60 p-7 text-sm text-slate-600">
-              <h3 class="text-[10px] font-semibold tracking-[0.3em] uppercase text-gold mb-5">
+              <h2 class="text-[10px] font-semibold tracking-[0.3em] uppercase text-gold mb-5">
                 {{ $t('about.credentialsTitle') }}
-              </h3>
+              </h2>
               <ul class="space-y-3.5">
-                <li class="flex gap-3 items-start">
+                <li v-for="row in credentialRows" :key="row.label" class="flex gap-3 items-start">
                   <span class="mt-1.5 h-1 w-1 rounded-full bg-gold/50 flex-shrink-0" aria-hidden="true"></span>
-                  <span>{{ $t('about.credTeaching') }} <em class="text-slate-400">{{ $t('about.credTeachingVal') }}</em></span>
-                </li>
-                <li class="flex gap-3 items-start">
-                  <span class="mt-1.5 h-1 w-1 rounded-full bg-gold/50 flex-shrink-0" aria-hidden="true"></span>
-                  <span>{{ $t('about.credQuran') }} <em class="text-slate-400">{{ $t('about.credQuranVal') }}</em></span>
-                </li>
-                <li class="flex gap-3 items-start">
-                  <span class="mt-1.5 h-1 w-1 rounded-full bg-gold/50 flex-shrink-0" aria-hidden="true"></span>
-                  <span>{{ $t('about.credFiqh') }} <em class="text-slate-400">{{ $t('about.credFiqhVal') }}</em></span>
-                </li>
-                <li class="flex gap-3 items-start">
-                  <span class="mt-1.5 h-1 w-1 rounded-full bg-gold/50 flex-shrink-0" aria-hidden="true"></span>
-                  <span>{{ $t('about.credArabic') }} <em class="text-slate-400">{{ $t('about.credArabicVal') }}</em></span>
-                </li>
-                <li class="flex gap-3 items-start">
-                  <span class="mt-1.5 h-1 w-1 rounded-full bg-gold/50 flex-shrink-0" aria-hidden="true"></span>
-                  <span>{{ $t('about.credCerts') }} <em class="text-slate-400">{{ $t('about.credCertsVal') }}</em></span>
+                  <span>
+                    {{ $t(row.labelKey) }}
+                    <em class="text-slate-400 not-italic">{{ $t(row.valueKey) }}</em>
+                  </span>
                 </li>
               </ul>
             </div>
@@ -87,9 +77,47 @@
     </section>
 
     <!-- ═══════════════════════════════════════════
-         SECTION 3: Values band
+         SECTION 3: Methodology grid — "How we teach"
+         Five principles, 2-up then 3-up grid. Dark
+         cream background to break rhythm between two
+         dark sections.
+         ═══════════════════════════════════════════ -->
+    <section class="bg-cream-100 py-24 md:py-32 border-y border-cream-200/60">
+      <div class="section-wide">
+        <div class="max-w-2xl mb-14 md:mb-20" data-reveal>
+          <div class="w-10 h-px bg-gold/40 mb-8" aria-hidden="true"></div>
+          <h2 class="font-display text-3xl md:text-4xl text-primary-950 leading-[1.15] mb-5 text-balance">
+            {{ $t('about.methodologyTitle') }}
+          </h2>
+          <p class="text-base md:text-lg text-slate-600 leading-relaxed text-pretty">
+            {{ $t('about.methodologyIntro') }}
+          </p>
+        </div>
+
+        <ol class="grid gap-x-10 gap-y-12 md:grid-cols-2 lg:grid-cols-3">
+          <li
+            v-for="(m, i) in methodologyItems"
+            :key="m.titleKey"
+            data-reveal
+            :data-reveal-delay="i * 80"
+          >
+            <div class="text-xs font-semibold text-gold tabular-nums tracking-[0.25em] mb-3">
+              {{ String(i + 1).padStart(2, '0') }}
+            </div>
+            <h3 class="font-display text-xl md:text-2xl text-primary-950 leading-snug mb-3 text-balance">
+              {{ $t(m.titleKey) }}
+            </h3>
+            <p class="text-sm md:text-base text-slate-600 leading-relaxed text-pretty">
+              {{ $t(m.bodyKey) }}
+            </p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SECTION 4: Values band — Philosophy + Languages
          Dark green surface. Two-column editorial.
-         Gold accents. Breaks the white rhythm.
          ═══════════════════════════════════════════ -->
     <section class="relative overflow-hidden bg-primary-950 py-24 md:py-32">
       <div class="absolute inset-0 grain-texture" aria-hidden="true"></div>
@@ -101,20 +129,20 @@
         <div class="grid gap-12 md:grid-cols-2">
           <div data-reveal>
             <div class="w-8 h-px bg-gold/40 mb-8" aria-hidden="true"></div>
-            <h3 class="font-display text-2xl md:text-3xl text-cream leading-[1.2] mb-5">
+            <h2 class="font-display text-2xl md:text-3xl text-cream leading-[1.2] mb-5 text-balance">
               {{ $t('about.philosophyTitle') }}
-            </h3>
-            <p class="text-base text-cream/35 leading-relaxed max-w-md">
+            </h2>
+            <p class="text-base text-cream/40 leading-relaxed max-w-md text-pretty">
               {{ $t('about.philosophyText') }}
             </p>
           </div>
 
           <div data-reveal data-reveal-delay="150">
             <div class="w-8 h-px bg-gold/40 mb-8" aria-hidden="true"></div>
-            <h3 class="font-display text-2xl md:text-3xl text-cream leading-[1.2] mb-5">
+            <h2 class="font-display text-2xl md:text-3xl text-cream leading-[1.2] mb-5 text-balance">
               {{ $t('about.langTitle') }}
-            </h3>
-            <p class="text-base text-cream/35 leading-relaxed max-w-md">
+            </h2>
+            <p class="text-base text-cream/40 leading-relaxed max-w-md text-pretty">
               {{ $t('about.langText') }}
             </p>
           </div>
@@ -123,8 +151,7 @@
     </section>
 
     <!-- ═══════════════════════════════════════════
-         SECTION 4: CTA — cinematic close
-         Matches home page BoldCTA register.
+         SECTION 5: CTA — cinematic close
          ═══════════════════════════════════════════ -->
     <section class="relative overflow-hidden bg-primary-950 py-32 md:py-44">
       <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-gold/[0.02] blur-[150px]" aria-hidden="true"></div>
@@ -140,7 +167,7 @@
         </h2>
 
         <p
-          class="text-base text-cream/30 max-w-sm mx-auto mb-14"
+          class="text-base text-cream/30 max-w-sm mx-auto mb-14 text-pretty"
           data-reveal
           data-reveal-delay="150"
         >
@@ -170,6 +197,28 @@ import { useWhatsApp } from '@/composables/useWhatsApp';
 usePageSeo('about');
 const { contactEmail } = contactConfig;
 const { whatsAppHref } = useWhatsApp();
+
+// Six rows on the "Methodology & tradition" card. All are organisation-
+// level — training lineage, fiqh school, what/how each program teaches.
+// Deliberately no named instructor; Daris is the brand and E-E-A-T here
+// is carried by the Al-Azhar lineage rather than a personal biography.
+const credentialRows = [
+  { labelKey: 'about.credLineageLabel', valueKey: 'about.credLineageVal' },
+  { labelKey: 'about.credFiqhLabel', valueKey: 'about.credFiqhVal' },
+  { labelKey: 'about.credQuranLabel', valueKey: 'about.credQuranVal' },
+  { labelKey: 'about.credArabicLabel', valueKey: 'about.credArabicVal' },
+  { labelKey: 'about.credStudentsLabel', valueKey: 'about.credStudentsVal' },
+  { labelKey: 'about.credFormatLabel', valueKey: 'about.credFormatVal' },
+];
+
+// Five methodology principles, rendered as a numbered grid below the story.
+const methodologyItems = [
+  { titleKey: 'about.method1Title', bodyKey: 'about.method1Body' },
+  { titleKey: 'about.method2Title', bodyKey: 'about.method2Body' },
+  { titleKey: 'about.method3Title', bodyKey: 'about.method3Body' },
+  { titleKey: 'about.method4Title', bodyKey: 'about.method4Body' },
+  { titleKey: 'about.method5Title', bodyKey: 'about.method5Body' },
+];
 
 useScrollReveal();
 </script>

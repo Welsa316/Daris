@@ -37,8 +37,9 @@
           <div class="space-y-10">
             <article
               v-for="(program, i) in programs"
+              :id="program.anchor"
               :key="program.titleKey"
-              class="rounded-2xl bg-cream-50 border border-cream-200/60 overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300"
+              class="rounded-2xl bg-cream-50 border border-cream-200/60 overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300 scroll-mt-28"
               data-reveal
               :data-reveal-delay="i * 100"
             >
@@ -59,13 +60,13 @@
               </div>
 
               <div class="p-8 text-sm text-slate-600 leading-relaxed">
-                <ul v-if="program.bulletKeys" class="space-y-3 mb-5">
+                <ul v-if="program.bulletKeys" class="space-y-3 mb-6">
                   <li v-for="bk in program.bulletKeys" :key="bk" class="flex gap-3 items-start">
                     <span class="mt-1.5 h-1 w-1 rounded-full bg-gold/50 flex-shrink-0" aria-hidden="true"></span>
                     <span>{{ $t(bk) }}</span>
                   </li>
                 </ul>
-                <div v-else-if="program.groups" class="space-y-5 mb-5">
+                <div v-else-if="program.groups" class="space-y-5 mb-6">
                   <div v-for="g in program.groups" :key="g.labelKey">
                     <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-primary/70 mb-2">
                       {{ $t(g.labelKey) }}
@@ -73,7 +74,21 @@
                     <p class="text-sm text-slate-600 leading-relaxed">{{ $t(g.itemsKey) }}</p>
                   </div>
                 </div>
-                <p class="text-xs text-slate-400 pt-5 border-t border-slate-200/40 leading-relaxed">
+
+                <!-- Course progression — the detailed syllabus block. This is
+                     where the page grows from ~50 words per card to ~200, and
+                     where target keywords (tajwid, iʿrāb, makhārij, Hanafi
+                     manuals, ijazah) actually live in body copy. -->
+                <div class="pt-5 border-t border-slate-200/40">
+                  <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-gold/80 mb-3">
+                    {{ $t('programs.syllabusLabel') }}
+                  </p>
+                  <p class="text-sm text-slate-600 leading-relaxed text-pretty">
+                    {{ $t(program.syllabusKey) }}
+                  </p>
+                </div>
+
+                <p class="text-xs text-slate-400 pt-5 mt-5 border-t border-slate-200/40 leading-relaxed">
                   {{ $t(program.noteKey) }}
                 </p>
               </div>
@@ -82,7 +97,9 @@
 
           <!-- Sidebar -->
           <aside class="space-y-8 lg:sticky lg:top-28">
-            <!-- Pricing CTA — deeper, more cinematic -->
+            <!-- "How to start" CTA. Deliberately no pricing copy on the site
+                 — any numbers happen in a direct conversation once we know
+                 the student's goals, level, and frequency. -->
             <div
               class="relative overflow-hidden rounded-2xl bg-primary-950 text-cream p-8"
               data-reveal
@@ -94,9 +111,9 @@
 
               <div class="relative">
                 <div class="w-8 h-px bg-gold/40 mb-6" aria-hidden="true"></div>
-                <h3 class="font-display text-xl font-semibold mb-3">{{ $t('programs.pricingTitle') }}</h3>
-                <p class="text-sm text-cream/40 mb-8 leading-relaxed">
-                  {{ $t('programs.pricingText') }}
+                <h2 class="font-display text-xl font-semibold mb-3 text-balance">{{ $t('programs.startTitle') }}</h2>
+                <p class="text-sm text-cream/40 mb-8 leading-relaxed text-pretty">
+                  {{ $t('programs.startText') }}
                 </p>
                 <div class="flex flex-col gap-3">
                   <CTAButton :asLink="true" :href="whatsAppHref" :external="true" variant="gold">
@@ -145,26 +162,32 @@ const { whatsAppHref } = useWhatsApp();
 
 const programs = [
   {
+    anchor: 'quran',
     titleKey: 'programs.quranTitle',
     tagKey: 'programs.quranTag',
     bulletKeys: ['programs.quranBullet1', 'programs.quranBullet2', 'programs.quranBullet3'],
+    syllabusKey: 'programs.quranSyllabus',
     noteKey: 'programs.quranNote',
     icon: '<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>'
   },
   {
+    anchor: 'arabic',
     titleKey: 'programs.arabicTitle',
     tagKey: 'programs.arabicTag',
     bulletKeys: ['programs.arabicBullet1', 'programs.arabicBullet2', 'programs.arabicBullet3'],
+    syllabusKey: 'programs.arabicSyllabus',
     noteKey: 'programs.arabicNote',
     icon: '<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802" /></svg>'
   },
   {
+    anchor: 'fiqh',
     titleKey: 'programs.fiqhTitle',
     tagKey: 'programs.fiqhTag',
     groups: [
       { labelKey: 'programs.fiqhAdultsLabel', itemsKey: 'programs.fiqhAdultsItems' },
       { labelKey: 'programs.fiqhChildrenLabel', itemsKey: 'programs.fiqhChildrenItems' }
     ],
+    syllabusKey: 'programs.fiqhSyllabus',
     noteKey: 'programs.fiqhNote',
     icon: '<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" /></svg>'
   }

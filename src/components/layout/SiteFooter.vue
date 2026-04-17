@@ -93,17 +93,24 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { contactConfig } from '@/config/contactConfig';
 import { useWhatsApp } from '@/composables/useWhatsApp';
 
 const { contactEmail } = contactConfig;
 const { whatsAppHref } = useWhatsApp();
+const { locale } = useI18n();
 
-const quickLinks = [
-  { to: '/', labelKey: 'nav.home' },
-  { to: '/about', labelKey: 'nav.about' },
-  { to: '/programs', labelKey: 'nav.programs' },
-  { to: '/contact', labelKey: 'nav.contact' }
-];
+// Marketing links pick up the current locale prefix so crawlers index only
+// the locale-scoped URLs (bare paths 301 on the server).
+const quickLinks = computed(() => [
+  { to: `/${locale.value}`, labelKey: 'nav.home' },
+  { to: `/${locale.value}/about`, labelKey: 'nav.about' },
+  { to: `/${locale.value}/programs`, labelKey: 'nav.programs' },
+  { to: `/${locale.value}/faq`, labelKey: 'nav.faq' },
+  { to: `/${locale.value}/articles`, labelKey: 'nav.articles' },
+  { to: `/${locale.value}/contact`, labelKey: 'nav.contact' },
+]);
 </script>

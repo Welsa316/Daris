@@ -19,7 +19,7 @@ import adminRoutes from './routes/admin.js';
 import studentRoutes from './routes/student.js';
 import meetingRoutes from './routes/meeting.js';
 import publicRoutes from './routes/public.js';
-import { buildMetaHtml } from './seoMeta.js';
+import { buildMetaHtml, pickLocaleFromHeader } from './seoMeta.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -83,6 +83,19 @@ app.use(
 // parse HTML as CSS/JS and the entire page breaks.
 app.get('/assets/*', (req, res) => {
   res.status(404).type('text/plain').send('Not Found');
+});
+
+// Locale-aware 301 redirects for bare marketing paths. Old bookmarks and
+// stale Google results that point at `/about` still work — they permanently
+// redirect to `/en/about` (or `/ar/about` if the browser prefers Arabic).
+// This is the single place where Accept-Language is consulted; once the
+// user is on a locale-prefixed URL their locale is determined by the URL
+// itself, not the header.
+const BARE_MARKETING_PATHS = ['/', '/about', '/programs', '/faq', '/articles', '/contact'];
+app.get(BARE_MARKETING_PATHS, (req, res) => {
+  const locale = pickLocaleFromHeader(req.headers['accept-language']);
+  const suffix = req.path === '/' ? '' : req.path;
+  res.redirect(301, `/${locale}${suffix}`);
 });
 
 // Read index.html once at startup for SEO meta injection

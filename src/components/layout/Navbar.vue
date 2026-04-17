@@ -9,7 +9,7 @@
     >
       <!-- Logo — fades in on scroll -->
       <RouterLink
-        to="/"
+        :to="homePath"
         class="flex items-center gap-3 group transition-all duration-500"
         :class="scrolled ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'"
       >
@@ -120,7 +120,7 @@
 
         <RouterLink
           v-if="!isAdmin"
-          to="/contact"
+          :to="contactPath"
           class="inline-flex items-center rounded-full px-8 py-3 text-base font-semibold active:scale-[0.97] transition-all duration-300 ltr:ml-2 rtl:mr-2"
           :class="scrolled
             ? 'bg-primary text-cream shadow-soft hover:bg-primary-800 hover:shadow-soft-md'
@@ -202,7 +202,7 @@
 
           <RouterLink
             v-if="!isAdmin"
-            to="/contact"
+            :to="contactPath"
             class="mt-2 flex items-center justify-center w-full rounded-full px-4 py-2.5 text-sm font-semibold transition-colors duration-200"
             :class="scrolled
               ? 'bg-primary text-cream shadow-soft hover:bg-primary-800'
@@ -218,21 +218,29 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { RouterLink } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 import { useAuth } from '@/composables/useAuth.js';
 
 const { isAuthenticated, isAdmin, isEnrolled, logout } = useAuth();
+const { locale } = useI18n();
 
 const isOpen = ref(false);
 const scrolled = ref(false);
 
-const navItems = [
-  { to: '/', labelKey: 'nav.home' },
-  { to: '/about', labelKey: 'nav.about' },
-  { to: '/programs', labelKey: 'nav.programs' },
-];
+// Every marketing link picks up the current locale prefix so Google indexes
+// only /en/* or /ar/* URLs — never the bare paths (those 301 to the locale
+// variants on the server). The array stays reactive via `computed`.
+const homePath = computed(() => `/${locale.value}`);
+const contactPath = computed(() => `/${locale.value}/contact`);
+const navItems = computed(() => [
+  { to: `/${locale.value}`, labelKey: 'nav.home' },
+  { to: `/${locale.value}/about`, labelKey: 'nav.about' },
+  { to: `/${locale.value}/programs`, labelKey: 'nav.programs' },
+  { to: `/${locale.value}/faq`, labelKey: 'nav.faq' },
+]);
 
 const handleScroll = () => {
   scrolled.value = window.scrollY > 60;

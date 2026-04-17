@@ -4,13 +4,19 @@
        Bottom-up light. Documentary frame feel.
        Strongest contrast of the three immersive sections. -->
   <section class="relative overflow-hidden min-h-[70vh] md:min-h-[80vh] flex items-start">
-    <!-- Painting — scholars gathered in a mosque courtyard -->
+    <!-- Painting — scholars gathered in a mosque courtyard.
+         Explicit width/height prevents CLS while `object-cover` handles
+         the real layout. Renamed from the raw WhatsApp export so the
+         filename carries a useful SEO signal. -->
     <div class="absolute inset-0">
       <img
-        src="/images/WhatsApp Image 2026-03-19 at 20.36.50.jpeg"
+        src="/images/scholars-gathering.jpeg"
         alt="Classical painting of scholars gathered in a mosque courtyard, studying and discussing Islamic jurisprudence"
+        width="1600"
+        height="1067"
         class="w-full h-full object-cover object-bottom"
         loading="lazy"
+        decoding="async"
       />
     </div>
     <!-- Bottom-up gradient — image is bright at bottom, fades into panel at top -->

@@ -1,3 +1,10 @@
+# Daris — crawl policy.
+# Marketing pages (`/en/*` and `/ar/*`) are open to every crawler that honours
+# robots.txt. Auth and authenticated surfaces are closed to everyone.
+# AI-search crawlers (GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot,
+# Google-Extended) are explicitly welcomed so Daris can be cited in AI
+# answers to "best online Quran teacher" style queries.
+
 User-agent: *
 Allow: /
 Disallow: /login
@@ -7,6 +14,66 @@ Disallow: /reset-password
 Disallow: /verify-email
 Disallow: /enrollment-status
 Disallow: /change-password
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /api/
+
+# Explicit allowlist for AI search and LLM-training crawlers.
+# Listing each under its own `User-agent` is the safe pattern — some of these
+# bots ignore rules under `User-agent: *` and read only their named section.
+
+User-agent: GPTBot
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /api/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /login
+Disallow: /register
 Disallow: /dashboard
 Disallow: /admin
 Disallow: /api/

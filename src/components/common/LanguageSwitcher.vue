@@ -44,6 +44,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute, useRouter } from 'vue-router';
 import { setLocale } from '@/i18n';
 
 defineProps({
@@ -51,11 +52,23 @@ defineProps({
 });
 
 const { locale } = useI18n();
+const route = useRoute();
+const router = useRouter();
 
 const currentLocale = computed(() => locale.value);
 
+// Swap the URL prefix so /en/<page> ↔ /ar/<page> and the new locale becomes
+// the indexed URL. If we're on a non-marketing route (auth, dashboard) we
+// don't rewrite the path — just flip the i18n locale in place.
 function setLang(next) {
   if (locale.value === next) return;
   setLocale(next);
+
+  const path = route.path || '/';
+  const match = path.match(/^\/(en|ar)(\/.*)?$/);
+  if (match) {
+    const rest = match[2] || '';
+    router.push(`/${next}${rest}${route.hash || ''}`);
+  }
 }
 </script>

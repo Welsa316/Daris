@@ -35,12 +35,17 @@
         <!-- ── Photo card — image is the surface ── -->
         <div class="relative rounded-2xl md:rounded-3xl shadow-2xl shadow-black/20 overflow-hidden ring-1 ring-black/[0.06]">
 
-          <!-- Background photo — object-top to show the subject properly -->
+          <!-- Background photo — object-top to show the subject properly.
+               WebP saves ~2MB vs the old PNG; explicit width/height avoid
+               CLS while Tailwind's object-cover handles the real layout. -->
           <img
-            src="/images/islamic-study.png"
+            src="/images/islamic-study.webp"
             :alt="$t('home.credibilityImageAlt')"
+            width="1200"
+            height="800"
             class="absolute inset-0 w-full h-full object-cover object-top"
             loading="lazy"
+            decoding="async"
           />
 
           <!-- Dark overlay gradient for text readability -->

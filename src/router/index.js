@@ -4,14 +4,79 @@ import HomeView from '../views/HomeView.vue';
 import AboutView from '../views/AboutView.vue';
 import ProgramsView from '../views/ProgramsView.vue';
 import ContactView from '../views/ContactView.vue';
+import FaqView from '../views/FaqView.vue';
+import ArticlesIndexView from '../views/ArticlesIndexView.vue';
+import ArticleView from '../views/ArticleView.vue';
+import { i18n, setLocale } from '@/i18n';
+
+// Build the eight canonical marketing routes: /en/<page> and /ar/<page>.
+// Each route carries a `meta.locale` and a `meta.pageKey` so the SEO
+// composable + nav guard can react to the URL instead of guessing from
+// vue-i18n state. Non-marketing routes (auth, dashboard) keep their bare
+// paths — they're not indexed and don't need locale-scoped URLs.
+function marketingRoutes() {
+  const pages = [
+    { key: 'home', path: '', component: HomeView },
+    { key: 'about', path: '/about', component: AboutView },
+    { key: 'programs', path: '/programs', component: ProgramsView },
+    { key: 'faq', path: '/faq', component: FaqView },
+    { key: 'contact', path: '/contact', component: ContactView },
+  ];
+  const out = [];
+  for (const locale of ['en', 'ar']) {
+    for (const p of pages) {
+      out.push({
+        path: `/${locale}${p.path}`,
+        name: `${p.key}-${locale}`,
+        component: p.component,
+        meta: { locale, pageKey: p.key, public: true },
+      });
+    }
+  }
+  // Articles: index + dynamic slug route. Currently English-only — when
+  // Arabic translations land, mirror these two entries under `/ar/articles`.
+  out.push({
+    path: '/en/articles',
+    name: 'articles-index-en',
+    component: ArticlesIndexView,
+    meta: { locale: 'en', pageKey: 'articles', public: true },
+  });
+  out.push({
+    path: '/en/articles/:slug',
+    name: 'article-en',
+    component: ArticleView,
+    meta: { locale: 'en', pageKey: 'article', public: true },
+  });
+  // Arabic visitors who reach either AR articles URL get bounced to the
+  // English index until translations exist. Prevents a half-empty page.
+  out.push({
+    path: '/ar/articles',
+    redirect: '/en/articles',
+  });
+  out.push({
+    path: '/ar/articles/:slug',
+    redirect: (to) => `/en/articles/${to.params.slug}`,
+  });
+  return out;
+}
+
+// Fallback redirects for old bare paths. The server issues a 301 for the
+// same paths before any SPA rendering happens (see server/src/index.js),
+// but if the client ever router-navigates to a bare path we still want
+// it to land on a real locale-scoped URL rather than 404.
+const bareRedirects = [
+  { path: '/', redirect: () => `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}` },
+  { path: '/about', redirect: () => `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}/about` },
+  { path: '/programs', redirect: () => `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}/programs` },
+  { path: '/faq', redirect: () => `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}/faq` },
+  { path: '/contact', redirect: () => `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}/contact` },
+];
 
 const routes = [
-  { path: '/', name: 'home', component: HomeView },
-  { path: '/about', name: 'about', component: AboutView },
-  { path: '/programs', name: 'programs', component: ProgramsView },
-  { path: '/contact', name: 'contact', component: ContactView },
+  ...marketingRoutes(),
+  ...bareRedirects,
 
-  // Auth routes
+  // Auth routes (unscoped — not indexed, no SEO reason to fork URLs)
   {
     path: '/login',
     name: 'login',
@@ -54,7 +119,7 @@ const routes = [
     meta: { auth: true },
   },
 
-  // Dashboard routes
+  // Dashboard routes (auth-gated)
   {
     path: '/dashboard',
     name: 'dashboard',
@@ -68,19 +133,30 @@ const routes = [
     meta: { auth: true, role: 'admin' },
   },
 
-  { path: '/:pathMatch(.*)*', redirect: '/' }
+  // Catch-all — redirect unknown paths to the current-locale home.
+  { path: '/:pathMatch(.*)*', redirect: () => `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}` },
 ];
 
 export const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior() {
+  scrollBehavior(to, _from, saved) {
+    // Preserve anchor scrolls (e.g. /en/programs#quran) and back-button
+    // scroll positions. Everything else snaps to top.
+    if (saved) return saved;
+    if (to.hash) return { el: to.hash, behavior: 'smooth' };
     return { top: 0 };
   }
 });
 
-// Navigation guards for auth enforcement
+// Nav guards for auth enforcement + locale sync.
 router.beforeEach(async (to) => {
+  // Sync vue-i18n to the URL's locale. This is what makes /en/* render
+  // English content and /ar/* render Arabic, even on deep links and reloads.
+  if (to.meta?.locale && i18n.global.locale.value !== to.meta.locale) {
+    setLocale(to.meta.locale);
+  }
+
   // Lazy import to avoid circular dependency (useAuth imports router)
   const { useAuth } = await import('@/composables/useAuth.js');
   const { user, initialized, isAdmin } = useAuth();
@@ -108,6 +184,6 @@ router.beforeEach(async (to) => {
 
   // Role-required routes — redirect home if wrong role
   if (to.meta.role && user.value?.role !== to.meta.role) {
-    return '/';
+    return `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}`;
   }
 });
