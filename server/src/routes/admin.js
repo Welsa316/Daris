@@ -1,8 +1,9 @@
 import { Router } from 'express';
+import { randomUUID } from 'node:crypto';
 import { authenticate, verifyTokenVersion } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
 import { validate } from '../middleware/validate.js';
-import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, rescheduleClassSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema, batchClassSchema, meetingLinkSchema, checkConflictsSchema, classLogSchema, paymentSchema, paymentUpdateSchema } from '../validators/adminSchemas.js';
+import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, rescheduleClassSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema, batchClassSchema, meetingLinkSchema, checkConflictsSchema, classLogSchema, paymentSchema, paymentUpdateSchema, studentProfileSchema } from '../validators/adminSchemas.js';
 import { getPendingEnrollments, approveEnrollment, rejectEnrollment, getRejectedApplicants, suspendStudent, removeStudent } from '../services/enrollmentService.js';
 import { prisma } from '../config/database.js';
 import { sendClassCancelledEmail, sendClassRescheduledEmail, sendFutureAssignmentsClearedEmail } from '../services/emailService.js';
@@ -170,6 +171,8 @@ router.get('/students', validate(paginationSchema, 'query'), async (req, res, ne
           enrolledAt: true,
           lastLoginAt: true,
           createdAt: true,
+          expectedMonthlyAmount: true,
+          expectedMonthlyCurrency: true,
         },
         orderBy,
         skip,
@@ -177,6 +180,28 @@ router.get('/students', validate(paginationSchema, 'query'), async (req, res, ne
       }),
       prisma.user.count({ where }),
     ]);
+
+    // Attach this-month's payment total per student so the frontend can render
+    // an outstanding-balance pill without hitting the detail endpoint per row.
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const paymentsThisMonth = await prisma.payment.groupBy({
+      by: ['studentId', 'currency'],
+      where: {
+        studentId: { in: students.map((s) => s.id) },
+        paidAt: { gte: monthStart },
+      },
+      _sum: { amount: true },
+    });
+    const paidMap = {};
+    for (const row of paymentsThisMonth) {
+      paidMap[row.studentId] ??= {};
+      paidMap[row.studentId][row.currency] = row._sum.amount || 0;
+    }
+    for (const s of students) {
+      s.paidThisMonth = paidMap[s.id] || {};
+    }
 
     res.json({
       students,
@@ -209,6 +234,9 @@ router.get('/students/:id', async (req, res, next) => {
         lastLoginAt: true,
         lastLoginIp: true,
         createdAt: true,
+        preferredLanguage: true,
+        expectedMonthlyAmount: true,
+        expectedMonthlyCurrency: true,
         adminNotes: {
           orderBy: { createdAt: 'desc' },
           select: {
@@ -231,7 +259,9 @@ router.get('/students/:id', async (req, res, next) => {
                 endTime: true,
                 meetingLink: true,
                 cancelled: true,
+                rescheduled: true,
                 recurrence: true,
+                seriesId: true,
               },
             },
           },
@@ -263,6 +293,47 @@ router.post('/students/:id/suspend', async (req, res, next) => {
     next(error);
   }
 });
+
+// Update the editable admin-facing fields on a student's profile — currently
+// preferred language and expected monthly tuition. These drive the balance
+// pill and the language used in reminder emails.
+router.put(
+  '/students/:id/profile',
+  validate(studentProfileSchema),
+  async (req, res, next) => {
+    try {
+      const { preferredLanguage, expectedMonthlyAmount, expectedMonthlyCurrency } = req.body;
+      const data = {};
+      if (preferredLanguage !== undefined) data.preferredLanguage = preferredLanguage;
+      if (expectedMonthlyAmount !== undefined) data.expectedMonthlyAmount = expectedMonthlyAmount;
+      if (expectedMonthlyCurrency !== undefined) data.expectedMonthlyCurrency = expectedMonthlyCurrency;
+
+      const student = await prisma.user.update({
+        where: { id: req.params.id },
+        data,
+        select: {
+          id: true,
+          preferredLanguage: true,
+          expectedMonthlyAmount: true,
+          expectedMonthlyCurrency: true,
+        },
+      });
+
+      auditLog('STUDENT_PROFILE_UPDATED', {
+        studentId: req.params.id,
+        adminId: req.user.id,
+        fields: Object.keys(data),
+      });
+
+      res.json({ student });
+    } catch (error) {
+      if (error.code === 'P2025') {
+        return res.status(404).json({ error: 'Student not found' });
+      }
+      next(error);
+    }
+  }
+);
 
 router.delete('/students/:id', async (req, res, next) => {
   try {
@@ -553,6 +624,72 @@ router.post('/classes/:id/cancel', async (req, res, next) => {
   }
 });
 
+// Cancel every not-yet-started class in the same series starting at or after
+// the given class's start time. Used by the "cancel this and following" UI.
+router.post('/classes/:id/cancel-series', async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+
+    const anchor = await prisma.classSession.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, seriesId: true, startTime: true, createdByAdminId: true },
+    });
+    if (!anchor) return res.status(404).json({ error: 'Class not found' });
+    if (!anchor.seriesId) {
+      return res.status(400).json({ error: 'This class is not part of a series.' });
+    }
+
+    // Find every not-already-cancelled session in the same series at or
+    // after this anchor — we cancel all of them.
+    const targets = await prisma.classSession.findMany({
+      where: {
+        seriesId: anchor.seriesId,
+        cancelled: false,
+        startTime: { gte: anchor.startTime },
+        createdByAdminId: anchor.createdByAdminId,
+      },
+      include: {
+        assignments: {
+          where: { student: { deletedAt: null } },
+          include: {
+            student: { select: { email: true, firstName: true, preferredLanguage: true } },
+          },
+        },
+      },
+    });
+
+    await prisma.classSession.updateMany({
+      where: { id: { in: targets.map((c) => c.id) } },
+      data: { cancelled: true, cancelledAt: new Date() },
+    });
+
+    // Notify each student once per cancelled class in their own language.
+    for (const cls of targets) {
+      for (const a of cls.assignments) {
+        const studentLang = a.student.preferredLanguage === 'en' ? 'en' : 'ar';
+        sendClassCancelledEmail(
+          a.student.email,
+          a.student.firstName,
+          cls.title,
+          cls.startTime.toISOString(),
+          studentLang
+        ).catch(() => {});
+      }
+    }
+
+    auditLog('CLASS_SERIES_CANCELLED', {
+      anchorClassId: anchor.id,
+      seriesId: anchor.seriesId,
+      count: targets.length,
+      adminId: req.user.id,
+    });
+
+    res.json({ message: t('schedule.cancelled', lang), count: targets.length });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/classes/:id/reschedule', validate(rescheduleClassSchema), async (req, res, next) => {
   try {
     const lang = getLang(req);
@@ -683,6 +820,10 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
     const meetingLinkSetting = await prisma.siteSetting.findUnique({ where: { key: 'meetingLink' } });
     const meetingLink = meetingLinkSetting?.value || null;
 
+    // One series ID per batch call. Later the admin can cancel "this and
+    // all future occurrences" by matching this ID.
+    const seriesId = randomUUID();
+
     const result = await prisma.$transaction(async (tx) => {
       let created = 0;
       let merged = 0;
@@ -743,6 +884,7 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
             endTime: new Date(session.endTime),
             meetingLink,
             recurrence: 'weekly',
+            seriesId,
             createdByAdminId: req.user.id,
           },
         });
@@ -1097,7 +1239,7 @@ router.put(
   async (req, res, next) => {
     try {
       const { classSessionId, studentId } = req.params;
-      const { summary, nextSteps } = req.body;
+      const { summary, homework, nextSteps, adminNotes, visibility } = req.body;
 
       // Sanity: the class and the student must actually be linked.
       const assignment = await prisma.classAssignment.findUnique({
@@ -1114,9 +1256,19 @@ router.put(
           studentId,
           authorId: req.user.id,
           summary,
+          homework,
           nextSteps,
+          adminNotes,
+          visibility,
         },
-        update: { summary, nextSteps, authorId: req.user.id },
+        update: {
+          summary,
+          homework,
+          nextSteps,
+          adminNotes,
+          visibility,
+          authorId: req.user.id,
+        },
       });
 
       auditLog('CLASS_LOG_UPDATED', {

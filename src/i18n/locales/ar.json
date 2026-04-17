@@ -470,6 +470,35 @@
     "undo": "تراجع",
     "cancelClassDone": "تم إلغاء الحصة",
     "deletePaymentDone": "تم حذف الدفعة",
+    "cancelOnlyThis": "إلغاء",
+    "cancelSeries": "إلغاء السلسلة",
+    "cancelSeriesTitle": "إلغاء هذه والحصص القادمة؟",
+    "cancelSeriesConfirm": "سيتم إلغاء {count} حصة من هذه السلسلة، من هذا التاريخ فصاعداً. سيتم إبلاغ الطلاب. لا يمكن التراجع.",
+    "cancelSeriesDone": "تم إلغاء {count} حصة",
+    "balance": {
+      "header": "الرصيد",
+      "paid": "مدفوع هذا الشهر",
+      "due": "متأخر {amount}",
+      "tooltip": "دُفع {paid} من أصل {expected} هذا الشهر",
+      "settingsTitle": "الأجر الشهري واللغة",
+      "expectedAmount": "الأجر الشهري المتوقع",
+      "preferredLanguage": "اللغة المفضلة",
+      "languageAr": "العربية",
+      "languageEn": "الإنجليزية"
+    },
+    "firstRun": {
+      "title": "أهلاً يا شيخ — لنبدأ",
+      "subtitle": "ثلاث خطوات سريعة لتشغيل دارس.",
+      "step1": "أضف أول طالب",
+      "step1Hint": "وافق على طلب تسجيل أو انتظر ورود طلب جديد.",
+      "step1Cta": "فتح التسجيلات",
+      "step2": "اضبط رابط الاجتماع",
+      "step2Hint": "رابط Zoom أو Google Meet الذي سينضم منه الطلاب.",
+      "step2Cta": "إضافة الرابط",
+      "step3": "جدولة أول حصة",
+      "step3Hint": "اختر طالباً وأيام الأسبوع والوقت.",
+      "step3Cta": "جدولة حصة"
+    },
     "batchSummary": "تمت جدولة {created} · دمج {merged} · تخطي {skipped}",
     "schedulePreview": "{count} حصة لـ {name} — {days} الساعة {time}",
     "statsFailed": "تعذر التحميل · اضغط للمحاولة",
@@ -491,7 +520,8 @@
       "saveClassLog": "تعذر حفظ تقرير الحصة",
       "savePayment": "تعذر حفظ الدفعة",
       "deletePayment": "تعذر حذف الدفعة",
-      "clearUpcoming": "تعذر إلغاء الحصص القادمة"
+      "clearUpcoming": "تعذر إلغاء الحصص القادمة",
+      "saveProfile": "تعذر حفظ الملف"
     },
     "relativeToday": "اليوم، {time}",
     "relativeTomorrow": "غداً، {time}",
@@ -511,8 +541,15 @@
       "save": "حفظ التقرير",
       "summaryLabel": "ما تم دراسته",
       "summaryPh": "مراجعة أحكام التجويد ١-٥، سورة العصر...",
-      "nextStepsLabel": "الخطوة التالية",
-      "nextStepsPh": "بدء الحديث ٤١، حفظ الآية التالية..."
+      "homeworkLabel": "الواجب المنزلي",
+      "homeworkPh": "حفظ الآيات من ١ إلى ٤، تدريب على أحكام المد...",
+      "nextStepsLabel": "الحصة القادمة",
+      "nextStepsPh": "الاستمرار في سورة البقرة...",
+      "privateLabel": "ملاحظات خاصة",
+      "privateHint": "للشيخ فقط — لا يراها الطالب",
+      "privatePh": "يحتاج إلى صبر أكثر في القلقلة...",
+      "shareWithStudent": "مشاركة التقرير مع الطالب",
+      "shareWithStudentHint": "سيرى الطالب ما تمت دراسته والواجب والحصة القادمة في لوحته. الملاحظات الخاصة تبقى مخفية."
     },
     "payments": {
       "total": "الإجمالي المدفوع",

@@ -123,7 +123,12 @@ export const checkConflictsSchema = z.object({
 
 export const classLogSchema = z.object({
   summary: z.string().max(20000).default(''),
+  homework: z.string().max(20000).default(''),
   nextSteps: z.string().max(20000).default(''),
+  adminNotes: z.string().max(20000).default(''),
+  // 'private' = admin only. 'student' = student can see summary/homework/next.
+  // adminNotes is always admin-only regardless of visibility.
+  visibility: z.enum(['private', 'student']).default('private'),
 });
 
 // Payment amounts are stored in minor units (piastres / cents). Cap at
@@ -143,6 +148,32 @@ export const paymentSchema = z.object({
 });
 
 export const paymentUpdateSchema = paymentSchema.partial();
+
+// Only admin-facing profile fields go through this route. All optional —
+// sending only one key updates only that one.
+export const studentProfileSchema = z
+  .object({
+    preferredLanguage: z.enum(['en', 'ar']).optional(),
+    // Minor units again. Null explicitly allowed so admin can clear the
+    // expectation (no balance pill will render).
+    expectedMonthlyAmount: z
+      .number()
+      .int()
+      .positive()
+      .max(10_000_000)
+      .optional()
+      .nullable(),
+    expectedMonthlyCurrency: z.string().min(1).max(10).optional().nullable(),
+  })
+  .refine(
+    (d) =>
+      (d.expectedMonthlyAmount == null && d.expectedMonthlyCurrency == null) ||
+      (d.expectedMonthlyAmount != null && d.expectedMonthlyCurrency),
+    {
+      message: 'Amount and currency must be set together, or both cleared',
+      path: ['expectedMonthlyCurrency'],
+    }
+  );
 
 export const meetingLinkSchema = z.object({
   meetingLink: z.string().url('Invalid meeting link').max(500),

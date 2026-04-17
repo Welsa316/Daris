@@ -470,6 +470,35 @@
     "undo": "Undo",
     "cancelClassDone": "Class cancelled",
     "deletePaymentDone": "Payment deleted",
+    "cancelOnlyThis": "Cancel",
+    "cancelSeries": "Cancel series",
+    "cancelSeriesTitle": "Cancel this and all following?",
+    "cancelSeriesConfirm": "This will cancel {count} classes in this series, from this date forward. Students will be notified. This cannot be undone.",
+    "cancelSeriesDone": "{count} classes cancelled",
+    "balance": {
+      "header": "Balance",
+      "paid": "Paid this month",
+      "due": "{amount} due",
+      "tooltip": "Paid {paid} of {expected} this month",
+      "settingsTitle": "Monthly tuition & language",
+      "expectedAmount": "Expected per month",
+      "preferredLanguage": "Preferred language",
+      "languageAr": "Arabic",
+      "languageEn": "English"
+    },
+    "firstRun": {
+      "title": "Welcome — let's get you set up",
+      "subtitle": "Three quick steps to start using Daris.",
+      "step1": "Add your first student",
+      "step1Hint": "Approve an enrollment request or wait for one to come in.",
+      "step1Cta": "Open enrollments",
+      "step2": "Set your meeting link",
+      "step2Hint": "A Zoom or Google Meet link students will join through.",
+      "step2Cta": "Add link",
+      "step3": "Schedule your first class",
+      "step3Hint": "Pick a student, days of the week, and a time.",
+      "step3Cta": "Schedule class"
+    },
     "batchSummary": "Scheduled {created} · Merged {merged} · Skipped {skipped}",
     "schedulePreview": "{count} classes for {name} — {days} at {time}",
     "statsFailed": "Couldn't load · tap to retry",
@@ -491,7 +520,8 @@
       "saveClassLog": "Couldn't save class log",
       "savePayment": "Couldn't save payment",
       "deletePayment": "Couldn't delete payment",
-      "clearUpcoming": "Couldn't clear upcoming classes"
+      "clearUpcoming": "Couldn't clear upcoming classes",
+      "saveProfile": "Couldn't save profile"
     },
     "relativeToday": "Today, {time}",
     "relativeTomorrow": "Tomorrow, {time}",
@@ -505,14 +535,21 @@
       "export": "Export"
     },
     "classLog": {
-      "add": "Add log",
-      "edit": "Edit log",
+      "add": "Add report",
+      "edit": "Edit report",
       "close": "Close",
-      "save": "Save log",
+      "save": "Save report",
       "summaryLabel": "What was covered",
       "summaryPh": "Tajwid rules 1–5, reviewed Surah Al-Asr...",
-      "nextStepsLabel": "What's next",
-      "nextStepsPh": "Start hadith 41, memorise next ayah..."
+      "homeworkLabel": "Homework",
+      "homeworkPh": "Memorise ayah 1–4, practise madd rules...",
+      "nextStepsLabel": "Next session",
+      "nextStepsPh": "Continue with Surah Al-Baqarah...",
+      "privateLabel": "Private notes",
+      "privateHint": "admin only — never shared",
+      "privatePh": "Struggles with qalqalah, needs patience...",
+      "shareWithStudent": "Share this report with the student",
+      "shareWithStudentHint": "Covered, homework, and next session will appear in the student's dashboard. Private notes stay hidden."
     },
     "payments": {
       "total": "Total paid",

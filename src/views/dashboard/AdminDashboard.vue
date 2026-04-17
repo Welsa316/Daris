@@ -86,6 +86,42 @@
         </div>
       </div>
 
+      <!-- First-run checklist. Shown when the dashboard is effectively empty
+           so the sheikh isn't staring at blank tabs on day one. Dismisses
+           itself once all three steps are done. -->
+      <div v-if="showFirstRunChecklist" class="bg-gradient-to-br from-primary/5 to-gold/5 border border-primary/10 rounded-2xl p-6 mb-8">
+        <h2 class="text-lg font-bold text-primary mb-1">{{ $t('admin.firstRun.title') }}</h2>
+        <p class="text-sm text-slate-500 mb-5">{{ $t('admin.firstRun.subtitle') }}</p>
+        <ol class="space-y-3">
+          <li v-for="step in firstRunSteps" :key="step.key"
+              class="flex items-start gap-3 p-3 rounded-xl"
+              :class="step.done ? 'bg-green-50/50' : 'bg-white'">
+            <span
+              class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+              :class="step.done
+                ? 'bg-green-600 text-white'
+                : 'bg-primary/10 text-primary'"
+            >
+              <svg v-if="step.done" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+              <span v-else>{{ step.number }}</span>
+            </span>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-primary text-sm" :class="step.done ? 'line-through text-slate-400' : ''">
+                {{ $t(step.labelKey) }}
+              </p>
+              <p class="text-xs text-slate-400 mt-0.5">{{ $t(step.hintKey) }}</p>
+            </div>
+            <button
+              v-if="!step.done"
+              @click="step.action"
+              class="bg-primary text-cream px-4 py-1.5 rounded-full text-xs font-medium hover:bg-primary-800 transition shrink-0"
+            >
+              {{ $t(step.ctaKey) }}
+            </button>
+          </li>
+        </ol>
+      </div>
+
       <!-- Tabs -->
       <div class="flex gap-2 mb-6 overflow-x-auto">
         <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
@@ -135,11 +171,12 @@
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-slate-100">
-                <th class="text-left py-3 px-2 text-slate-500 font-medium">{{ $t('auth.firstName') }}</th>
-                <th class="text-left py-3 px-2 text-slate-500 font-medium">{{ $t('auth.email') }}</th>
-                <th class="text-left py-3 px-2 text-slate-500 font-medium">{{ $t('auth.country') }}</th>
-                <th class="text-left py-3 px-2 text-slate-500 font-medium">{{ $t('admin.enrolled') }}</th>
-                <th class="text-left py-3 px-2 text-slate-500 font-medium">{{ $t('admin.actions') }}</th>
+                <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('auth.firstName') }}</th>
+                <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('auth.email') }}</th>
+                <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('auth.country') }}</th>
+                <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('admin.balance.header') }}</th>
+                <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('admin.enrolled') }}</th>
+                <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('admin.actions') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -147,6 +184,9 @@
                 <td class="py-3 px-2">{{ s.firstName }} {{ s.lastName }}</td>
                 <td class="py-3 px-2 text-slate-500">{{ s.email }}</td>
                 <td class="py-3 px-2 text-slate-500">{{ s.country }}</td>
+                <td class="py-3 px-2">
+                  <BalancePill :student="s" />
+                </td>
                 <td class="py-3 px-2 text-slate-400 text-xs">{{ s.enrolledAt ? new Date(s.enrolledAt).toLocaleDateString() : '-' }}</td>
                 <td class="py-3 px-2">
                   <button @click="viewStudent(s.id)" class="text-primary hover:text-primary-800 text-xs font-medium">{{ $t('admin.view') }}</button>
@@ -257,7 +297,8 @@
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                   <button v-if="!selectedClass.cancelled" @click="openReschedule(selectedClass)" class="text-amber-600 hover:text-amber-700 text-xs font-medium">{{ $t('admin.reschedule') }}</button>
-                  <button v-if="!selectedClass.cancelled" @click="cancelClass(selectedClass.id); selectedClass = null" class="text-red-500 hover:text-red-700 text-xs font-medium">{{ $t('admin.cancel') }}</button>
+                  <button v-if="!selectedClass.cancelled" @click="cancelClass(selectedClass.id); selectedClass = null" class="text-red-500 hover:text-red-700 text-xs font-medium">{{ $t('admin.cancelOnlyThis') }}</button>
+                  <button v-if="!selectedClass.cancelled && selectedClass.seriesId" @click="cancelSeriesFromHere(selectedClass); selectedClass = null" class="text-red-500 hover:text-red-700 text-xs font-medium">{{ $t('admin.cancelSeries') }}</button>
                   <button @click="selectedClass = null" class="text-slate-400 hover:text-slate-600">&times;</button>
                 </div>
               </div>
@@ -304,9 +345,14 @@
       <!-- Student Detail Modal -->
       <div v-if="selectedStudent" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="selectedStudent = null">
         <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
-          <div class="flex items-start justify-between mb-4">
-            <h2 class="text-lg font-bold text-primary">{{ selectedStudent.firstName }} {{ selectedStudent.lastName }}</h2>
-            <button @click="selectedStudent = null" class="text-slate-400 hover:text-slate-600">&times;</button>
+          <div class="flex items-start justify-between mb-4 gap-3">
+            <div class="min-w-0">
+              <h2 class="text-lg font-bold text-primary">{{ selectedStudent.firstName }} {{ selectedStudent.lastName }}</h2>
+              <div class="mt-1">
+                <BalancePill :student="balancePillStudent" />
+              </div>
+            </div>
+            <button @click="selectedStudent = null" class="text-slate-400 hover:text-slate-600 shrink-0">&times;</button>
           </div>
           <div class="space-y-2 text-sm">
             <p><span class="text-slate-400">{{ $t('admin.emailLabel') }}:</span> {{ selectedStudent.email }}</p>
@@ -316,6 +362,57 @@
             <p v-if="selectedStudent.telegram"><span class="text-slate-400">{{ $t('admin.telegramLabel') }}:</span> {{ selectedStudent.telegram }}</p>
             <p v-if="selectedStudent.lastLoginAt"><span class="text-slate-400">{{ $t('admin.lastLogin') }}:</span> {{ new Date(selectedStudent.lastLoginAt).toLocaleString() }}</p>
           </div>
+
+          <!-- Editable: expected monthly tuition + preferred language -->
+          <details class="mt-4 text-sm">
+            <summary class="cursor-pointer text-slate-500 hover:text-primary">
+              {{ $t('admin.balance.settingsTitle') }}
+            </summary>
+            <div class="mt-3 space-y-3 p-3 bg-slate-50 rounded-lg">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.balance.expectedAmount') }}</label>
+                  <input
+                    v-model.number="profileForm.expectedAmount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    dir="ltr"
+                    class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.payments.currency') }}</label>
+                  <select v-model="profileForm.expectedCurrency"
+                    class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white">
+                    <option>EGP</option>
+                    <option>USD</option>
+                    <option>EUR</option>
+                    <option>SAR</option>
+                    <option>AED</option>
+                    <option>GBP</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.balance.preferredLanguage') }}</label>
+                <select v-model="profileForm.preferredLanguage"
+                  class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white">
+                  <option value="ar">{{ $t('admin.balance.languageAr') }}</option>
+                  <option value="en">{{ $t('admin.balance.languageEn') }}</option>
+                </select>
+              </div>
+              <div class="flex justify-end gap-2">
+                <button
+                  @click="saveStudentProfile(selectedStudent.id)"
+                  :disabled="savingProfile"
+                  class="bg-primary text-cream px-4 py-1.5 rounded-full text-xs font-medium hover:bg-primary-800 transition disabled:opacity-50"
+                >
+                  {{ savingProfile ? $t('admin.saving') : $t('admin.save') }}
+                </button>
+              </div>
+            </div>
+          </details>
 
           <!-- Tabs: Classes | Payments | Export -->
           <div class="mt-6 border-b border-slate-100 flex gap-1">
@@ -369,13 +466,20 @@
                   </div>
                 </div>
 
-                <!-- Expanded: existing log summary + edit form -->
-                <div v-if="expandedLogClassId === a.classSession.id" class="mt-3 border-t border-slate-100 pt-3 space-y-2">
+                <!-- Expanded lesson report: covered / homework / next / private notes -->
+                <div v-if="expandedLogClassId === a.classSession.id" class="mt-3 border-t border-slate-100 pt-3 space-y-3">
                   <div>
                     <label class="block text-xs font-medium text-slate-500 mb-1">{{ $t('admin.classLog.summaryLabel') }}</label>
                     <textarea v-model="logDraft.summary" rows="3"
                       class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none"
                       :placeholder="$t('admin.classLog.summaryPh')"
+                    ></textarea>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">{{ $t('admin.classLog.homeworkLabel') }}</label>
+                    <textarea v-model="logDraft.homework" rows="2"
+                      class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none"
+                      :placeholder="$t('admin.classLog.homeworkPh')"
                     ></textarea>
                   </div>
                   <div>
@@ -385,6 +489,31 @@
                       :placeholder="$t('admin.classLog.nextStepsPh')"
                     ></textarea>
                   </div>
+                  <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">
+                      {{ $t('admin.classLog.privateLabel') }}
+                      <span class="text-slate-400 font-normal">· {{ $t('admin.classLog.privateHint') }}</span>
+                    </label>
+                    <textarea v-model="logDraft.adminNotes" rows="2"
+                      class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-amber-50/30"
+                      :placeholder="$t('admin.classLog.privatePh')"
+                    ></textarea>
+                  </div>
+
+                  <!-- Visibility toggle: private by default, student-visible on flip -->
+                  <label class="flex items-start gap-2 cursor-pointer text-sm">
+                    <input
+                      type="checkbox"
+                      class="mt-0.5"
+                      :checked="logDraft.visibility === 'student'"
+                      @change="logDraft.visibility = $event.target.checked ? 'student' : 'private'"
+                    />
+                    <span>
+                      <span class="font-medium text-primary">{{ $t('admin.classLog.shareWithStudent') }}</span>
+                      <span class="block text-xs text-slate-400 mt-0.5">{{ $t('admin.classLog.shareWithStudentHint') }}</span>
+                    </span>
+                  </label>
+
                   <div class="flex justify-end gap-2">
                     <button @click="expandedLogClassId = null"
                       class="px-3 py-1.5 text-sm text-slate-500 hover:text-slate-700">
@@ -692,6 +821,7 @@ import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth.js';
 import { api } from '@/config/api.js';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
+import BalancePill from '@/components/dashboard/BalancePill.vue';
 import { confirmDialog, promptDialog } from '@/composables/useConfirmDialog.js';
 import { queueUndoable } from '@/composables/useUndoToast.js';
 
@@ -732,8 +862,22 @@ const studentDetailLoading = ref(false);
 const studentClassLogs = ref([]);
 const studentPayments = ref([]);
 const studentPaymentTotals = ref({});
+
+// Editable profile form (inside the student detail modal).
+const profileForm = reactive({
+  expectedAmount: null,
+  expectedCurrency: 'EGP',
+  preferredLanguage: 'ar',
+});
+const savingProfile = ref(false);
 const expandedLogClassId = ref(null);
-const logDraft = reactive({ summary: '', nextSteps: '' });
+const logDraft = reactive({
+  summary: '',
+  homework: '',
+  nextSteps: '',
+  adminNotes: '',
+  visibility: 'private', // 'private' | 'student'
+});
 const savingLog = ref(false);
 
 const showPaymentForm = ref(false);
@@ -914,6 +1058,53 @@ const schedulePreview = computed(() => {
     .replace('{time}', scheduleForm.time);
 });
 
+// First-run checklist. Three steps, each computed from real data so we can't
+// lie about progress: we know the student count from stats, classes from the
+// classes list, meeting link from the settings fetch.
+const firstRunSteps = computed(() => {
+  const hasStudent = (stats.value?.totalEnrolled || 0) > 0 || students.value.length > 0;
+  const hasClass = classes.value.length > 0;
+  const hasMeetingLink = !!globalMeetingLink.value;
+
+  return [
+    {
+      key: 'addStudent',
+      number: 1,
+      done: hasStudent,
+      labelKey: 'admin.firstRun.step1',
+      hintKey: 'admin.firstRun.step1Hint',
+      ctaKey: 'admin.firstRun.step1Cta',
+      action: () => { activeTab.value = 'enrollments'; },
+    },
+    {
+      key: 'meetingLink',
+      number: 2,
+      done: hasMeetingLink,
+      labelKey: 'admin.firstRun.step2',
+      hintKey: 'admin.firstRun.step2Hint',
+      ctaKey: 'admin.firstRun.step2Cta',
+      action: () => { activeTab.value = 'scheduling'; },
+    },
+    {
+      key: 'scheduleClass',
+      number: 3,
+      done: hasClass,
+      labelKey: 'admin.firstRun.step3',
+      hintKey: 'admin.firstRun.step3Hint',
+      ctaKey: 'admin.firstRun.step3Cta',
+      action: () => {
+        activeTab.value = 'scheduling';
+        showScheduleForm.value = true;
+      },
+    },
+  ];
+});
+
+const showFirstRunChecklist = computed(() => {
+  // Hide once all three steps are done — no need to keep nagging.
+  return firstRunSteps.value.some((s) => !s.done);
+});
+
 const tabs = [
   { key: 'enrollments', label: 'admin.enrollments' },
   { key: 'students', label: 'admin.students' },
@@ -1021,6 +1212,12 @@ async function viewStudent(id) {
     studentDetailTab.value = 'classes';
     expandedLogClassId.value = null;
     showPaymentForm.value = false;
+    // Seed the inline profile form with the current values.
+    profileForm.expectedAmount = data.student.expectedMonthlyAmount
+      ? (data.student.expectedMonthlyAmount / 100).toFixed(2)
+      : null;
+    profileForm.expectedCurrency = data.student.expectedMonthlyCurrency || 'EGP';
+    profileForm.preferredLanguage = data.student.preferredLanguage || 'ar';
     await loadStudentDetailData(id);
   } catch (e) { showToast(e, 'viewStudent'); }
 }
@@ -1043,6 +1240,34 @@ async function handleSuspend(id) {
     loadStudents();
     loadStats();
   } catch (e) { showToast(e, 'suspend'); }
+}
+
+// Cancel this class + every future occurrence sharing the same seriesId.
+// This is too destructive to silently undo, so it keeps a confirm dialog.
+async function cancelSeriesFromHere(cls) {
+  const futureCount = classes.value.filter(
+    (c) =>
+      c.seriesId === cls.seriesId &&
+      !c.cancelled &&
+      new Date(c.startTime) >= new Date(cls.startTime)
+  ).length;
+
+  const ok = await confirmDialog({
+    title: t('admin.cancelSeriesTitle'),
+    message: t('admin.cancelSeriesConfirm').replace('{count}', futureCount),
+    confirmLabel: t('admin.cancelSeries'),
+    cancelLabel: t('admin.cancel'),
+    danger: true,
+  });
+  if (!ok) return;
+
+  try {
+    const data = await api.post(`/api/admin/classes/${cls.id}/cancel-series`);
+    showToast(t('admin.cancelSeriesDone').replace('{count}', data.count));
+    loadClasses();
+  } catch (e) {
+    showToast(e, 'cancelClass');
+  }
 }
 
 function cancelClass(id) {
@@ -1300,6 +1525,54 @@ function formatConflictTime(iso) {
 
 // --- Student detail: class logs + payments -------------------------------
 
+// BalancePill reads `student.paidThisMonth` plus `expectedMonthlyAmount` etc.
+// Assemble a shape that mirrors the row in the students list so we can reuse
+// the same component in the detail modal header.
+const balancePillStudent = computed(() => {
+  if (!selectedStudent.value) return {};
+  const totals = studentPaymentTotals.value || {};
+  // studentPaymentTotals holds all-time totals; for the monthly pill we want
+  // only this month, so recompute from the payments list.
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const paidThisMonth = {};
+  for (const p of studentPayments.value) {
+    if (new Date(p.paidAt) >= monthStart) {
+      paidThisMonth[p.currency] = (paidThisMonth[p.currency] || 0) + p.amount;
+    }
+  }
+  return {
+    ...selectedStudent.value,
+    paidThisMonth,
+  };
+});
+
+async function saveStudentProfile(studentId) {
+  if (savingProfile.value) return;
+  savingProfile.value = true;
+  try {
+    const amount = profileForm.expectedAmount;
+    const body = {
+      preferredLanguage: profileForm.preferredLanguage,
+      expectedMonthlyAmount: amount ? Math.round(parseFloat(amount) * 100) : null,
+      expectedMonthlyCurrency: amount ? profileForm.expectedCurrency : null,
+    };
+    const { student } = await api.put(`/api/admin/students/${studentId}/profile`, body);
+    // Merge the returned values back into selectedStudent and the students list
+    // so both pill surfaces update immediately.
+    if (selectedStudent.value?.id === studentId) {
+      Object.assign(selectedStudent.value, student);
+    }
+    const row = students.value.find((s) => s.id === studentId);
+    if (row) Object.assign(row, student);
+  } catch (e) {
+    showToast(e, 'saveProfile');
+  } finally {
+    savingProfile.value = false;
+  }
+}
+
 async function loadStudentDetailData(studentId) {
   studentDetailLoading.value = true;
   try {
@@ -1328,7 +1601,10 @@ function expandClassLog(classSessionId) {
   }
   const existing = logForClass(classSessionId);
   logDraft.summary = existing?.summary || '';
+  logDraft.homework = existing?.homework || '';
   logDraft.nextSteps = existing?.nextSteps || '';
+  logDraft.adminNotes = existing?.adminNotes || '';
+  logDraft.visibility = existing?.visibility || 'private';
   expandedLogClassId.value = classSessionId;
 }
 
@@ -1337,7 +1613,10 @@ async function saveClassLog(classSessionId, studentId) {
   try {
     const data = await api.put(`/api/admin/class-logs/${classSessionId}/${studentId}`, {
       summary: logDraft.summary,
+      homework: logDraft.homework,
       nextSteps: logDraft.nextSteps,
+      adminNotes: logDraft.adminNotes,
+      visibility: logDraft.visibility,
     });
     // Merge into studentClassLogs so the UI reflects the new state without a refetch.
     const idx = studentClassLogs.value.findIndex(

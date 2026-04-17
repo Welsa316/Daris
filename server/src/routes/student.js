@@ -282,4 +282,32 @@ router.get('/schedule', requireEnrolled, async (req, res, next) => {
   }
 });
 
+/**
+ * Student-visible lesson reports. Only returns rows the sheikh explicitly
+ * published (visibility='student'). adminNotes is stripped from the
+ * response regardless of visibility — it's never shared.
+ */
+router.get('/lesson-reports', requireEnrolled, async (req, res, next) => {
+  try {
+    const reports = await prisma.classLog.findMany({
+      where: { studentId: req.user.id, visibility: 'student' },
+      select: {
+        id: true,
+        summary: true,
+        homework: true,
+        nextSteps: true,
+        createdAt: true,
+        updatedAt: true,
+        classSession: {
+          select: { id: true, title: true, titleAr: true, startTime: true },
+        },
+      },
+      orderBy: { classSession: { startTime: 'desc' } },
+    });
+    res.json({ reports });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

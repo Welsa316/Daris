@@ -28,6 +28,11 @@ model User {
   telegram          String?
   enrollmentMessage String?   @map("enrollment_message") @db.VarChar(500)
   preferredLanguage String    @default("ar") @map("preferred_language")
+  // How much is expected from this student per calendar month. Minor units
+  // (piastres / cents) to match Payment.amount. Null = no expectation set
+  // and no balance pill will render.
+  expectedMonthlyAmount   Int?    @map("expected_monthly_amount")
+  expectedMonthlyCurrency String? @map("expected_monthly_currency")
   role              UserRole  @default(pending)
   emailVerified     Boolean   @default(false) @map("email_verified")
   tokenVersion      Int       @default(0) @map("token_version")
@@ -114,6 +119,10 @@ model ClassSession {
   originalEndTime   DateTime? @map("original_end_time")
   reminder30SentAt  DateTime? @map("reminder_30_sent_at")
   reminder24SentAt  DateTime? @map("reminder_24_sent_at")
+  // Groups all ClassSession rows created together via /classes/batch so
+  // admin actions can act on "this occurrence" vs "this and following".
+  // Null for legacy or one-off classes.
+  seriesId          String?   @map("series_id") @db.Uuid
   createdByAdminId String? @map("created_by_admin_id") @db.Uuid
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
@@ -125,6 +134,7 @@ model ClassSession {
   @@index([startTime])
   @@index([cancelled])
   @@index([createdByAdminId])
+  @@index([seriesId])
   @@map("class_sessions")
 }
 
@@ -157,15 +167,21 @@ model AdminNote {
   @@map("admin_notes")
 }
 
-// Per-class per-student log: what was covered + what's next.
-// One row per (classSessionId, studentId). Upsert on edit.
+// Per-class per-student lesson report. One row per (classSessionId, studentId).
+// Upsert on edit. `summary` / `homework` / `nextSteps` are student-visible
+// when `visibility='student'`. `adminNotes` is always admin-only.
 model ClassLog {
   id             String       @id @default(uuid()) @db.Uuid
   classSessionId String       @map("class_session_id") @db.Uuid
   studentId      String       @map("student_id") @db.Uuid
   authorId       String       @map("author_id") @db.Uuid
   summary        String       @default("") @db.Text
+  homework       String       @default("") @db.Text
   nextSteps      String       @default("") @map("next_steps") @db.Text
+  adminNotes     String       @default("") @map("admin_notes") @db.Text
+  // 'private' (admin only) or 'student' (student sees summary/homework/next,
+  // never adminNotes). Default private so nothing leaks accidentally.
+  visibility     String       @default("private")
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
