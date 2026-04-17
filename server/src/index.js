@@ -58,7 +58,30 @@ app.use('/api', publicRoutes);
 
 // --- Serve Vue frontend in production ---
 const frontendDist = path.resolve(__dirname, '../../dist');
-app.use(express.static(frontendDist));
+
+// Hashed assets (Vite emits /assets/<name>-<hash>.<ext>) are content-addressed
+// — cache them for a year. index.html changes on every deploy, so it must
+// never be cached, otherwise a browser holding an old copy asks the server
+// for asset filenames that no longer exist and the SPA fallback serves HTML
+// in their place (MIME-type errors in the console).
+app.use(
+  express.static(frontendDist, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('index.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    },
+  })
+);
+
+// Missing asset files (stale cached index.html asking for old hashes) must
+// 404 instead of falling through to the SPA, otherwise the browser tries to
+// parse HTML as CSS/JS and the entire page breaks.
+app.get('/assets/*', (req, res) => {
+  res.status(404).type('text/plain').send('Not Found');
+});
 
 // Read index.html once at startup for SEO meta injection
 let indexHtml = '';
@@ -73,6 +96,9 @@ try {
 // <title>, <meta>, and JSON-LD into the HTML so crawlers see full SEO content
 // without needing JavaScript execution.
 app.get(/^\/(?!api).*/, (req, res, next) => {
+  // Always fresh — never let the browser or a CDN cache this response.
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+
   if (!indexHtml) {
     return res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
       if (err) next();
