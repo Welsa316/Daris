@@ -68,10 +68,15 @@
             <div>
               <h3 class="font-semibold text-primary">{{ classDisplayName(cls) }}</h3>
               <p class="text-sm text-slate-500 mt-0.5">
-                {{ formatClassTime(cls.startTime, cls.timezone) }}
+                {{ formatClassTime(cls.startTime) }}
                 –
-                {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(cls.endTime)) }}
-                <span v-if="cls.timezone" class="text-xs text-slate-400">({{ cls.timezone }})</span>
+                {{ formatClassTimeShort(cls.endTime) }}
+              </p>
+              <p v-if="viewerTzDiffersFrom(cls)" class="text-xs text-slate-400 mt-0.5">
+                {{ formatClassTimeShort(cls.startTime, cls.timezone) }}
+                –
+                {{ formatClassTimeShort(cls.endTime, cls.timezone) }}
+                ({{ cls.timezone }})
               </p>
               <p class="text-xs mt-1" :class="classTimeLabel(cls).color">{{ classTimeLabel(cls).text }}</p>
             </div>
@@ -302,7 +307,7 @@
                       {{ $t('admin.subject_' + cls.subject) }}
                     </span>
                     <span v-if="subjectStyle(cls.subject)" class="opacity-60">·</span>
-                    {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(cls.startTime)) }}
+                    {{ formatClassTimeShort(cls.startTime) }}
                   </p>
                 </div>
                 <div v-if="!(classesByDay[localDateKey(day)] || []).length" class="text-[10px] text-slate-300 text-center pt-4">—</div>
@@ -324,10 +329,15 @@
                     <span v-if="selectedClass.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
                   </h3>
                   <p class="text-sm text-slate-500 mt-1">
-                    {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: selectedClass.timezone || 'Africa/Cairo', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(selectedClass.startTime)) }}
+                    {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: viewerTz, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(selectedClass.startTime)) }}
                     –
-                    {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: selectedClass.timezone || 'Africa/Cairo', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(selectedClass.endTime)) }}
-                    <span v-if="selectedClass.timezone" class="text-xs text-slate-400">({{ selectedClass.timezone }})</span>
+                    {{ formatClassTimeShort(selectedClass.endTime) }}
+                  </p>
+                  <p v-if="viewerTzDiffersFrom(selectedClass)" class="text-xs text-slate-400">
+                    {{ formatClassTimeShort(selectedClass.startTime, selectedClass.timezone) }}
+                    –
+                    {{ formatClassTimeShort(selectedClass.endTime, selectedClass.timezone) }}
+                    ({{ selectedClass.timezone }})
                   </p>
                   <p class="text-xs text-slate-400 mt-1">{{ selectedClass.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
                   <div v-if="selectedClass.assignments?.length" class="mt-2 flex flex-wrap gap-1">
@@ -355,10 +365,15 @@
                   <div>
                     <h3 class="font-semibold text-primary">{{ classDisplayName(cls) }} <span v-if="cls.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span><span v-if="cls.rescheduled" class="text-amber-600 text-xs"> ({{ $t('admin.rescheduled') }})</span></h3>
                     <p class="text-sm text-slate-500">
-                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(cls.startTime)) }}
+                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: viewerTz, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(cls.startTime)) }}
                       -
-                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(cls.endTime)) }}
-                      <span v-if="cls.timezone" class="text-xs text-slate-400">({{ cls.timezone }})</span>
+                      {{ formatClassTimeShort(cls.endTime) }}
+                    </p>
+                    <p v-if="viewerTzDiffersFrom(cls)" class="text-xs text-slate-400">
+                      {{ formatClassTimeShort(cls.startTime, cls.timezone) }}
+                      –
+                      {{ formatClassTimeShort(cls.endTime, cls.timezone) }}
+                      ({{ cls.timezone }})
                     </p>
                     <p class="text-xs text-slate-400 mt-1">{{ cls.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
                   </div>
@@ -495,9 +510,12 @@
                       <span v-if="a.classSession.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
                     </p>
                     <p class="text-xs text-slate-500">
-                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: a.classSession.timezone || 'Africa/Cairo', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(a.classSession.startTime)) }}
+                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: viewerTz, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(a.classSession.startTime)) }}
                       -
-                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: a.classSession.timezone || 'Africa/Cairo', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(a.classSession.endTime)) }}
+                      {{ formatClassTimeShort(a.classSession.endTime) }}
+                    </p>
+                    <p v-if="viewerTzDiffersFrom(a.classSession)" class="text-[10px] text-slate-400">
+                      {{ formatClassTimeShort(a.classSession.startTime, a.classSession.timezone) }} ({{ a.classSession.timezone }})
                     </p>
                   </div>
                   <div class="flex items-center gap-2 shrink-0">
@@ -1107,10 +1125,10 @@ const upcomingClasses = computed(() => {
     .slice(0, 10);
 });
 
-// Format a class time in the *class's* timezone, not the admin's browser.
-// This way a class scheduled for 5 PM Cairo always displays as 5 PM
-// regardless of where the admin happens to be viewing from.
-function formatClassTime(iso, tz = 'Africa/Cairo') {
+// Format a class time in the VIEWER's timezone. The admin sees the class
+// at the hour it actually happens for them — not in the sheikh's time
+// zone halfway across the world.
+function formatClassTime(iso, tz = viewerTz) {
   const d = new Date(iso);
   const localeTag = isAr.value ? 'ar-EG' : 'en-GB';
 
@@ -1121,9 +1139,6 @@ function formatClassTime(iso, tz = 'Africa/Cairo') {
     hour12: true,
   }).format(d);
 
-  // Day-relative labels ("Today" / "Tomorrow") should also be computed in
-  // the class's timezone or a class that's "today Cairo" but "tomorrow
-  // New York" will label incorrectly for admins abroad.
   const zoned = (m) => new Intl.DateTimeFormat('en-CA', {
     timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
   }).format(m); // YYYY-MM-DD
@@ -1140,6 +1155,24 @@ function formatClassTime(iso, tz = 'Africa/Cairo') {
     day: 'numeric',
   }).format(d);
   return `${dateStr}, ${timeStr}`;
+}
+
+// Short "HH:MM AM/PM" in the viewer's timezone — used where we don't want
+// the full relative-date wrapper.
+function formatClassTimeShort(iso, tz = viewerTz) {
+  return new Intl.DateTimeFormat(isAr.value ? 'ar-EG' : 'en-GB', {
+    timeZone: tz,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(new Date(iso));
+}
+
+// True when the class was scheduled in a timezone other than what the
+// viewer's browser says they're in — drives whether we render the
+// secondary "1:00 PM (Africa/Cairo)" caption.
+function viewerTzDiffersFrom(cls) {
+  return cls.timezone && cls.timezone !== viewerTz;
 }
 
 function classTimeLabel(cls) {
@@ -1609,6 +1642,15 @@ function showBatchOutcomeToast(result) {
   setTimeout(() => { toast.value = ''; }, 5000);
 }
 
+// The browser's IANA timezone. Used as the PRIMARY display TZ everywhere
+// (we used to show class times in their stored class-TZ, but that's
+// confusing for an admin looking at the dashboard from a different
+// continent — they want to see "when is this class happening to ME").
+const viewerTz = (() => {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone; }
+  catch { return 'UTC'; }
+})();
+
 // A ticking "now" ref so Join-button visibility and countdown labels update
 // without a manual refresh. 30-second granularity is plenty for minute-level
 // messaging.
@@ -1657,12 +1699,11 @@ function joinAvailabilityLabel(cls) {
   if (minsUntilOpen <= 60) {
     return t('admin.joinOpensInMin').replace('{n}', minsUntilOpen);
   }
-  // Further out: a relative hour count is useless ("Opens in 5h" — 5h from
-  // when?). Show the actual clock time the link opens, in the class's
-  // own timezone.
-  const tz = cls.timezone || 'Africa/Cairo';
+  // Further out: show the actual clock time the link opens, in the
+  // viewer's timezone (the sheikh is looking at his own clock right now,
+  // not the class's).
   const openTime = new Intl.DateTimeFormat(isAr.value ? 'ar-EG' : 'en-US', {
-    timeZone: tz,
+    timeZone: viewerTz,
     weekday: 'short',
     hour: 'numeric',
     minute: '2-digit',
