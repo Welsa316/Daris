@@ -88,6 +88,9 @@ export const batchClassSchema = z.object({
   studentId: z.string().uuid(),
   title: z.string().min(1).max(200).trim(),
   titleAr: z.string().max(200).trim().optional().nullable(),
+  // IANA timezone the wall-clock times should be interpreted in. Persisted
+  // on each ClassSession so reminder emails render in the right zone.
+  timezone: z.string().min(1).max(64).default('Africa/Cairo'),
   sessions: z
     .array(
       z

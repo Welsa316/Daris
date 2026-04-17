@@ -162,10 +162,28 @@ export async function removeStudent(studentId, adminId) {
     return { error: 'student.notFound' };
   }
 
+  // Find the class sessions this student was in so we can clean up any
+  // that become orphans after we delete their assignments.
+  const affected = await prisma.classAssignment.findMany({
+    where: { studentId },
+    select: { classSessionId: true },
+  });
+
   // Hard-delete class assignments so the student stops appearing in any
-  // admin "upcoming classes" view. The class sessions themselves are kept
-  // (admin may want to reassign or audit them); only the link is removed.
+  // admin "upcoming classes" view.
   await prisma.classAssignment.deleteMany({ where: { studentId } });
+
+  // Nuke any ClassSession that has zero remaining live assignments — those
+  // are orphans and would otherwise cloud the admin's class list forever.
+  if (affected.length) {
+    const sessionIds = [...new Set(affected.map((a) => a.classSessionId))];
+    await prisma.classSession.deleteMany({
+      where: {
+        id: { in: sessionIds },
+        assignments: { none: { student: { deletedAt: null } } },
+      },
+    });
+  }
 
   await prisma.user.update({
     where: { id: studentId },

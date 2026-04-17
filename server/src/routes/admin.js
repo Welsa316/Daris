@@ -370,15 +370,35 @@ router.delete('/students/:id/future-assignments', async (req, res, next) => {
     }
 
     const now = new Date();
+
+    // First look up the class IDs we're about to orphan — we need them to
+    // clean up empty sessions after the fact.
+    const affected = await prisma.classAssignment.findMany({
+      where: {
+        studentId,
+        classSession: { startTime: { gt: now }, cancelled: false },
+      },
+      select: { classSessionId: true },
+    });
+
     const result = await prisma.classAssignment.deleteMany({
       where: {
         studentId,
-        classSession: {
-          startTime: { gt: now },
-          cancelled: false,
-        },
+        classSession: { startTime: { gt: now }, cancelled: false },
       },
     });
+
+    // Delete any ClassSession that's been left with zero live assignments —
+    // those are orphans and nobody can join them.
+    if (affected.length) {
+      const sessionIds = [...new Set(affected.map((a) => a.classSessionId))];
+      await prisma.classSession.deleteMany({
+        where: {
+          id: { in: sessionIds },
+          assignments: { none: { student: { deletedAt: null } } },
+        },
+      });
+    }
 
     auditLog('STUDENT_FUTURE_ASSIGNMENTS_CLEARED', {
       studentId,
@@ -478,7 +498,14 @@ router.get('/classes', validate(paginationSchema, 'query'), async (req, res, nex
     const { page, limit } = req.query;
     const skip = (page - 1) * limit;
 
-    const classWhere = { createdByAdminId: req.user.id };
+    // Hide classes with zero live students — they're orphans left behind
+    // when a student was removed. The class row is preserved in the DB for
+    // audit purposes, but there's no reason the sheikh should see it in
+    // the scheduling list or calendar.
+    const classWhere = {
+      createdByAdminId: req.user.id,
+      assignments: { some: { student: { deletedAt: null } } },
+    };
 
     const [classes, total] = await Promise.all([
       prisma.classSession.findMany({
@@ -814,7 +841,7 @@ router.put('/settings/meeting-link', validate(meetingLinkSchema), async (req, re
 router.post('/classes/batch', validate(batchClassSchema), async (req, res, next) => {
   try {
     const lang = getLang(req);
-    const { studentId, title, titleAr, sessions, resolutions = {} } = req.body;
+    const { studentId, title, titleAr, timezone, sessions, resolutions = {} } = req.body;
 
     // Get global meeting link
     const meetingLinkSetting = await prisma.siteSetting.findUnique({ where: { key: 'meetingLink' } });
@@ -884,6 +911,7 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
             endTime: new Date(session.endTime),
             meetingLink,
             recurrence: 'weekly',
+            timezone,
             seriesId,
             createdByAdminId: req.user.id,
           },

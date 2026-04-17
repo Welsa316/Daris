@@ -67,7 +67,12 @@
             class="flex items-center justify-between border border-slate-100 rounded-xl p-4 hover:border-primary/30 transition">
             <div>
               <h3 class="font-semibold text-primary">{{ classDisplayName(cls) }}</h3>
-              <p class="text-sm text-slate-500 mt-0.5">{{ formatClassTime(cls.startTime) }} – {{ new Date(cls.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</p>
+              <p class="text-sm text-slate-500 mt-0.5">
+                {{ formatClassTime(cls.startTime, cls.timezone) }}
+                –
+                {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', hour: '2-digit', minute: '2-digit' }).format(new Date(cls.endTime)) }}
+                <span v-if="cls.timezone" class="text-xs text-slate-400">({{ cls.timezone }})</span>
+              </p>
               <p class="text-xs mt-1" :class="classTimeLabel(cls).color">{{ classTimeLabel(cls).text }}</p>
             </div>
             <template v-if="cls.meetingLink || globalMeetingLink">
@@ -268,14 +273,14 @@
 
               <!-- Day columns -->
               <div v-for="(day, i) in calendarDays" :key="'d'+i" class="min-h-[100px]">
-                <div v-for="cls in classesByDay[day.toISOString().split('T')[0]] || []" :key="cls.id"
+                <div v-for="cls in classesByDay[localDateKey(day)] || []" :key="cls.id"
                   @click="selectedClass = cls"
                   class="mb-1 rounded-lg p-2 text-xs cursor-pointer hover:ring-2 hover:ring-primary/30 transition"
                   :class="[cls.cancelled ? 'bg-slate-100 text-slate-400 line-through' : cls.rescheduled ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-primary/10 text-primary', selectedClass?.id === cls.id ? 'ring-2 ring-primary' : '']">
                   <p class="font-medium truncate">{{ classDisplayName(cls) }}</p>
-                  <p class="text-[10px] opacity-70">{{ new Date(cls.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</p>
+                  <p class="text-[10px] opacity-70">{{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', hour: '2-digit', minute: '2-digit' }).format(new Date(cls.startTime)) }}</p>
                 </div>
-                <div v-if="!(classesByDay[day.toISOString().split('T')[0]] || []).length" class="text-[10px] text-slate-300 text-center pt-4">—</div>
+                <div v-if="!(classesByDay[localDateKey(day)] || []).length" class="text-[10px] text-slate-300 text-center pt-4">—</div>
               </div>
             </div>
 
@@ -287,7 +292,12 @@
                     <span v-if="selectedClass.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span>
                     <span v-if="selectedClass.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
                   </h3>
-                  <p class="text-sm text-slate-500 mt-1">{{ new Date(selectedClass.startTime).toLocaleString() }} – {{ new Date(selectedClass.endTime).toLocaleTimeString() }}</p>
+                  <p class="text-sm text-slate-500 mt-1">
+                    {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: selectedClass.timezone || 'Africa/Cairo', weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(selectedClass.startTime)) }}
+                    –
+                    {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: selectedClass.timezone || 'Africa/Cairo', hour: '2-digit', minute: '2-digit' }).format(new Date(selectedClass.endTime)) }}
+                    <span v-if="selectedClass.timezone" class="text-xs text-slate-400">({{ selectedClass.timezone }})</span>
+                  </p>
                   <p class="text-xs text-slate-400 mt-1">{{ selectedClass.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
                   <div v-if="selectedClass.assignments?.length" class="mt-2 flex flex-wrap gap-1">
                     <span v-for="a in selectedClass.assignments" :key="a.student.id" class="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded-full">
@@ -313,7 +323,12 @@
                 <div class="flex items-start justify-between">
                   <div>
                     <h3 class="font-semibold text-primary">{{ classDisplayName(cls) }} <span v-if="cls.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span><span v-if="cls.rescheduled" class="text-amber-600 text-xs"> ({{ $t('admin.rescheduled') }})</span></h3>
-                    <p class="text-sm text-slate-500">{{ new Date(cls.startTime).toLocaleString() }} - {{ new Date(cls.endTime).toLocaleTimeString() }}</p>
+                    <p class="text-sm text-slate-500">
+                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(cls.startTime)) }}
+                      -
+                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', hour: '2-digit', minute: '2-digit' }).format(new Date(cls.endTime)) }}
+                      <span v-if="cls.timezone" class="text-xs text-slate-400">({{ cls.timezone }})</span>
+                    </p>
                     <p class="text-xs text-slate-400 mt-1">{{ cls.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
                   </div>
                   <div v-if="!cls.cancelled" class="flex gap-2">
@@ -448,7 +463,11 @@
                       <span v-if="a.classSession.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span>
                       <span v-if="a.classSession.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
                     </p>
-                    <p class="text-xs text-slate-500">{{ new Date(a.classSession.startTime).toLocaleString() }} - {{ new Date(a.classSession.endTime).toLocaleTimeString() }}</p>
+                    <p class="text-xs text-slate-500">
+                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: a.classSession.timezone || 'Africa/Cairo', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(a.classSession.startTime)) }}
+                      -
+                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: a.classSession.timezone || 'Africa/Cairo', hour: '2-digit', minute: '2-digit' }).format(new Date(a.classSession.endTime)) }}
+                    </p>
                   </div>
                   <div class="flex items-center gap-2 shrink-0">
                     <span :class="new Date(a.classSession.startTime) > new Date() ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'"
@@ -669,10 +688,22 @@
               </div>
             </div>
 
-            <!-- Time -->
-            <div>
-              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.classTime') }}</label>
-              <input v-model="scheduleForm.time" type="time" required dir="ltr" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none text-sm" />
+            <!-- Time + timezone. The time is always interpreted as wall-clock
+                 in the selected timezone, regardless of where the admin
+                 physically is. -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.classTime') }}</label>
+                <input v-model="scheduleForm.time" type="time" required dir="ltr" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none text-sm" />
+              </div>
+              <div>
+                <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.timezone') }}</label>
+                <select v-model="scheduleForm.timezone" dir="ltr"
+                  class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none text-sm bg-white">
+                  <option v-for="tz in TZ_OPTIONS" :key="tz" :value="tz">{{ tz }}</option>
+                </select>
+                <p class="text-xs text-slate-400 mt-1">{{ $t('admin.timezoneHint') }}</p>
+              </div>
             </div>
 
             <!-- Duration -->
@@ -824,6 +855,7 @@ import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 import BalancePill from '@/components/dashboard/BalancePill.vue';
 import { confirmDialog, promptDialog } from '@/composables/useConfirmDialog.js';
 import { queueUndoable } from '@/composables/useUndoToast.js';
+import { nextWeekdayInTz, TZ_OPTIONS, formatInTz } from '@/composables/useTimezone.js';
 
 const { locale, t } = useI18n();
 const { logout } = useAuth();
@@ -910,11 +942,14 @@ const conflictModal = reactive({
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const FULL_DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-// Simplified schedule form
+// Simplified schedule form. `time` is always interpreted as wall-clock in
+// the `timezone` field; we default to Cairo because that's where the sheikh
+// is, not where whoever happens to be filling out the form is.
 const scheduleForm = reactive({
   studentId: '',
   days: [],      // array of dayOfWeek numbers (0=Sun, 1=Mon, ...)
-  time: '15:00', // HH:MM
+  time: '17:00', // HH:MM in scheduleForm.timezone
+  timezone: 'Africa/Cairo',
   duration: '60', // minutes
   weeks: '12',
 });
@@ -948,14 +983,21 @@ const calendarDays = computed(() => {
   return days;
 });
 
+// YYYY-MM-DD in the admin's local timezone — matches the calendar header
+// dates, which are also local-tz. Using `toISOString` here would bucket
+// classes by UTC date and they'd land in the wrong column for anyone not
+// on UTC (very visible when the admin is abroad).
+function localDateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 const classesByDay = computed(() => {
   const map = {};
   for (const d of calendarDays.value) {
-    const key = d.toISOString().split('T')[0];
-    map[key] = [];
+    map[localDateKey(d)] = [];
   }
   for (const cls of classes.value) {
-    const key = new Date(cls.startTime).toISOString().split('T')[0];
+    const key = localDateKey(new Date(cls.startTime));
     if (map[key]) map[key].push(cls);
   }
   // Sort each day's classes by start time
@@ -984,25 +1026,37 @@ const upcomingClasses = computed(() => {
     .slice(0, 10);
 });
 
-function formatClassTime(iso) {
+// Format a class time in the *class's* timezone, not the admin's browser.
+// This way a class scheduled for 5 PM Cairo always displays as 5 PM
+// regardless of where the admin happens to be viewing from.
+function formatClassTime(iso, tz = 'Africa/Cairo') {
   const d = new Date(iso);
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const localeTag = isAr.value ? 'ar-EG' : 'en-GB';
 
-  const localeTag = isAr.value ? 'ar-EG' : undefined;
-  const timeStr = d.toLocaleTimeString(localeTag, { hour: '2-digit', minute: '2-digit' });
-  if (d.toDateString() === today.toDateString()) {
-    return t('admin.relativeToday').replace('{time}', timeStr);
-  }
-  if (d.toDateString() === tomorrow.toDateString()) {
-    return t('admin.relativeTomorrow').replace('{time}', timeStr);
-  }
-  const dateStr = d.toLocaleDateString(localeTag, {
+  const timeStr = new Intl.DateTimeFormat(localeTag, {
+    timeZone: tz,
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d);
+
+  // Day-relative labels ("Today" / "Tomorrow") should also be computed in
+  // the class's timezone or a class that's "today Cairo" but "tomorrow
+  // New York" will label incorrectly for admins abroad.
+  const zoned = (m) => new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(m); // YYYY-MM-DD
+  const today = new Date();
+  const tomorrow = new Date(today.getTime() + 86400000);
+
+  if (zoned(d) === zoned(today)) return t('admin.relativeToday').replace('{time}', timeStr);
+  if (zoned(d) === zoned(tomorrow)) return t('admin.relativeTomorrow').replace('{time}', timeStr);
+
+  const dateStr = new Intl.DateTimeFormat(localeTag, {
+    timeZone: tz,
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-  });
+  }).format(d);
   return `${dateStr}, ${timeStr}`;
 }
 
@@ -1375,10 +1429,14 @@ async function scheduleStudent() {
     const title = student ? `${student.firstName} ${student.lastName}` : 'Class';
     const durationMs = parseInt(scheduleForm.duration) * 60000;
     const weeks = parseInt(scheduleForm.weeks) || 12;
+    const tz = scheduleForm.timezone || 'Africa/Cairo';
 
+    // Interpret `time` as wall-clock in `tz`. A class scheduled for "5 PM
+    // Cairo" is the same UTC instant no matter which continent the admin
+    // is physically in when they fill the form out.
     const sessions = [];
     for (const day of scheduleForm.days) {
-      const firstOccurrence = getNextDayOfWeek(day, scheduleForm.time);
+      const firstOccurrence = nextWeekdayInTz(day, scheduleForm.time, tz);
       for (let w = 0; w < weeks; w++) {
         const start = new Date(firstOccurrence.getTime() + w * 7 * 86400000);
         const end = new Date(start.getTime() + durationMs);
@@ -1391,7 +1449,9 @@ async function scheduleStudent() {
       sessions,
     });
 
-    const payload = { studentId: scheduleForm.studentId, title, sessions };
+    // `timezone` is persisted on every ClassSession so the backend can
+    // format reminder emails in the class's own zone (see Round 2 work).
+    const payload = { studentId: scheduleForm.studentId, title, sessions, timezone: tz };
 
     if (conflicts?.length) {
       // Surface the conflicts inline in the same form; defaults are the
@@ -1442,7 +1502,7 @@ async function submitConflictResolution() {
 function closeScheduleForm() {
   showScheduleForm.value = false;
   Object.assign(scheduleForm, {
-    studentId: '', days: [], time: '15:00', duration: '60', weeks: '12',
+    studentId: '', days: [], time: '17:00', timezone: 'Africa/Cairo', duration: '60', weeks: '12',
   });
   conflictModal.conflicts = [];
   conflictModal.pendingPayload = null;
