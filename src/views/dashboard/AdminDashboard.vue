@@ -542,45 +542,54 @@
             <div class="h-12 bg-slate-100 rounded-lg animate-pulse"></div>
           </div>
 
-          <!-- Classes tab: list + per-class log expander -->
+          <!-- Classes tab: upcoming section + past section, both using the
+               same row template via a sections computed list. Section
+               headers carry the upcoming/past signal so the per-row pill
+               was dropped — a group of rows under "Upcoming" says it all. -->
           <div v-else-if="studentDetailTab === 'classes'" class="mt-4">
             <div v-if="!studentClasses.length" class="text-slate-400 text-sm py-4">{{ $t('admin.noStudentClasses') }}</div>
-            <div v-else class="space-y-2 max-h-80 overflow-y-auto">
-              <div v-for="a in studentClasses" :key="a.id" class="border border-slate-100 rounded-lg p-3 text-sm"
-                :class="a.classSession.cancelled ? 'opacity-50' : ''">
+            <div v-else class="space-y-2 max-h-96 overflow-y-auto">
+              <template v-for="item in studentClassesSections" :key="item.key">
+                <div
+                  v-if="item.type === 'header'"
+                  class="text-[11px] font-semibold tracking-[0.2em] uppercase text-slate-400 pt-3 pb-1 first:pt-0"
+                >
+                  {{ $t(item.labelKey) }} <span class="tabular-nums text-slate-300">· {{ item.count }}</span>
+                </div>
+                <div
+                  v-else
+                  class="border border-slate-100 rounded-lg p-3 text-sm"
+                  :class="item.a.classSession.cancelled ? 'opacity-50' : ''"
+                >
                 <div class="flex items-start justify-between gap-3">
                   <div class="min-w-0">
-                    <p class="font-medium text-primary">{{ isAr && a.classSession.titleAr ? a.classSession.titleAr : a.classSession.title }}
-                      <span v-if="a.classSession.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span>
-                      <span v-if="a.classSession.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
+                    <p class="font-medium text-primary">{{ isAr && item.a.classSession.titleAr ? item.a.classSession.titleAr : item.a.classSession.title }}
+                      <span v-if="item.a.classSession.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span>
+                      <span v-if="item.a.classSession.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
                     </p>
                     <p class="text-xs text-slate-500">
-                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: viewerTz, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(a.classSession.startTime)) }}
+                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: viewerTz, year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(item.a.classSession.startTime)) }}
                       -
-                      {{ formatClassTimeShort(a.classSession.endTime) }}
+                      {{ formatClassTimeShort(item.a.classSession.endTime) }}
                     </p>
-                    <p v-if="viewerTzDiffersFrom(a.classSession)" class="text-[10px] text-slate-400">
-                      {{ formatClassTimeShort(a.classSession.startTime, a.classSession.timezone) }} ({{ a.classSession.timezone }})
+                    <p v-if="viewerTzDiffersFrom(item.a.classSession)" class="text-[10px] text-slate-400">
+                      {{ formatClassTimeShort(item.a.classSession.startTime, item.a.classSession.timezone) }} ({{ item.a.classSession.timezone }})
                     </p>
                   </div>
                   <div class="flex items-center gap-2 shrink-0">
-                    <span :class="new Date(a.classSession.startTime) > new Date() ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'"
-                      class="text-xs px-2 py-0.5 rounded-full">
-                      {{ new Date(a.classSession.startTime) > new Date() ? $t('admin.upcoming') : $t('admin.past') }}
-                    </span>
                     <button
-                      @click="expandClassLog(a.classSession.id)"
+                      @click="expandClassLog(item.a.classSession.id)"
                       class="text-xs text-primary hover:text-primary-800 underline"
                     >
-                      {{ expandedLogClassId === a.classSession.id
+                      {{ expandedLogClassId === item.a.classSession.id
                         ? $t('admin.classLog.close')
-                        : (logForClass(a.classSession.id) ? $t('admin.classLog.edit') : $t('admin.classLog.add')) }}
+                        : (logForClass(item.a.classSession.id) ? $t('admin.classLog.edit') : $t('admin.classLog.add')) }}
                     </button>
                   </div>
                 </div>
 
                 <!-- Expanded lesson report: covered / homework / next / private notes -->
-                <div v-if="expandedLogClassId === a.classSession.id" class="mt-3 border-t border-slate-100 pt-3 space-y-3">
+                <div v-if="expandedLogClassId === item.a.classSession.id" class="mt-3 border-t border-slate-100 pt-3 space-y-3">
                   <div>
                     <label class="block text-xs font-medium text-slate-500 mb-1">{{ $t('admin.classLog.summaryLabel') }}</label>
                     <textarea v-model="logDraft.summary" rows="3"
@@ -632,14 +641,15 @@
                       class="px-3 py-1.5 text-sm text-slate-500 hover:text-slate-700">
                       {{ $t('admin.cancel') }}
                     </button>
-                    <button @click="saveClassLog(a.classSession.id, selectedStudent.id)"
+                    <button @click="saveClassLog(item.a.classSession.id, selectedStudent.id)"
                       :disabled="savingLog"
                       class="bg-primary text-cream px-4 py-1.5 rounded-full text-sm font-medium hover:bg-primary-800 transition-colors disabled:opacity-50">
                       {{ savingLog ? $t('admin.saving') : $t('admin.classLog.save') }}
                     </button>
                   </div>
                 </div>
-              </div>
+                </div>
+              </template>
             </div>
             <div class="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-3">
               <button
@@ -1251,6 +1261,42 @@ const studentClasses = computed(() => {
   return selectedStudent.value.classAssignments;
 });
 
+// Split the student's classes into upcoming (not yet started) and past.
+// Upcoming sorts ascending (soonest first) so the admin's eye lands on the
+// next lesson immediately. Past sorts descending (most recent first).
+// Cancelled classes are treated as past regardless of date — an admin
+// viewing the tab shouldn't see a cancelled slot marketed as "Upcoming".
+const studentUpcomingClasses = computed(() => {
+  const nowMs = now.value;
+  return [...studentClasses.value]
+    .filter((a) => !a.classSession.cancelled && new Date(a.classSession.startTime).getTime() > nowMs)
+    .sort((x, y) => new Date(x.classSession.startTime) - new Date(y.classSession.startTime));
+});
+const studentPastClasses = computed(() => {
+  const nowMs = now.value;
+  return [...studentClasses.value]
+    .filter((a) => a.classSession.cancelled || new Date(a.classSession.startTime).getTime() <= nowMs)
+    .sort((x, y) => new Date(y.classSession.startTime) - new Date(x.classSession.startTime));
+});
+
+// Flat render list: interleaves section headers with class rows so the
+// template can render the complex row + expanded log-report form exactly
+// once rather than duplicating it under each heading.
+const studentClassesSections = computed(() => {
+  const items = [];
+  const up = studentUpcomingClasses.value;
+  const past = studentPastClasses.value;
+  if (up.length) {
+    items.push({ type: 'header', key: 'h-up', labelKey: 'admin.studentClassesUpcoming', count: up.length });
+    up.forEach((a) => items.push({ type: 'row', key: `u-${a.id}`, a, isUpcoming: true }));
+  }
+  if (past.length) {
+    items.push({ type: 'header', key: 'h-past', labelKey: 'admin.studentClassesPast', count: past.length });
+    past.forEach((a) => items.push({ type: 'row', key: `p-${a.id}`, a, isUpcoming: false }));
+  }
+  return items;
+});
+
 const existingSlotConflicts = computed(() =>
   (conflictModal.conflicts || []).filter((c) => c.kind === 'existing_slot')
 );
@@ -1740,35 +1786,20 @@ function joinAvailabilityLabel(cls) {
   const opens = start - JOIN_WINDOW_MIN * 60_000;
   if (now.value >= opens) return t('admin.joinLive');
 
-  const minsUntilOpen = Math.ceil((opens - now.value) / 60_000);
-  // Within the next hour: keep the countdown so the sheikh can see the
-  // button is about to light up.
+  // Unit-scaled countdown — never depends on Intl.DateTimeFormat, so it can't
+  // collapse into a bare "Opens " label if a locale or timezone argument
+  // produces an empty string. Minutes for the last hour (most actionable),
+  // hours for the next day, days further out.
+  const minsUntilOpen = Math.max(1, Math.ceil((opens - now.value) / 60_000));
   if (minsUntilOpen <= 60) {
     return t('admin.joinOpensInMin').replace('{n}', minsUntilOpen);
   }
-  // Further out: show the actual clock time the link opens, in the
-  // viewer's timezone.
-  let openTime = '';
-  try {
-    openTime = new Intl.DateTimeFormat(isAr.value ? 'ar-EG' : 'en-US', {
-      timeZone: viewerTz,
-      weekday: 'short',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    }).format(new Date(opens));
-  } catch {
-    // Some browsers throw on malformed TZ strings — fall back to the raw
-    // locale string so we still say SOMETHING useful.
-    openTime = new Date(opens).toLocaleString();
-  }
-  // If the formatter somehow returns empty, don't leave the admin with a
-  // dangling "Opens " label. Fall back to an hour-based countdown.
-  if (!openTime) {
+  if (minsUntilOpen < 24 * 60) {
     const hours = Math.ceil(minsUntilOpen / 60);
-    return t('admin.joinOpensInMin').replace('{n}', hours * 60);
+    return t('admin.joinOpensInHr').replace('{n}', hours);
   }
-  return t('admin.joinOpensAt').replace('{time}', openTime);
+  const days = Math.ceil(minsUntilOpen / (24 * 60));
+  return t('admin.joinOpensInDays').replace('{n}', days);
 }
 
 // Display name for a class. When multiple students share a class (co-taught),
