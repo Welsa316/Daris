@@ -2,12 +2,14 @@ import { Router } from 'express';
 import { authenticate, verifyTokenVersion } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
 import { validate } from '../middleware/validate.js';
-import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, rescheduleClassSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema, batchClassSchema, meetingLinkSchema } from '../validators/adminSchemas.js';
+import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, rescheduleClassSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema, batchClassSchema, meetingLinkSchema, checkConflictsSchema, classLogSchema, paymentSchema, paymentUpdateSchema } from '../validators/adminSchemas.js';
 import { getPendingEnrollments, approveEnrollment, rejectEnrollment, getRejectedApplicants, suspendStudent, removeStudent } from '../services/enrollmentService.js';
 import { prisma } from '../config/database.js';
-import { sendClassCancelledEmail, sendClassRescheduledEmail } from '../services/emailService.js';
+import { sendClassCancelledEmail, sendClassRescheduledEmail, sendFutureAssignmentsClearedEmail } from '../services/emailService.js';
+import { findConflicts } from '../services/classConflictService.js';
+import { toCsv, sendCsv } from '../utils/csv.js';
 import { t, getLang } from '../utils/i18n.js';
-import { auditLog } from '../utils/logger.js';
+import { auditLog, logger } from '../utils/logger.js';
 import { sendEmail } from '../services/emailService.js';
 import { env } from '../config/env.js';
 
@@ -272,6 +274,52 @@ router.delete('/students/:id', async (req, res, next) => {
     }
 
     res.json({ message: t('student.removed', lang) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Drop the student from every upcoming class without suspending their account.
+// Used when a student changes their schedule permanently. Other students in
+// co-taught classes keep their bookings.
+router.delete('/students/:id/future-assignments', async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    const studentId = req.params.id;
+
+    const student = await prisma.user.findUnique({
+      where: { id: studentId },
+      select: { id: true, email: true, firstName: true, lastName: true, deletedAt: true },
+    });
+    if (!student || student.deletedAt) {
+      return res.status(404).json({ error: t('student.notFound', lang) });
+    }
+
+    const now = new Date();
+    const result = await prisma.classAssignment.deleteMany({
+      where: {
+        studentId,
+        classSession: {
+          startTime: { gt: now },
+          cancelled: false,
+        },
+      },
+    });
+
+    auditLog('STUDENT_FUTURE_ASSIGNMENTS_CLEARED', {
+      studentId,
+      removed: result.count,
+      adminId: req.user.id,
+    });
+
+    // Fire-and-forget email; don't block the response on mail delivery.
+    if (result.count > 0) {
+      sendFutureAssignmentsClearedEmail(student, result.count, lang).catch((err) =>
+        logger.error('future-assignments email failed', { error: err.message })
+      );
+    }
+
+    res.json({ removed: result.count });
   } catch (error) {
     next(error);
   }
@@ -615,16 +663,63 @@ router.put('/settings/meeting-link', validate(meetingLinkSchema), async (req, re
 router.post('/classes/batch', validate(batchClassSchema), async (req, res, next) => {
   try {
     const lang = getLang(req);
-    const { studentId, title, titleAr, sessions } = req.body;
+    const { studentId, title, titleAr, sessions, resolutions = {} } = req.body;
 
     // Get global meeting link
     const meetingLinkSetting = await prisma.siteSetting.findUnique({ where: { key: 'meetingLink' } });
     const meetingLink = meetingLinkSetting?.value || null;
 
-    // Create all sessions + assignments in a transaction
-    const created = await prisma.$transaction(async (tx) => {
-      const results = [];
+    const result = await prisma.$transaction(async (tx) => {
+      let created = 0;
+      let merged = 0;
+      let skipped = 0;
+
       for (const session of sessions) {
+        // The resolution map is keyed by the ISO start-time the admin saw in
+        // the conflict modal; fall back to a plain "create" if the admin
+        // didn't need to resolve anything.
+        const key = new Date(session.startTime).toISOString();
+        const resolution = resolutions[key] || 'create';
+
+        if (resolution === 'skip') {
+          skipped += 1;
+          continue;
+        }
+
+        if (resolution === 'merge') {
+          // Find an existing class at the exact same slot and attach the
+          // student to it instead of creating a parallel session.
+          const existing = await tx.classSession.findFirst({
+            where: {
+              createdByAdminId: req.user.id,
+              cancelled: false,
+              startTime: new Date(session.startTime),
+              endTime: new Date(session.endTime),
+            },
+            select: { id: true },
+          });
+
+          if (existing) {
+            // `upsert` via unique index — if the student was somehow already
+            // in this class we silently succeed instead of throwing on the
+            // unique constraint.
+            await tx.classAssignment.upsert({
+              where: {
+                classSessionId_studentId: {
+                  classSessionId: existing.id,
+                  studentId,
+                },
+              },
+              create: { classSessionId: existing.id, studentId },
+              update: {},
+            });
+            merged += 1;
+            continue;
+          }
+          // No matching slot anymore — fall through to create instead.
+        }
+
+        // 'create' and 'force' both land here: make a fresh ClassSession.
         const classSession = await tx.classSession.create({
           data: {
             title,
@@ -642,14 +737,37 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
             studentId,
           },
         });
-        results.push(classSession);
+        created += 1;
       }
-      return results;
+
+      return { created, merged, skipped };
     });
 
-    auditLog('CLASSES_BATCH_CREATED', { count: created.length, studentId, adminId: req.user.id });
+    auditLog('CLASSES_BATCH_CREATED', {
+      ...result,
+      studentId,
+      adminId: req.user.id,
+    });
 
-    res.status(201).json({ message: t('schedule.created', lang), count: created.length });
+    res.status(201).json({
+      message: t('schedule.created', lang),
+      ...result,
+      // Keep `count` for backward compatibility with any older client that reads it.
+      count: result.created + result.merged,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Detect conflicts *before* actually creating anything. The frontend calls
+// this first, shows a resolution modal, then POSTs to /classes/batch with a
+// `resolutions` map.
+router.post('/classes/check-conflicts', validate(checkConflictsSchema), async (req, res, next) => {
+  try {
+    const { studentId, sessions } = req.body;
+    const conflicts = await findConflicts(sessions, studentId, req.user.id);
+    res.json({ conflicts });
   } catch (error) {
     next(error);
   }
@@ -932,6 +1050,275 @@ router.get('/audit-logs', validate(paginationSchema, 'query'), async (req, res, 
     ]);
 
     res.json({ logs, total, page, totalPages: Math.ceil(total / limit) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// --- Class Logs (per-class per-student: what we covered, what's next) ---
+
+// List all class logs for a student, joined with the class they refer to.
+router.get('/students/:id/class-logs', async (req, res, next) => {
+  try {
+    const logs = await prisma.classLog.findMany({
+      where: { studentId: req.params.id },
+      include: {
+        classSession: {
+          select: { id: true, title: true, titleAr: true, startTime: true, endTime: true, cancelled: true },
+        },
+      },
+      orderBy: { classSession: { startTime: 'desc' } },
+    });
+    res.json({ logs });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Upsert a single class log. One per (classSessionId, studentId).
+router.put(
+  '/class-logs/:classSessionId/:studentId',
+  validate(classLogSchema),
+  async (req, res, next) => {
+    try {
+      const { classSessionId, studentId } = req.params;
+      const { summary, nextSteps } = req.body;
+
+      // Sanity: the class and the student must actually be linked.
+      const assignment = await prisma.classAssignment.findUnique({
+        where: { classSessionId_studentId: { classSessionId, studentId } },
+      });
+      if (!assignment) {
+        return res.status(404).json({ error: 'This student is not assigned to that class.' });
+      }
+
+      const log = await prisma.classLog.upsert({
+        where: { classSessionId_studentId: { classSessionId, studentId } },
+        create: {
+          classSessionId,
+          studentId,
+          authorId: req.user.id,
+          summary,
+          nextSteps,
+        },
+        update: { summary, nextSteps, authorId: req.user.id },
+      });
+
+      auditLog('CLASS_LOG_UPDATED', {
+        classLogId: log.id,
+        classSessionId,
+        studentId,
+        adminId: req.user.id,
+      });
+
+      res.json({ log });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// --- Payments ---
+
+router.get('/students/:id/payments', async (req, res, next) => {
+  try {
+    const payments = await prisma.payment.findMany({
+      where: { studentId: req.params.id },
+      orderBy: { paidAt: 'desc' },
+    });
+    // Running total by currency (can't just sum — student may have paid in EGP + USD).
+    const totals = payments.reduce((acc, p) => {
+      acc[p.currency] = (acc[p.currency] || 0) + p.amount;
+      return acc;
+    }, {});
+    res.json({ payments, totals });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/students/:id/payments', validate(paymentSchema), async (req, res, next) => {
+  try {
+    const { amount, currency, period, paidAt, notes } = req.body;
+
+    // Make sure the student actually exists (avoids orphan payments).
+    const student = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true },
+    });
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    const payment = await prisma.payment.create({
+      data: {
+        studentId: req.params.id,
+        authorId: req.user.id,
+        amount,
+        currency,
+        period,
+        paidAt: new Date(paidAt),
+        notes: notes || null,
+      },
+    });
+
+    auditLog('PAYMENT_CREATED', {
+      paymentId: payment.id,
+      studentId: req.params.id,
+      amount,
+      currency,
+      adminId: req.user.id,
+    });
+
+    res.status(201).json({ payment });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/payments/:id', validate(paymentUpdateSchema), async (req, res, next) => {
+  try {
+    const updates = { ...req.body };
+    if (updates.paidAt) updates.paidAt = new Date(updates.paidAt);
+
+    const payment = await prisma.payment.update({
+      where: { id: req.params.id },
+      data: updates,
+    });
+
+    auditLog('PAYMENT_UPDATED', {
+      paymentId: payment.id,
+      studentId: payment.studentId,
+      adminId: req.user.id,
+    });
+
+    res.json({ payment });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+    next(error);
+  }
+});
+
+router.delete('/payments/:id', async (req, res, next) => {
+  try {
+    const payment = await prisma.payment.delete({ where: { id: req.params.id } });
+    auditLog('PAYMENT_DELETED', {
+      paymentId: req.params.id,
+      studentId: payment.studentId,
+      adminId: req.user.id,
+    });
+    res.json({ success: true });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+    next(error);
+  }
+});
+
+// --- CSV Exports ---
+
+function formatMoney(minorUnits) {
+  return (minorUnits / 100).toFixed(2);
+}
+
+// Per-student bundle — one CSV with two sections (class logs + payments).
+router.get('/students/:id/export.csv', async (req, res, next) => {
+  try {
+    const student = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, firstName: true, lastName: true, email: true },
+    });
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+
+    const [logs, payments] = await Promise.all([
+      prisma.classLog.findMany({
+        where: { studentId: student.id },
+        include: {
+          classSession: { select: { title: true, startTime: true } },
+        },
+        orderBy: { classSession: { startTime: 'desc' } },
+      }),
+      prisma.payment.findMany({
+        where: { studentId: student.id },
+        orderBy: { paidAt: 'desc' },
+      }),
+    ]);
+
+    const logsCsv = toCsv(logs, [
+      { label: 'Date', get: (r) => new Date(r.classSession.startTime).toISOString() },
+      { label: 'Class', get: (r) => r.classSession.title },
+      { label: 'Summary', key: 'summary' },
+      { label: 'Next Steps', key: 'nextSteps' },
+    ]);
+
+    const paymentsCsv = toCsv(payments, [
+      { label: 'Date', get: (r) => new Date(r.paidAt).toISOString() },
+      { label: 'Period', key: 'period' },
+      { label: 'Amount', get: (r) => formatMoney(r.amount) },
+      { label: 'Currency', key: 'currency' },
+      { label: 'Notes', key: 'notes' },
+    ]);
+
+    // Stitched together with labeled section headers so a single download
+    // gives the admin everything they need for one student in one file.
+    const combined =
+      `Student,${student.firstName} ${student.lastName},${student.email}\n\n` +
+      `# Class Logs\n${logsCsv}\n` +
+      `# Payments\n${paymentsCsv}`;
+
+    const filename = `daris-${student.firstName}-${student.lastName}.csv`.replace(/\s+/g, '-');
+    sendCsv(res, filename, combined);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// All payments across all students — for tax/reconciliation.
+router.get('/export/payments.csv', async (req, res, next) => {
+  try {
+    const payments = await prisma.payment.findMany({
+      include: {
+        student: { select: { firstName: true, lastName: true, email: true } },
+      },
+      orderBy: { paidAt: 'desc' },
+    });
+    const csv = toCsv(payments, [
+      { label: 'Date', get: (r) => new Date(r.paidAt).toISOString() },
+      { label: 'Student', get: (r) => `${r.student.firstName} ${r.student.lastName}` },
+      { label: 'Email', get: (r) => r.student.email },
+      { label: 'Period', key: 'period' },
+      { label: 'Amount', get: (r) => formatMoney(r.amount) },
+      { label: 'Currency', key: 'currency' },
+      { label: 'Notes', key: 'notes' },
+    ]);
+    sendCsv(res, 'daris-payments.csv', csv);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// All class logs across all students.
+router.get('/export/class-logs.csv', async (req, res, next) => {
+  try {
+    const logs = await prisma.classLog.findMany({
+      include: {
+        student: { select: { firstName: true, lastName: true, email: true } },
+        classSession: { select: { title: true, startTime: true } },
+      },
+      orderBy: { classSession: { startTime: 'desc' } },
+    });
+    const csv = toCsv(logs, [
+      { label: 'Date', get: (r) => new Date(r.classSession.startTime).toISOString() },
+      { label: 'Class', get: (r) => r.classSession.title },
+      { label: 'Student', get: (r) => `${r.student.firstName} ${r.student.lastName}` },
+      { label: 'Email', get: (r) => r.student.email },
+      { label: 'Summary', key: 'summary' },
+      { label: 'Next Steps', key: 'nextSteps' },
+    ]);
+    sendCsv(res, 'daris-class-logs.csv', csv);
   } catch (error) {
     next(error);
   }

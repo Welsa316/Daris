@@ -282,49 +282,190 @@
             <p v-if="selectedStudent.lastLoginAt"><span class="text-slate-400">{{ $t('admin.lastLogin') }}:</span> {{ new Date(selectedStudent.lastLoginAt).toLocaleString() }}</p>
           </div>
 
-          <!-- Student's Classes -->
-          <div class="mt-6">
-            <h3 class="font-semibold text-primary mb-3">{{ $t('admin.studentClasses') }}</h3>
-            <div v-if="!studentClasses.length" class="text-slate-400 text-sm">{{ $t('admin.noStudentClasses') }}</div>
-            <div v-else class="space-y-2 max-h-48 overflow-y-auto">
+          <!-- Tabs: Classes | Payments | Export -->
+          <div class="mt-6 border-b border-slate-100 flex gap-1">
+            <button
+              v-for="tab in ['classes', 'payments', 'export']"
+              :key="tab"
+              @click="studentDetailTab = tab"
+              class="px-4 py-2 text-sm font-medium border-b-2 transition"
+              :class="studentDetailTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-slate-400 hover:text-slate-600'"
+            >
+              {{ $t('admin.tab.' + tab) }}
+            </button>
+          </div>
+
+          <!-- Classes tab: list + per-class log expander -->
+          <div v-if="studentDetailTab === 'classes'" class="mt-4">
+            <div v-if="!studentClasses.length" class="text-slate-400 text-sm py-4">{{ $t('admin.noStudentClasses') }}</div>
+            <div v-else class="space-y-2 max-h-80 overflow-y-auto">
               <div v-for="a in studentClasses" :key="a.id" class="border border-slate-100 rounded-lg p-3 text-sm"
                 :class="a.classSession.cancelled ? 'opacity-50' : ''">
-                <div class="flex items-start justify-between">
-                  <div>
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
                     <p class="font-medium text-primary">{{ isAr && a.classSession.titleAr ? a.classSession.titleAr : a.classSession.title }}
                       <span v-if="a.classSession.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span>
                       <span v-if="a.classSession.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
                     </p>
                     <p class="text-xs text-slate-500">{{ new Date(a.classSession.startTime).toLocaleString() }} - {{ new Date(a.classSession.endTime).toLocaleTimeString() }}</p>
-                    <p v-if="a.classSession.recurrence" class="text-xs text-slate-400">{{ a.classSession.recurrence }}</p>
                   </div>
-                  <span :class="new Date(a.classSession.startTime) > new Date() ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'"
-                    class="text-xs px-2 py-0.5 rounded-full shrink-0">
-                    {{ new Date(a.classSession.startTime) > new Date() ? $t('admin.upcoming') : $t('admin.past') }}
-                  </span>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <span :class="new Date(a.classSession.startTime) > new Date() ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'"
+                      class="text-xs px-2 py-0.5 rounded-full">
+                      {{ new Date(a.classSession.startTime) > new Date() ? $t('admin.upcoming') : $t('admin.past') }}
+                    </span>
+                    <button
+                      @click="expandClassLog(a.classSession.id)"
+                      class="text-xs text-primary hover:text-primary-800 underline"
+                    >
+                      {{ expandedLogClassId === a.classSession.id
+                        ? $t('admin.classLog.close')
+                        : (logForClass(a.classSession.id) ? $t('admin.classLog.edit') : $t('admin.classLog.add')) }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Expanded: existing log summary + edit form -->
+                <div v-if="expandedLogClassId === a.classSession.id" class="mt-3 border-t border-slate-100 pt-3 space-y-2">
+                  <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">{{ $t('admin.classLog.summaryLabel') }}</label>
+                    <textarea v-model="logDraft.summary" rows="3"
+                      class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none"
+                      :placeholder="$t('admin.classLog.summaryPh')"
+                    ></textarea>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">{{ $t('admin.classLog.nextStepsLabel') }}</label>
+                    <textarea v-model="logDraft.nextSteps" rows="2"
+                      class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none"
+                      :placeholder="$t('admin.classLog.nextStepsPh')"
+                    ></textarea>
+                  </div>
+                  <div class="flex justify-end gap-2">
+                    <button @click="expandedLogClassId = null"
+                      class="px-3 py-1.5 text-sm text-slate-500 hover:text-slate-700">
+                      {{ $t('admin.cancel') }}
+                    </button>
+                    <button @click="saveClassLog(a.classSession.id, selectedStudent.id)"
+                      :disabled="savingLog"
+                      class="bg-primary text-cream px-4 py-1.5 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
+                      {{ savingLog ? $t('admin.saving') : $t('admin.classLog.save') }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-3">
+              <button
+                @click="clearUpcomingClasses(selectedStudent.id)"
+                :disabled="clearingUpcoming"
+                class="bg-amber-100 text-amber-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-amber-200 transition disabled:opacity-50"
+              >
+                {{ clearingUpcoming ? $t('admin.saving') : $t('admin.clearUpcoming') }}
+              </button>
+              <button @click="handleSuspend(selectedStudent.id)"
+                class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-200 transition">
+                {{ $t('admin.suspendStudent') }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Payments tab -->
+          <div v-if="studentDetailTab === 'payments'" class="mt-4">
+            <div v-if="Object.keys(studentPaymentTotals).length" class="mb-4 bg-primary/5 rounded-lg p-3 text-sm">
+              <span class="text-slate-500">{{ $t('admin.payments.total') }}:</span>
+              <span v-for="(minor, cur) in studentPaymentTotals" :key="cur" class="ms-2 font-medium text-primary">
+                {{ formatMoney(minor, cur) }}
+              </span>
+            </div>
+            <div v-if="!studentPayments.length" class="text-slate-400 text-sm py-4">{{ $t('admin.payments.none') }}</div>
+            <div v-else class="space-y-2 max-h-72 overflow-y-auto">
+              <div v-for="p in studentPayments" :key="p.id" class="border border-slate-100 rounded-lg p-3 text-sm">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="font-medium text-primary">{{ formatMoney(p.amount, p.currency) }} · {{ p.period }}</p>
+                    <p class="text-xs text-slate-500">{{ new Date(p.paidAt).toLocaleDateString() }}</p>
+                    <p v-if="p.notes" class="text-xs text-slate-400 mt-1">{{ p.notes }}</p>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <button @click="openPaymentForm(p)" class="text-xs text-primary hover:text-primary-800 underline">{{ $t('admin.edit') }}</button>
+                    <button @click="deletePayment(p.id, selectedStudent.id)" class="text-xs text-red-500 hover:text-red-700 underline">{{ $t('admin.delete') }}</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <button v-if="!showPaymentForm" @click="openPaymentForm(null)"
+                class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition">
+                + {{ $t('admin.payments.record') }}
+              </button>
+              <div v-else class="border border-slate-200 rounded-lg p-4 space-y-3 bg-slate-50">
+                <h4 class="font-medium text-primary">{{ editingPaymentId ? $t('admin.payments.editTitle') : $t('admin.payments.recordTitle') }}</h4>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.payments.amount') }}</label>
+                    <input v-model="paymentForm.amount" type="number" step="0.01" min="0"
+                      class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white" />
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.payments.currency') }}</label>
+                    <select v-model="paymentForm.currency"
+                      class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white">
+                      <option>EGP</option>
+                      <option>USD</option>
+                      <option>EUR</option>
+                      <option>SAR</option>
+                      <option>AED</option>
+                      <option>GBP</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.payments.period') }}</label>
+                  <input v-model="paymentForm.period" type="text"
+                    :placeholder="$t('admin.payments.periodPh')"
+                    class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white" />
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.payments.paidAt') }}</label>
+                  <input v-model="paymentForm.paidAt" type="date"
+                    class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white" />
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.payments.notes') }}</label>
+                  <textarea v-model="paymentForm.notes" rows="2"
+                    :placeholder="$t('admin.payments.notesPh')"
+                    class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white"></textarea>
+                </div>
+                <div class="flex justify-end gap-2">
+                  <button @click="showPaymentForm = false"
+                    class="px-3 py-1.5 text-sm text-slate-500 hover:text-slate-700">{{ $t('admin.cancel') }}</button>
+                  <button @click="savePayment(selectedStudent.id)" :disabled="savingPayment"
+                    class="bg-primary text-cream px-4 py-1.5 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
+                    {{ savingPayment ? $t('admin.saving') : $t('admin.payments.save') }}
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Notes -->
-          <div class="mt-6">
-            <h3 class="font-semibold text-primary mb-3">{{ $t('admin.notes') }}</h3>
-            <div v-for="note in selectedStudent.adminNotes" :key="note.id" class="bg-slate-50 rounded-lg p-3 mb-2 text-sm">
-              <p>{{ note.content }}</p>
-              <p class="text-xs text-slate-400 mt-1">{{ new Date(note.createdAt).toLocaleString() }}</p>
-            </div>
-            <div class="mt-3">
-              <textarea v-model="newNote" rows="2" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" :placeholder="$t('admin.addNote')"></textarea>
-              <button @click="addNote(selectedStudent.id)" class="mt-2 bg-primary text-cream px-4 py-1.5 rounded-full text-sm font-medium hover:bg-primary-800 transition">
-                {{ $t('admin.saveNote') }}
-              </button>
-            </div>
-          </div>
-
-          <div class="mt-6 pt-4 border-t border-slate-100 flex gap-3">
-            <button @click="handleSuspend(selectedStudent.id)" class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-200 transition">
-              {{ $t('admin.suspendStudent') }}
+          <!-- Export tab -->
+          <div v-if="studentDetailTab === 'export'" class="mt-4 space-y-3">
+            <p class="text-sm text-slate-500">{{ $t('admin.export.desc') }}</p>
+            <button @click="downloadStudentCsv(selectedStudent.id)"
+              class="w-full bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition">
+              {{ $t('admin.export.student') }}
+            </button>
+            <button @click="downloadAllPaymentsCsv"
+              class="w-full bg-slate-100 text-slate-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-200 transition">
+              {{ $t('admin.export.allPayments') }}
+            </button>
+            <button @click="downloadAllClassLogsCsv"
+              class="w-full bg-slate-100 text-slate-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-200 transition">
+              {{ $t('admin.export.allClassLogs') }}
             </button>
           </div>
         </div>
@@ -402,6 +543,64 @@
           </form>
         </div>
       </div>
+
+      <!-- Conflict Resolution Modal -->
+      <div v-if="conflictModal.open" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" @click.self="cancelConflictResolution">
+        <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-6">
+          <h2 class="text-lg font-bold text-primary mb-2">{{ $t('admin.conflict.title') }}</h2>
+          <p class="text-sm text-slate-500 mb-4">{{ $t('admin.conflict.subtitle') }}</p>
+          <div class="space-y-3">
+            <div v-for="c in conflictModal.conflicts" :key="c.startTime" class="border border-slate-200 rounded-lg p-3">
+              <p class="font-medium text-sm text-primary">{{ formatConflictTime(c.startTime) }}</p>
+              <p v-if="c.kind === 'same_student'" class="text-sm text-amber-700 mt-1">
+                {{ $t('admin.conflict.sameStudent').replace('{title}', c.existingTitle || '') }}
+              </p>
+              <p v-else class="text-sm text-slate-600 mt-1">
+                {{ $t('admin.conflict.existingSlot')
+                  .replace('{title}', c.existingTitle || '')
+                  .replace('{students}', (c.existingStudents || []).map(s => `${s.firstName} ${s.lastName}`).join(', ')) }}
+              </p>
+              <div class="mt-3 flex flex-col gap-2 text-sm">
+                <template v-if="c.kind === 'same_student'">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" :name="`res-${c.startTime}`" value="skip" v-model="conflictModal.resolutions[c.startTime]" />
+                    <span>{{ $t('admin.conflict.skip') }}</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" :name="`res-${c.startTime}`" value="force" v-model="conflictModal.resolutions[c.startTime]" />
+                    <span>{{ $t('admin.conflict.scheduleAnyway') }}</span>
+                  </label>
+                </template>
+                <template v-else>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" :name="`res-${c.startTime}`" value="merge" v-model="conflictModal.resolutions[c.startTime]" />
+                    <span>{{ $t('admin.conflict.merge') }}</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" :name="`res-${c.startTime}`" value="create" v-model="conflictModal.resolutions[c.startTime]" />
+                    <span>{{ $t('admin.conflict.createSeparate') }}</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" :name="`res-${c.startTime}`" value="skip" v-model="conflictModal.resolutions[c.startTime]" />
+                    <span>{{ $t('admin.conflict.skip') }}</span>
+                  </label>
+                </template>
+              </div>
+            </div>
+          </div>
+          <div class="mt-5 flex justify-end gap-3">
+            <button @click="cancelConflictResolution"
+              class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">
+              {{ $t('admin.cancel') }}
+            </button>
+            <button @click="submitConflictResolution" :disabled="creatingClass"
+              class="bg-primary text-cream px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
+              {{ creatingClass ? $t('admin.creating') : $t('admin.conflict.confirm') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Reschedule Modal -->
       <div v-if="showRescheduleModal && rescheduleTarget" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showRescheduleModal = false">
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
@@ -470,7 +669,6 @@ const students = ref([]);
 const classes = ref([]);
 const studentSearch = ref('');
 const selectedStudent = ref(null);
-const newNote = ref('');
 const showScheduleForm = ref(false);
 const creatingClass = ref(false);
 const selectedClass = ref(null);
@@ -481,6 +679,39 @@ const showRescheduleModal = ref(false);
 const rescheduleTarget = ref(null);
 const rescheduleDate = ref('');
 const rescheduleTime = ref('');
+
+// --- Student detail expansion: tabs + per-student data -------------------
+// The old modal had a single free-form notes textbox. It's now replaced with
+// a Classes / Payments / Export tab switcher, backed by the server.
+const studentDetailTab = ref('classes');
+const studentClassLogs = ref([]);
+const studentPayments = ref([]);
+const studentPaymentTotals = ref({});
+const expandedLogClassId = ref(null);
+const logDraft = reactive({ summary: '', nextSteps: '' });
+const savingLog = ref(false);
+
+const showPaymentForm = ref(false);
+const editingPaymentId = ref(null);
+const paymentForm = reactive({
+  amount: '',
+  currency: 'EGP',
+  period: '',
+  paidAt: new Date().toISOString().slice(0, 10),
+  notes: '',
+});
+const savingPayment = ref(false);
+const clearingUpcoming = ref(false);
+
+// --- Conflict resolution modal -------------------------------------------
+// Populated when the admin submits the schedule form and the backend finds
+// overlaps with existing classes.
+const conflictModal = reactive({
+  open: false,
+  conflicts: [], // array from /classes/check-conflicts
+  resolutions: {}, // keyed by session startTime ISO
+  pendingPayload: null, // the scheduleForm payload we'll re-POST after resolving
+});
 
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const FULL_DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -677,17 +908,15 @@ async function viewStudent(id) {
   try {
     const data = await api.get(`/api/admin/students/${id}`);
     selectedStudent.value = data.student;
+    studentDetailTab.value = 'classes';
+    expandedLogClassId.value = null;
+    showPaymentForm.value = false;
+    await loadStudentDetailData(id);
   } catch (e) { showToast(e); }
 }
 
-async function addNote(studentId) {
-  if (!newNote.value.trim()) return;
-  try {
-    const data = await api.post(`/api/admin/students/${studentId}/notes`, { content: newNote.value });
-    selectedStudent.value.adminNotes.unshift(data.note);
-    newNote.value = '';
-  } catch (e) { showToast(e); }
-}
+// Legacy AdminNote textbox was replaced by the Classes / Payments tabs.
+// Keeping the endpoints but no longer calling them from the UI.
 
 async function handleSuspend(id) {
   if (!confirm(t('admin.suspendConfirm'))) return;
@@ -774,11 +1003,31 @@ async function scheduleStudent() {
       }
     }
 
-    await api.post('/api/admin/classes/batch', {
+    // Ask the backend to look for conflicts before committing anything. If
+    // any come back we open the resolution modal instead of submitting.
+    const { conflicts } = await api.post('/api/admin/classes/check-conflicts', {
       studentId: scheduleForm.studentId,
-      title,
       sessions,
     });
+
+    const payload = { studentId: scheduleForm.studentId, title, sessions };
+
+    if (conflicts?.length) {
+      // Default each conflict's resolution to the "safe" pick:
+      //   - existing_slot -> 'merge' (probably a co-taught class)
+      //   - same_student  -> 'skip'  (admin must explicitly confirm)
+      const defaults = {};
+      for (const c of conflicts) {
+        defaults[c.startTime] = c.kind === 'existing_slot' ? 'merge' : 'skip';
+      }
+      conflictModal.open = true;
+      conflictModal.conflicts = conflicts;
+      conflictModal.resolutions = defaults;
+      conflictModal.pendingPayload = payload;
+      return; // wait for the user to resolve
+    }
+
+    await api.post('/api/admin/classes/batch', payload);
 
     showScheduleForm.value = false;
     Object.assign(scheduleForm, { studentId: '', days: [], time: '15:00', duration: '60', weeks: '12' });
@@ -786,6 +1035,200 @@ async function scheduleStudent() {
   } catch (e) { showToast(e); } finally {
     creatingClass.value = false;
   }
+}
+
+// Submit from the conflict modal once the admin has picked an action per row.
+async function submitConflictResolution() {
+  if (creatingClass.value) return;
+  const payload = conflictModal.pendingPayload;
+  if (!payload) return;
+  creatingClass.value = true;
+  try {
+    await api.post('/api/admin/classes/batch', {
+      ...payload,
+      resolutions: conflictModal.resolutions,
+    });
+    conflictModal.open = false;
+    conflictModal.conflicts = [];
+    conflictModal.resolutions = {};
+    conflictModal.pendingPayload = null;
+    showScheduleForm.value = false;
+    Object.assign(scheduleForm, { studentId: '', days: [], time: '15:00', duration: '60', weeks: '12' });
+    loadClasses();
+  } catch (e) {
+    showToast(e);
+  } finally {
+    creatingClass.value = false;
+  }
+}
+
+function cancelConflictResolution() {
+  conflictModal.open = false;
+  conflictModal.conflicts = [];
+  conflictModal.resolutions = {};
+  conflictModal.pendingPayload = null;
+}
+
+function formatConflictTime(iso) {
+  return new Date(iso).toLocaleString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+// --- Student detail: class logs + payments -------------------------------
+
+async function loadStudentDetailData(studentId) {
+  try {
+    const [logs, payments] = await Promise.all([
+      api.get(`/api/admin/students/${studentId}/class-logs`),
+      api.get(`/api/admin/students/${studentId}/payments`),
+    ]);
+    studentClassLogs.value = logs.logs || [];
+    studentPayments.value = payments.payments || [];
+    studentPaymentTotals.value = payments.totals || {};
+  } catch (e) {
+    showToast(e);
+  }
+}
+
+function logForClass(classSessionId) {
+  return studentClassLogs.value.find((l) => l.classSessionId === classSessionId);
+}
+
+function expandClassLog(classSessionId) {
+  if (expandedLogClassId.value === classSessionId) {
+    expandedLogClassId.value = null;
+    return;
+  }
+  const existing = logForClass(classSessionId);
+  logDraft.summary = existing?.summary || '';
+  logDraft.nextSteps = existing?.nextSteps || '';
+  expandedLogClassId.value = classSessionId;
+}
+
+async function saveClassLog(classSessionId, studentId) {
+  savingLog.value = true;
+  try {
+    const data = await api.put(`/api/admin/class-logs/${classSessionId}/${studentId}`, {
+      summary: logDraft.summary,
+      nextSteps: logDraft.nextSteps,
+    });
+    // Merge into studentClassLogs so the UI reflects the new state without a refetch.
+    const idx = studentClassLogs.value.findIndex(
+      (l) => l.classSessionId === classSessionId
+    );
+    const merged = { ...data.log, classSession: logForClass(classSessionId)?.classSession };
+    if (idx === -1) {
+      studentClassLogs.value.unshift(merged);
+    } else {
+      studentClassLogs.value[idx] = { ...studentClassLogs.value[idx], ...data.log };
+    }
+    expandedLogClassId.value = null;
+  } catch (e) {
+    showToast(e);
+  } finally {
+    savingLog.value = false;
+  }
+}
+
+function openPaymentForm(payment) {
+  if (payment) {
+    editingPaymentId.value = payment.id;
+    paymentForm.amount = (payment.amount / 100).toFixed(2);
+    paymentForm.currency = payment.currency;
+    paymentForm.period = payment.period;
+    paymentForm.paidAt = new Date(payment.paidAt).toISOString().slice(0, 10);
+    paymentForm.notes = payment.notes || '';
+  } else {
+    editingPaymentId.value = null;
+    paymentForm.amount = '';
+    paymentForm.currency = 'EGP';
+    paymentForm.period = '';
+    paymentForm.paidAt = new Date().toISOString().slice(0, 10);
+    paymentForm.notes = '';
+  }
+  showPaymentForm.value = true;
+}
+
+async function savePayment(studentId) {
+  if (savingPayment.value) return;
+  const amountMinor = Math.round(parseFloat(paymentForm.amount) * 100);
+  if (!amountMinor || amountMinor <= 0 || !paymentForm.period.trim()) {
+    showToast(t('admin.payments.missingFields') || 'Amount and period are required');
+    return;
+  }
+  savingPayment.value = true;
+  try {
+    const body = {
+      amount: amountMinor,
+      currency: paymentForm.currency,
+      period: paymentForm.period.trim(),
+      paidAt: new Date(paymentForm.paidAt).toISOString(),
+      notes: paymentForm.notes?.trim() || null,
+    };
+    if (editingPaymentId.value) {
+      await api.put(`/api/admin/payments/${editingPaymentId.value}`, body);
+    } else {
+      await api.post(`/api/admin/students/${studentId}/payments`, body);
+    }
+    showPaymentForm.value = false;
+    await loadStudentDetailData(studentId);
+  } catch (e) {
+    showToast(e);
+  } finally {
+    savingPayment.value = false;
+  }
+}
+
+async function deletePayment(paymentId, studentId) {
+  if (!confirm(t('admin.payments.deleteConfirm') || 'Delete this payment?')) return;
+  try {
+    await api.delete(`/api/admin/payments/${paymentId}`);
+    await loadStudentDetailData(studentId);
+  } catch (e) {
+    showToast(e);
+  }
+}
+
+async function clearUpcomingClasses(studentId) {
+  if (clearingUpcoming.value) return;
+  const upcomingCount = studentClasses.value.filter(
+    (a) => new Date(a.classSession.startTime) > new Date() && !a.classSession.cancelled
+  ).length;
+  const msg = (t('admin.clearUpcomingConfirm') || 'Remove this student from {count} upcoming classes?')
+    .replace('{count}', upcomingCount);
+  if (!confirm(msg)) return;
+  clearingUpcoming.value = true;
+  try {
+    const data = await api.delete(`/api/admin/students/${studentId}/future-assignments`);
+    showToast((t('admin.clearUpcomingDone') || 'Removed {count} upcoming classes').replace('{count}', data.removed));
+    await loadClasses();
+    // Refresh the student detail so the classes list updates in place.
+    await viewStudent(studentId);
+  } catch (e) {
+    showToast(e);
+  } finally {
+    clearingUpcoming.value = false;
+  }
+}
+
+function formatMoney(minor, currency) {
+  return `${(minor / 100).toFixed(2)} ${currency}`;
+}
+
+function downloadStudentCsv(studentId) {
+  // The endpoint requires auth cookie, so just hit it as a link.
+  window.open(`/api/admin/students/${studentId}/export.csv`, '_blank');
+}
+function downloadAllPaymentsCsv() {
+  window.open('/api/admin/export/payments.csv', '_blank');
+}
+function downloadAllClassLogsCsv() {
+  window.open('/api/admin/export/class-logs.csv', '_blank');
 }
 
 watch(activeTab, (tab) => {

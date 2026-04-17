@@ -48,6 +48,10 @@ model User {
   createdClasses    ClassSession[]     @relation("AdminClasses")
   emailTokens       EmailToken[]
   auditLogs         AuditLog[]
+  classLogs         ClassLog[]     @relation("ClassLogStudent")
+  classLogsAuthored ClassLog[]     @relation("ClassLogAuthor")
+  payments          Payment[]      @relation("PaymentStudent")
+  paymentsAuthored  Payment[]      @relation("PaymentAuthor")
 
   @@index([role])
   @@index([createdAt])
@@ -107,12 +111,15 @@ model ClassSession {
   rescheduledAt     DateTime? @map("rescheduled_at")
   originalStartTime DateTime? @map("original_start_time")
   originalEndTime   DateTime? @map("original_end_time")
+  reminder30SentAt  DateTime? @map("reminder_30_sent_at")
+  reminder24SentAt  DateTime? @map("reminder_24_sent_at")
   createdByAdminId String? @map("created_by_admin_id") @db.Uuid
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   createdByAdmin  User?    @relation("AdminClasses", fields: [createdByAdminId], references: [id], onDelete: SetNull)
   assignments     ClassAssignment[]
+  classLogs       ClassLog[]
 
   @@index([startTime])
   @@index([cancelled])
@@ -147,6 +154,47 @@ model AdminNote {
 
   @@index([studentId])
   @@map("admin_notes")
+}
+
+// Per-class per-student log: what was covered + what's next.
+// One row per (classSessionId, studentId). Upsert on edit.
+model ClassLog {
+  id             String       @id @default(uuid()) @db.Uuid
+  classSessionId String       @map("class_session_id") @db.Uuid
+  studentId      String       @map("student_id") @db.Uuid
+  authorId       String       @map("author_id") @db.Uuid
+  summary        String       @default("") @db.Text
+  nextSteps      String       @default("") @map("next_steps") @db.Text
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  classSession   ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+  student        User         @relation("ClassLogStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  author         User         @relation("ClassLogAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@unique([classSessionId, studentId])
+  @@index([studentId, createdAt])
+  @@map("class_logs")
+}
+
+// Payment ledger. Amount stored in minor units (piastres) to avoid floats.
+model Payment {
+  id        String   @id @default(uuid()) @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  amount    Int      // minor units (e.g. piastres for EGP, cents for USD)
+  currency  String   @default("EGP")
+  period    String   // free-form: "April 2026", "4-week package", etc.
+  paidAt    DateTime @map("paid_at")
+  notes     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  student   User     @relation("PaymentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  author    User     @relation("PaymentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, paidAt])
+  @@map("payments")
 }
 
 model Announcement {

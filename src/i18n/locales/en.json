@@ -453,6 +453,59 @@
     "upcomingClassesTitle": "Upcoming Classes",
     "noUpcomingClasses": "No upcoming classes",
     "joinClass": "Join",
-    "noMeetingLink": "No meeting link set"
+    "noMeetingLink": "No meeting link set",
+    "edit": "Edit",
+    "tab": {
+      "classes": "Classes",
+      "payments": "Payments",
+      "export": "Export"
+    },
+    "classLog": {
+      "add": "Add log",
+      "edit": "Edit log",
+      "close": "Close",
+      "save": "Save log",
+      "summaryLabel": "What was covered",
+      "summaryPh": "Tajwid rules 1–5, reviewed Surah Al-Asr...",
+      "nextStepsLabel": "What's next",
+      "nextStepsPh": "Start hadith 41, memorise next ayah..."
+    },
+    "payments": {
+      "total": "Total paid",
+      "none": "No payments recorded yet.",
+      "record": "Record payment",
+      "recordTitle": "Record a payment",
+      "editTitle": "Edit payment",
+      "amount": "Amount",
+      "currency": "Currency",
+      "period": "Covers",
+      "periodPh": "April 2026 / 4-week package",
+      "paidAt": "Paid on",
+      "notes": "Notes",
+      "notesPh": "Cash, bank transfer, etc.",
+      "save": "Save payment",
+      "deleteConfirm": "Delete this payment? This cannot be undone.",
+      "missingFields": "Amount and period are required."
+    },
+    "export": {
+      "desc": "Download records for bookkeeping or sharing.",
+      "student": "Download this student's data (CSV)",
+      "allPayments": "Download all payments (CSV)",
+      "allClassLogs": "Download all class logs (CSV)"
+    },
+    "clearUpcoming": "Clear upcoming classes",
+    "clearUpcomingConfirm": "Remove this student from {count} upcoming classes? Other students in shared classes keep their bookings.",
+    "clearUpcomingDone": "Removed {count} upcoming classes.",
+    "conflict": {
+      "title": "Scheduling conflict",
+      "subtitle": "Some of the sessions overlap with what's already on the calendar. Pick what to do with each.",
+      "sameStudent": "This student already has a class \"{title}\" at this time.",
+      "existingSlot": "A class \"{title}\" already exists at this slot with: {students}.",
+      "merge": "Add this student to the existing class",
+      "createSeparate": "Create a separate class anyway",
+      "scheduleAnyway": "Schedule anyway (student will be double-booked)",
+      "skip": "Skip this session",
+      "confirm": "Confirm and schedule"
+    }
   }
 }

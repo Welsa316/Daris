@@ -320,6 +320,144 @@ export async function sendNewEnrollmentNotification(student) {
   logger.info('Admin enrollment notification sent', { studentId: student.id });
 }
 
+/**
+ * Format a class's start time for the student's time zone the best we can.
+ * Falls back to UTC if the session has no explicit timezone. The reminder
+ * emails intentionally show the date in a human-friendly short form.
+ */
+function formatClassDateTime(date, lang = 'en') {
+  const locale = lang === 'ar' ? 'ar-EG' : 'en-GB';
+  try {
+    return new Date(date).toLocaleString(locale, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return new Date(date).toISOString();
+  }
+}
+
+/**
+ * Class reminder to a student: "Your class is in 30 minutes" / "tomorrow".
+ */
+export async function sendClassReminderStudent(student, classSession, label) {
+  const lang = 'en'; // User model has no preferredLanguage yet; default EN.
+  const when = formatClassDateTime(classSession.startTime, lang);
+  const title = classSession.title || (lang === 'ar' ? 'حصتك' : 'Your class');
+  const firstName = student.firstName || (lang === 'ar' ? 'طالبنا' : 'student');
+  const meetingLink = classSession.meetingLink || '';
+
+  const subjectMap = {
+    '30min': lang === 'ar'
+      ? 'دارس — تذكير: حصتك تبدأ خلال ٣٠ دقيقة'
+      : 'Daris — Reminder: your class starts in 30 minutes',
+    '24hr': lang === 'ar'
+      ? 'دارس — تذكير: حصتك غداً'
+      : 'Daris — Reminder: your class is tomorrow',
+  };
+  const headingMap = {
+    '30min': lang === 'ar' ? 'حصتك تبدأ خلال ٣٠ دقيقة' : 'Your class starts in 30 minutes',
+    '24hr': lang === 'ar' ? 'حصتك غداً' : 'Your class is tomorrow',
+  };
+
+  const cta = meetingLink
+    ? `<a href="${meetingLink}" style="display: inline-block; background: #1F4D3A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+         ${lang === 'ar' ? 'الانضمام للحصة' : 'Join the class'}
+       </a>`
+    : `<p style="color: #666; font-size: 14px;">${lang === 'ar' ? 'سيتم إرسال رابط الحصة قبل بدايتها.' : 'The class link will be sent before the session starts.'}</p>`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ${lang === 'ar' ? 'rtl' : 'ltr'};">
+      <h2 style="color: #1F4D3A;">${headingMap[label]}</h2>
+      <p>${lang === 'ar' ? `السلام عليكم ${firstName}،` : `Assalamu alaikum, ${firstName}.`}</p>
+      <p style="background: #f5f1e8; padding: 12px 16px; border-radius: 6px; border-left: 3px solid #C8A951;">
+        <strong>${escapeHtml(title)}</strong><br/>
+        ${escapeHtml(when)}
+      </p>
+      ${cta}
+      <p style="color: #999; font-size: 12px;">${lang === 'ar'
+        ? 'إذا لم تعد تستطيع الحضور، يرجى إبلاغ الشيخ بأسرع وقت ممكن.'
+        : 'If you can no longer attend, please let the Sheikh know as soon as possible.'}</p>
+    </div>
+  `;
+
+  await sendEmail({ to: student.email, subject: subjectMap[label], html });
+}
+
+/**
+ * Class reminder to the admin 30 minutes before the class starts.
+ * Admin always gets Arabic (sheikh's preference).
+ */
+export async function sendClassReminderAdmin(classSession, studentNames) {
+  if (!env.ADMIN_EMAIL) {
+    logger.error('ADMIN_EMAIL not configured — cannot send class reminder to admin', {
+      classId: classSession.id,
+    });
+    return;
+  }
+
+  const when = formatClassDateTime(classSession.startTime, 'ar');
+  const title = classSession.title || 'حصة';
+  const students = studentNames.length
+    ? studentNames.join('، ')
+    : '(لا يوجد طلاب مسجلون)';
+
+  const meetingLink = classSession.meetingLink || '';
+  const cta = meetingLink
+    ? `<a href="${meetingLink}" style="display: inline-block; background: #1F4D3A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+         فتح رابط الحصة
+       </a>`
+    : '';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl;">
+      <h2 style="color: #1F4D3A;">تذكير: حصتك تبدأ خلال ٣٠ دقيقة</h2>
+      <p style="background: #f5f1e8; padding: 12px 16px; border-radius: 6px; border-left: 3px solid #C8A951;">
+        <strong>${escapeHtml(title)}</strong><br/>
+        ${escapeHtml(when)}<br/>
+        <span style="color: #666;">الطلاب:</span> ${escapeHtml(students)}
+      </p>
+      ${cta}
+    </div>
+  `;
+
+  await sendEmail({
+    to: env.ADMIN_EMAIL,
+    subject: `دارس — تذكير: حصة مع ${students} بعد ٣٠ دقيقة`,
+    html,
+  });
+}
+
+/**
+ * Consolidated email sent when the admin clears all of a student's upcoming
+ * classes in one action (e.g., student changing their schedule permanently).
+ */
+export async function sendFutureAssignmentsClearedEmail(student, count, lang = 'en') {
+  const subject = lang === 'ar'
+    ? 'دارس — تم إلغاء حصصك القادمة'
+    : 'Daris — Your upcoming classes have been cleared';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ${lang === 'ar' ? 'rtl' : 'ltr'};">
+      <h2 style="color: #1F4D3A;">${lang === 'ar' ? 'تم تحديث جدولك' : 'Your schedule has been updated'}</h2>
+      <p>${lang === 'ar'
+        ? `عزيزي ${student.firstName}،`
+        : `Dear ${student.firstName},`}</p>
+      <p>${lang === 'ar'
+        ? `تمت إزالتك من ${count} حصة قادمة. إذا كان هذا خطأً أو كنت ترغب في العودة للجدول، يرجى التواصل مع الشيخ.`
+        : `You have been removed from ${count} upcoming class${count === 1 ? '' : 'es'}. If this was a mistake or you'd like to return to the schedule, please contact the Sheikh.`}</p>
+      <p style="color: #999; font-size: 12px;">${lang === 'ar'
+        ? 'حسابك لا يزال نشطاً — تم تحديث جدول الحصص فقط.'
+        : 'Your account is still active — only your class schedule was updated.'}</p>
+    </div>
+  `;
+
+  await sendEmail({ to: student.email, subject, html });
+}
+
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')

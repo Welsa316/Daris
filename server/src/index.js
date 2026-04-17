@@ -8,6 +8,7 @@ import { generalLimiter } from './middleware/rateLimiter.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { logger } from './utils/logger.js';
 import { cleanExpiredSessions } from './services/tokenService.js';
+import { runClassReminderTick } from './services/classReminderJob.js';
 
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -105,6 +106,17 @@ setInterval(async () => {
     logger.error('Session cleanup failed', { error: error.message });
   }
 }, 60 * 60 * 1000);
+
+// --- Class reminders (every 5 min — sends 30-min and 24-h notices) ---
+setInterval(() => {
+  runClassReminderTick().catch((err) =>
+    logger.error('Class reminder tick failed', { error: err.message })
+  );
+}, 5 * 60 * 1000);
+// Also run once on boot so restarts don't create a 5-min gap.
+runClassReminderTick().catch((err) =>
+  logger.error('Initial class reminder tick failed', { error: err.message })
+);
 
 // --- Start server ---
 async function start() {

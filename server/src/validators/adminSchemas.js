@@ -70,7 +70,40 @@ export const batchClassSchema = z.object({
     startTime: z.string().datetime(),
     endTime: z.string().datetime(),
   })).min(1).max(200),
+  // Optional per-session resolutions for detected conflicts. Key is the session
+  // startTime ISO string, value is the action the admin chose in the UI.
+  resolutions: z
+    .record(z.string(), z.enum(['merge', 'create', 'force', 'skip']))
+    .optional(),
 });
+
+export const checkConflictsSchema = z.object({
+  studentId: z.string().uuid(),
+  sessions: z
+    .array(
+      z.object({
+        startTime: z.string().datetime(),
+        endTime: z.string().datetime(),
+      })
+    )
+    .min(1)
+    .max(200),
+});
+
+export const classLogSchema = z.object({
+  summary: z.string().max(20000).default(''),
+  nextSteps: z.string().max(20000).default(''),
+});
+
+export const paymentSchema = z.object({
+  amount: z.number().int().positive().max(100_000_000), // up to 1 million major units
+  currency: z.string().min(1).max(10).default('EGP'),
+  period: z.string().min(1).max(100).trim(),
+  paidAt: z.string().datetime(),
+  notes: z.string().max(2000).optional().nullable(),
+});
+
+export const paymentUpdateSchema = paymentSchema.partial();
 
 export const meetingLinkSchema = z.object({
   meetingLink: z.string().url('Invalid meeting link').max(500),
