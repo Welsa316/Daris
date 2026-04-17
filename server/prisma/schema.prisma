@@ -105,6 +105,11 @@ model ClassSession {
   titleAr         String?  @map("title_ar")
   description     String?  @db.Text
   descriptionAr   String?  @map("description_ar") @db.Text
+  // Subject area being taught. Drives the color-coding + legend in the
+  // admin calendar. Free-form string rather than an enum so we can add
+  // new subjects (e.g. "seerah", "tafseer") without a migration.
+  // Null for classes scheduled before this field existed.
+  subject         String?
   startTime       DateTime @map("start_time")
   endTime         DateTime @map("end_time")
   timezone        String   @default("UTC")

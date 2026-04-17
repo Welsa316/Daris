@@ -88,6 +88,10 @@ export const batchClassSchema = z.object({
   studentId: z.string().uuid(),
   title: z.string().min(1).max(200).trim(),
   titleAr: z.string().max(200).trim().optional().nullable(),
+  // Subject area: 'quran' | 'fiqh' | 'arabic' (or any free-form label).
+  // Null lets a scheduler skip picking one and drops into the neutral
+  // calendar color. Keep the list open so we can add types later.
+  subject: z.string().min(1).max(40).optional().nullable(),
   // IANA timezone the wall-clock times should be interpreted in. Persisted
   // on each ClassSession so reminder emails render in the right zone.
   timezone: z.string().min(1).max(64).default('Africa/Cairo'),

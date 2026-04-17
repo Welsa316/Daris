@@ -841,7 +841,7 @@ router.put('/settings/meeting-link', validate(meetingLinkSchema), async (req, re
 router.post('/classes/batch', validate(batchClassSchema), async (req, res, next) => {
   try {
     const lang = getLang(req);
-    const { studentId, title, titleAr, timezone, sessions, resolutions = {} } = req.body;
+    const { studentId, title, titleAr, subject, timezone, sessions, resolutions = {} } = req.body;
 
     // Get global meeting link
     const meetingLinkSetting = await prisma.siteSetting.findUnique({ where: { key: 'meetingLink' } });
@@ -907,6 +907,7 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
           data: {
             title,
             titleAr: titleAr || null,
+            subject: subject || null,
             startTime: new Date(session.startTime),
             endTime: new Date(session.endTime),
             meetingLink,

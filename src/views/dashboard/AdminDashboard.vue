@@ -261,6 +261,24 @@
               <button @click="nextWeek" class="text-slate-500 hover:text-primary text-sm font-medium">{{ $t('admin.nextWeek') }} &rarr;</button>
             </div>
 
+            <!-- Subject legend — small cheatsheet so the sheikh always knows
+                 what each calendar color represents without guessing. -->
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3 text-xs text-slate-500">
+              <span class="font-semibold uppercase tracking-wider">{{ $t('admin.legend') }}:</span>
+              <span v-for="s in SUBJECTS" :key="s.key" class="inline-flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-sm" :class="s.dot" aria-hidden="true"></span>
+                {{ $t('admin.subject_' + s.key) }}
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-sm border-2 border-amber-400" aria-hidden="true"></span>
+                {{ $t('admin.rescheduled') }}
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-sm bg-slate-200" aria-hidden="true"></span>
+                {{ $t('admin.cancelled') }}
+              </span>
+            </div>
+
             <!-- 7-day grid -->
             <div class="grid grid-cols-7 gap-2">
               <!-- Day headers -->
@@ -276,9 +294,16 @@
                 <div v-for="cls in classesByDay[localDateKey(day)] || []" :key="cls.id"
                   @click="selectedClass = cls"
                   class="mb-1 rounded-lg p-2 text-xs cursor-pointer hover:ring-2 hover:ring-primary/30 transition"
-                  :class="[cls.cancelled ? 'bg-slate-100 text-slate-400 line-through' : cls.rescheduled ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-primary/10 text-primary', selectedClass?.id === cls.id ? 'ring-2 ring-primary' : '']">
+                  :class="calendarBlockClass(cls)">
                   <p class="font-medium truncate">{{ classDisplayName(cls) }}</p>
-                  <p class="text-[10px] opacity-70">{{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(cls.startTime)) }}</p>
+                  <p class="text-[10px] opacity-70 flex items-center gap-1.5">
+                    <span v-if="subjectStyle(cls.subject)"
+                      class="text-[9px] uppercase tracking-wide font-semibold">
+                      {{ $t('admin.subject_' + cls.subject) }}
+                    </span>
+                    <span v-if="subjectStyle(cls.subject)" class="opacity-60">·</span>
+                    {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(cls.startTime)) }}
+                  </p>
                 </div>
                 <div v-if="!(classesByDay[localDateKey(day)] || []).length" class="text-[10px] text-slate-300 text-center pt-4">—</div>
               </div>
@@ -288,7 +313,13 @@
             <div v-if="selectedClass" class="mt-4 border border-slate-200 rounded-xl p-4 bg-slate-50/50">
               <div class="flex items-start justify-between">
                 <div>
-                  <h3 class="font-semibold text-primary">{{ classDisplayName(selectedClass) }}
+                  <h3 class="font-semibold text-primary flex items-center gap-2 flex-wrap">
+                    <span>{{ classDisplayName(selectedClass) }}</span>
+                    <span v-if="subjectStyle(selectedClass.subject)"
+                      class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full"
+                      :class="`${subjectStyle(selectedClass.subject).bg} ${subjectStyle(selectedClass.subject).text}`">
+                      {{ $t('admin.subject_' + selectedClass.subject) }}
+                    </span>
                     <span v-if="selectedClass.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span>
                     <span v-if="selectedClass.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
                   </h3>
@@ -675,6 +706,25 @@
               </select>
             </div>
 
+            <!-- Subject — drives the calendar block colour + legend -->
+            <div>
+              <label class="block text-sm text-slate-500 mb-2">{{ $t('admin.subject') }}</label>
+              <div class="flex gap-2">
+                <label
+                  v-for="s in SUBJECTS"
+                  :key="s.key"
+                  class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-sm transition flex-1 justify-center"
+                  :class="scheduleForm.subject === s.key
+                    ? `${s.bg} ${s.text} border-current`
+                    : 'border-slate-200 text-slate-500 hover:border-slate-300'"
+                >
+                  <input type="radio" :value="s.key" v-model="scheduleForm.subject" class="sr-only" />
+                  <span class="w-2.5 h-2.5 rounded-full" :class="s.dot" aria-hidden="true"></span>
+                  {{ $t('admin.subject_' + s.key) }}
+                </label>
+              </div>
+            </div>
+
             <!-- Days of week -->
             <div>
               <label class="block text-sm text-slate-500 mb-2">{{ $t('admin.classDays') }}</label>
@@ -947,12 +997,43 @@ const FULL_DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', '
 // is, not where whoever happens to be filling out the form is.
 const scheduleForm = reactive({
   studentId: '',
+  subject: 'quran',  // 'quran' | 'fiqh' | 'arabic' — drives calendar colour
   days: [],      // array of dayOfWeek numbers (0=Sun, 1=Mon, ...)
   time: '17:00', // HH:MM in scheduleForm.timezone
   timezone: 'Africa/Cairo',
   duration: '60', // minutes
   weeks: '12',
 });
+
+// The fixed list of subjects we offer in the schedule form + legend. Each
+// entry maps to a colour class pair used by the calendar block; picking
+// these from a single source of truth means the dropdown, the calendar
+// block, and the legend never fall out of sync.
+const SUBJECTS = [
+  { key: 'quran',  bg: 'bg-amber-50',  text: 'text-amber-800', dot: 'bg-amber-500' },
+  { key: 'fiqh',   bg: 'bg-primary/10', text: 'text-primary',  dot: 'bg-primary' },
+  { key: 'arabic', bg: 'bg-blue-50',   text: 'text-blue-800',  dot: 'bg-blue-500' },
+];
+function subjectStyle(subject) {
+  return SUBJECTS.find((s) => s.key === subject) || null;
+}
+
+// Color layers for a calendar block. Precedence:
+//   cancelled  > rescheduled (border accent) > subject color > neutral default
+// The subject color drives the background; rescheduled gets an amber
+// border on top instead of overriding the color so the subject still reads.
+function calendarBlockClass(cls) {
+  const out = [];
+  if (cls.cancelled) {
+    out.push('bg-slate-100 text-slate-400 line-through');
+  } else {
+    const s = subjectStyle(cls.subject);
+    out.push(s ? `${s.bg} ${s.text}` : 'bg-slate-100 text-slate-600');
+    if (cls.rescheduled) out.push('border-2 border-amber-400');
+  }
+  if (selectedClass.value?.id === cls.id) out.push('ring-2 ring-primary');
+  return out;
+}
 
 // Calendar state
 const calendarView = ref(true); // true = calendar, false = list
@@ -1452,7 +1533,13 @@ async function scheduleStudent() {
 
     // `timezone` is persisted on every ClassSession so the backend can
     // format reminder emails in the class's own zone (see Round 2 work).
-    const payload = { studentId: scheduleForm.studentId, title, sessions, timezone: tz };
+    const payload = {
+      studentId: scheduleForm.studentId,
+      title,
+      subject: scheduleForm.subject,
+      sessions,
+      timezone: tz,
+    };
 
     if (conflicts?.length) {
       // Surface the conflicts inline in the same form; defaults are the
@@ -1503,7 +1590,7 @@ async function submitConflictResolution() {
 function closeScheduleForm() {
   showScheduleForm.value = false;
   Object.assign(scheduleForm, {
-    studentId: '', days: [], time: '17:00', timezone: 'Africa/Cairo', duration: '60', weeks: '12',
+    studentId: '', subject: 'quran', days: [], time: '17:00', timezone: 'Africa/Cairo', duration: '60', weeks: '12',
   });
   conflictModal.conflicts = [];
   conflictModal.pendingPayload = null;
