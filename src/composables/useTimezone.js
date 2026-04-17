@@ -158,7 +158,8 @@ export function formatInTz(date, tz, lang = 'en') {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
+    hour12: true,
   }).format(new Date(date));
 }

@@ -70,7 +70,7 @@
               <p class="text-sm text-slate-500 mt-0.5">
                 {{ formatClassTime(cls.startTime, cls.timezone) }}
                 –
-                {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', hour: '2-digit', minute: '2-digit' }).format(new Date(cls.endTime)) }}
+                {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(cls.endTime)) }}
                 <span v-if="cls.timezone" class="text-xs text-slate-400">({{ cls.timezone }})</span>
               </p>
               <p class="text-xs mt-1" :class="classTimeLabel(cls).color">{{ classTimeLabel(cls).text }}</p>
@@ -278,7 +278,7 @@
                   class="mb-1 rounded-lg p-2 text-xs cursor-pointer hover:ring-2 hover:ring-primary/30 transition"
                   :class="[cls.cancelled ? 'bg-slate-100 text-slate-400 line-through' : cls.rescheduled ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-primary/10 text-primary', selectedClass?.id === cls.id ? 'ring-2 ring-primary' : '']">
                   <p class="font-medium truncate">{{ classDisplayName(cls) }}</p>
-                  <p class="text-[10px] opacity-70">{{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', hour: '2-digit', minute: '2-digit' }).format(new Date(cls.startTime)) }}</p>
+                  <p class="text-[10px] opacity-70">{{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(cls.startTime)) }}</p>
                 </div>
                 <div v-if="!(classesByDay[localDateKey(day)] || []).length" class="text-[10px] text-slate-300 text-center pt-4">—</div>
               </div>
@@ -293,9 +293,9 @@
                     <span v-if="selectedClass.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
                   </h3>
                   <p class="text-sm text-slate-500 mt-1">
-                    {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: selectedClass.timezone || 'Africa/Cairo', weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(selectedClass.startTime)) }}
+                    {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: selectedClass.timezone || 'Africa/Cairo', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(selectedClass.startTime)) }}
                     –
-                    {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: selectedClass.timezone || 'Africa/Cairo', hour: '2-digit', minute: '2-digit' }).format(new Date(selectedClass.endTime)) }}
+                    {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: selectedClass.timezone || 'Africa/Cairo', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(selectedClass.endTime)) }}
                     <span v-if="selectedClass.timezone" class="text-xs text-slate-400">({{ selectedClass.timezone }})</span>
                   </p>
                   <p class="text-xs text-slate-400 mt-1">{{ selectedClass.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
@@ -324,9 +324,9 @@
                   <div>
                     <h3 class="font-semibold text-primary">{{ classDisplayName(cls) }} <span v-if="cls.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span><span v-if="cls.rescheduled" class="text-amber-600 text-xs"> ({{ $t('admin.rescheduled') }})</span></h3>
                     <p class="text-sm text-slate-500">
-                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(cls.startTime)) }}
+                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(cls.startTime)) }}
                       -
-                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', hour: '2-digit', minute: '2-digit' }).format(new Date(cls.endTime)) }}
+                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: cls.timezone || 'Africa/Cairo', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(cls.endTime)) }}
                       <span v-if="cls.timezone" class="text-xs text-slate-400">({{ cls.timezone }})</span>
                     </p>
                     <p class="text-xs text-slate-400 mt-1">{{ cls.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
@@ -464,9 +464,9 @@
                       <span v-if="a.classSession.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
                     </p>
                     <p class="text-xs text-slate-500">
-                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: a.classSession.timezone || 'Africa/Cairo', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(a.classSession.startTime)) }}
+                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: a.classSession.timezone || 'Africa/Cairo', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(a.classSession.startTime)) }}
                       -
-                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: a.classSession.timezone || 'Africa/Cairo', hour: '2-digit', minute: '2-digit' }).format(new Date(a.classSession.endTime)) }}
+                      {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: a.classSession.timezone || 'Africa/Cairo', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(a.classSession.endTime)) }}
                     </p>
                   </div>
                   <div class="flex items-center gap-2 shrink-0">
@@ -1035,8 +1035,9 @@ function formatClassTime(iso, tz = 'Africa/Cairo') {
 
   const timeStr = new Intl.DateTimeFormat(localeTag, {
     timeZone: tz,
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
+    hour12: true,
   }).format(d);
 
   // Day-relative labels ("Today" / "Tomorrow") should also be computed in
@@ -1574,12 +1575,13 @@ function conflictGroupPreview(group) {
 }
 
 function formatConflictTime(iso) {
-  return new Date(iso).toLocaleString(undefined, {
+  return new Date(iso).toLocaleString(isAr.value ? 'ar-EG' : undefined, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
+    hour12: true,
   });
 }
 

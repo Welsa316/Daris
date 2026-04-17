@@ -327,22 +327,20 @@ export async function sendNewEnrollmentNotification(student) {
  */
 function formatClassDateTime(date, lang = 'en', timeZone = 'UTC') {
   const locale = lang === 'ar' ? 'ar-EG' : 'en-GB';
+  const opts = {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  };
   try {
-    return new Intl.DateTimeFormat(locale, {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone,
-    }).format(new Date(date));
+    return new Intl.DateTimeFormat(locale, { ...opts, timeZone }).format(new Date(date));
   } catch {
     // Invalid timezone string — retry without it so we still return something.
     try {
-      return new Intl.DateTimeFormat(locale, {
-        weekday: 'short', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit',
-      }).format(new Date(date));
+      return new Intl.DateTimeFormat(locale, opts).format(new Date(date));
     } catch {
       return new Date(date).toISOString();
     }
