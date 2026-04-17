@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
 import studentRoutes from './routes/student.js';
+import meetingRoutes from './routes/meeting.js';
 import publicRoutes from './routes/public.js';
 import { buildMetaHtml } from './seoMeta.js';
 
@@ -54,6 +55,7 @@ app.use('/api', generalLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/student', studentRoutes);
+app.use('/api/meeting', meetingRoutes);
 app.use('/api', publicRoutes);
 
 // --- Serve Vue frontend in production ---

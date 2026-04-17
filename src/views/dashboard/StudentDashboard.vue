@@ -50,9 +50,9 @@
                   <p v-if="cls.rescheduled && cls.originalStartTime" class="text-xs text-slate-400 mt-0.5 line-through">{{ $t('admin.originalTime') }}: {{ formatDate(cls.originalStartTime) }}</p>
                   <p v-if="cls.description" class="text-sm text-slate-400 mt-1">{{ isAr ? (cls.descriptionAr || cls.description) : cls.description }}</p>
                 </div>
-                <a v-if="cls.meetingLink" :href="cls.meetingLink" target="_blank" rel="noopener" class="shrink-0 bg-primary text-cream text-sm font-medium px-4 py-2 rounded-full hover:bg-primary-800 transition">
+                <button v-if="cls.canJoin" @click="joinClass(cls.id)" class="shrink-0 bg-primary text-cream text-sm font-medium px-4 py-2 rounded-full hover:bg-primary-800 transition">
                   {{ $t('dashboard.joinClass') }}
-                </a>
+                </button>
                 <span v-else-if="cls.meetingLinkAvailableIn" class="shrink-0 text-xs text-slate-400 bg-slate-50 px-3 py-1.5 rounded-full">
                   {{ $t('dashboard.linkAvailableIn', { minutes: cls.meetingLinkAvailableIn }) }}
                 </span>
@@ -119,6 +119,19 @@ function formatTime(date) {
   return new Date(date).toLocaleTimeString(locale.value === 'ar' ? 'ar-EG' : 'en-US', {
     hour: '2-digit', minute: '2-digit',
   });
+}
+
+// When the student clicks Join, ask the server for the actual meeting URL
+// via the gated endpoint. The server checks the student is assigned to
+// that class AND the class is currently in its 15-min window before
+// revealing the URL — we never embed it in the page payload.
+async function joinClass(classId) {
+  try {
+    const { meetingLink } = await api.get(`/api/meeting/${classId}/link`);
+    if (meetingLink) window.open(meetingLink, '_blank', 'noopener');
+  } catch (err) {
+    console.error('Failed to get meeting link:', err?.data?.error || err.message);
+  }
 }
 
 onMounted(async () => {

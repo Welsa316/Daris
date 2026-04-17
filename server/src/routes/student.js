@@ -130,16 +130,17 @@ router.get('/dashboard', requireEnrolled, async (req, res, next) => {
       take: 10,
     });
 
-    // Get global meeting link fallback
-    const globalLinkSetting = await prisma.siteSetting.findUnique({ where: { key: 'meetingLink' } });
-    const globalMeetingLink = globalLinkSetting?.value || null;
-
-    // Conditionally show meeting links (only 30 min before class)
-    const MEETING_LINK_WINDOW_MS = 30 * 60 * 1000;
+    // We used to embed the meeting URL in this response during the 15-min
+    // window. That's a leak — anyone with network-tab access could grab
+    // the URL and reconnect outside class hours. Instead, return only a
+    // `canJoin` flag and make the student hit /api/meeting/:id/link to
+    // actually retrieve the URL; that endpoint enforces the window server-
+    // side so the URL is never handed out outside it.
+    const MEETING_LINK_WINDOW_MS = 15 * 60 * 1000;
     const classesForClient = upcomingClasses.map((assignment) => {
       const cls = assignment.classSession;
       const timeUntilClass = new Date(cls.startTime).getTime() - now.getTime();
-      const link = cls.meetingLink || globalMeetingLink;
+      const classEnded = new Date(cls.endTime).getTime() < now.getTime();
       return {
         id: cls.id,
         title: cls.title,
@@ -151,8 +152,7 @@ router.get('/dashboard', requireEnrolled, async (req, res, next) => {
         timezone: cls.timezone,
         rescheduled: cls.rescheduled,
         originalStartTime: cls.originalStartTime,
-        // Show meeting link from 30 min before start until class ends
-        meetingLink: timeUntilClass <= MEETING_LINK_WINDOW_MS && (new Date(cls.endTime).getTime() - now.getTime()) > 0 ? link : null,
+        canJoin: !classEnded && timeUntilClass <= MEETING_LINK_WINDOW_MS,
         meetingLinkAvailableIn: timeUntilClass > MEETING_LINK_WINDOW_MS ? Math.ceil(timeUntilClass / 60000) : null,
       };
     });
@@ -245,22 +245,22 @@ router.put('/profile', requireRole('enrolled_student', 'pending', 'pending_revie
 router.get('/schedule', requireEnrolled, async (req, res, next) => {
   try {
     const now = new Date();
-    const MEETING_LINK_WINDOW_MS = 30 * 60 * 1000;
+    const MEETING_LINK_WINDOW_MS = 15 * 60 * 1000;
 
-    const [assignments, globalLinkSetting] = await Promise.all([
-      prisma.classAssignment.findMany({
-        where: { studentId: req.user.id },
-        include: { classSession: true },
-        orderBy: { classSession: { startTime: 'asc' } },
-      }),
-      prisma.siteSetting.findUnique({ where: { key: 'meetingLink' } }),
-    ]);
-    const globalMeetingLink = globalLinkSetting?.value || null;
+    const assignments = await prisma.classAssignment.findMany({
+      where: { studentId: req.user.id },
+      include: { classSession: true },
+      orderBy: { classSession: { startTime: 'asc' } },
+    });
 
+    // Same rationale as /dashboard: don't embed the URL here. Return a
+    // canJoin boolean so the frontend knows to show a Join button, and
+    // make the button fetch the link from /api/meeting/:id/link, which
+    // enforces the window server-side.
     const schedule = assignments.map((a) => {
       const cls = a.classSession;
       const timeUntilClass = new Date(cls.startTime).getTime() - now.getTime();
-      const link = cls.meetingLink || globalMeetingLink;
+      const classEnded = new Date(cls.endTime).getTime() < now.getTime();
       return {
         id: cls.id,
         title: cls.title,
@@ -270,7 +270,7 @@ router.get('/schedule', requireEnrolled, async (req, res, next) => {
         startTime: cls.startTime,
         endTime: cls.endTime,
         timezone: cls.timezone,
-        meetingLink: timeUntilClass <= MEETING_LINK_WINDOW_MS && (new Date(cls.endTime).getTime() - now.getTime()) > 0 ? link : null,
+        canJoin: !cls.cancelled && !classEnded && timeUntilClass <= MEETING_LINK_WINDOW_MS,
         cancelled: cls.cancelled,
         recurrence: cls.recurrence,
       };

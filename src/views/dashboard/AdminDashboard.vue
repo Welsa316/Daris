@@ -76,12 +76,12 @@
               <p class="text-xs mt-1" :class="classTimeLabel(cls).color">{{ classTimeLabel(cls).text }}</p>
             </div>
             <template v-if="cls.meetingLink || globalMeetingLink">
-              <a v-if="isJoinable(cls)"
-                :href="cls.meetingLink || globalMeetingLink" target="_blank" rel="noopener"
+              <button v-if="isJoinable(cls)"
+                @click="joinClass(cls)"
                 class="bg-green-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-green-700 transition shrink-0 flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                 {{ $t('admin.joinClass') }}
-              </a>
+              </button>
               <span v-else class="text-xs text-slate-400 italic shrink-0 text-end" :title="new Date(cls.startTime).toLocaleString()">
                 {{ joinAvailabilityLabel(cls) }}
               </span>
@@ -1528,10 +1528,11 @@ function showBatchOutcomeToast(result) {
 const now = ref(Date.now());
 const nowTick = setInterval(() => { now.value = Date.now(); }, 30_000);
 
-// The join link only becomes active 30 min before class start and stays
-// active until class end. Outside that window the button is replaced with a
-// countdown label so the sheikh can see exactly when it will open.
-const JOIN_WINDOW_MIN = 30;
+// The join link only becomes active JOIN_WINDOW_MIN before class start and
+// stays active until class end. Outside that window the button is replaced
+// with a label that either counts down in minutes (within the next hour) or
+// shows the actual wall-clock time the link will open (further out).
+const JOIN_WINDOW_MIN = 15;
 
 function isJoinable(cls) {
   if (cls.cancelled) return false;
@@ -1540,17 +1541,47 @@ function isJoinable(cls) {
   return now.value >= start - JOIN_WINDOW_MIN * 60_000 && now.value <= end;
 }
 
+// Go through the server-side gate rather than opening the meeting URL
+// directly. The gate enforces the 15-min-before-to-end window and that the
+// caller is actually assigned — so even if someone has the raw Zoom URL
+// saved, they can't use our dashboard to get back in outside class hours.
+async function joinClass(cls) {
+  try {
+    const { meetingLink } = await api.get(`/api/meeting/${cls.id}/link`);
+    if (meetingLink) {
+      window.open(meetingLink, '_blank', 'noopener');
+    }
+  } catch (e) {
+    showToast(e, 'joinClass');
+  }
+}
+
 function joinAvailabilityLabel(cls) {
   const start = new Date(cls.startTime).getTime();
   const end = new Date(cls.endTime).getTime();
   if (now.value > end) return t('admin.joinEnded');
-  const minsUntilOpen = Math.ceil((start - JOIN_WINDOW_MIN * 60_000 - now.value) / 60_000);
-  if (minsUntilOpen <= 0) return t('admin.joinLive');
-  if (minsUntilOpen < 60) {
+
+  const opens = start - JOIN_WINDOW_MIN * 60_000;
+  if (now.value >= opens) return t('admin.joinLive');
+
+  const minsUntilOpen = Math.ceil((opens - now.value) / 60_000);
+  // Within the next hour: keep the countdown so the sheikh can see the
+  // button is about to light up.
+  if (minsUntilOpen <= 60) {
     return t('admin.joinOpensInMin').replace('{n}', minsUntilOpen);
   }
-  const hours = Math.ceil(minsUntilOpen / 60);
-  return t('admin.joinOpensInHr').replace('{n}', hours);
+  // Further out: a relative hour count is useless ("Opens in 5h" — 5h from
+  // when?). Show the actual clock time the link opens, in the class's
+  // own timezone.
+  const tz = cls.timezone || 'Africa/Cairo';
+  const openTime = new Intl.DateTimeFormat(isAr.value ? 'ar-EG' : 'en-US', {
+    timeZone: tz,
+    weekday: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(new Date(opens));
+  return t('admin.joinOpensAt').replace('{time}', openTime);
 }
 
 // Display name for a class. When multiple students share a class (co-taught),
