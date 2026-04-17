@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate, verifyTokenVersion } from '../middleware/auth.js';
+import { meetingLinkLimiter } from '../middleware/rateLimiter.js';
 import { prisma } from '../config/database.js';
 import { auditLog } from '../utils/logger.js';
 
@@ -25,7 +26,7 @@ const JOIN_WINDOW_MS = 15 * 60 * 1000;
  *   403 { error, reason: 'too_early' | 'too_late' | 'cancelled' | 'forbidden' | 'no_link' }
  *   404 { error }                      — class not found.
  */
-router.get('/:classId/link', authenticate, verifyTokenVersion, async (req, res, next) => {
+router.get('/:classId/link', meetingLinkLimiter, authenticate, verifyTokenVersion, async (req, res, next) => {
   try {
     const cls = await prisma.classSession.findUnique({
       where: { id: req.params.classId },

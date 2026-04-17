@@ -151,6 +151,26 @@ const messages = {
     en: 'Class has been rescheduled. Students will be notified.',
     ar: 'تمت إعادة جدولة الحصة. سيتم إخطار الطلاب.',
   },
+  'schedule.classNotFound': {
+    en: 'Class not found.',
+    ar: 'لم يتم العثور على الحصة.',
+  },
+  'schedule.notSeries': {
+    en: 'This class is not part of a series.',
+    ar: 'هذه الحصة ليست جزءاً من سلسلة متكررة.',
+  },
+  'schedule.studentNotAssigned': {
+    en: 'This student is not assigned to that class.',
+    ar: 'هذا الطالب غير مسجَّل في هذه الحصة.',
+  },
+  'schedule.intraBatchOverlap': {
+    en: 'The selected days and time produce overlapping sessions. Pick a different time or drop one of the days.',
+    ar: 'الأيام والوقت المختارة تُنتج حصصاً متداخلة. اختر وقتاً آخر أو احذف أحد الأيام.',
+  },
+  'payment.notFound': {
+    en: 'Payment not found.',
+    ar: 'لم يتم العثور على الدفعة.',
+  },
 
   // General
   'error.generic': {

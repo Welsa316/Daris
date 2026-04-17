@@ -39,4 +39,10 @@ onBeforeUnmount(() => {
   opacity: 0;
   transform: translate(var(--tw-translate-x), 1rem);
 }
+@media (prefers-reduced-motion: reduce) {
+  .slide-up-enter-active,
+  .slide-up-leave-active { transition: none; }
+  .slide-up-enter-from,
+  .slide-up-leave-to { transform: none; }
+}
 </style>

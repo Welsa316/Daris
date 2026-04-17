@@ -2,7 +2,7 @@
   <span v-if="!student.expectedMonthlyAmount" class="text-xs text-slate-300">—</span>
   <span
     v-else
-    class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
+    class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full tabular-nums"
     :class="pillClass"
     :title="tooltip"
   >

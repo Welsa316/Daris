@@ -328,7 +328,7 @@ router.put(
       res.json({ student });
     } catch (error) {
       if (error.code === 'P2025') {
-        return res.status(404).json({ error: 'Student not found' });
+        return res.status(404).json({ error: t('student.notFound', getLang(req)) });
       }
       next(error);
     }
@@ -371,34 +371,37 @@ router.delete('/students/:id/future-assignments', async (req, res, next) => {
 
     const now = new Date();
 
-    // First look up the class IDs we're about to orphan — we need them to
-    // clean up empty sessions after the fact.
-    const affected = await prisma.classAssignment.findMany({
-      where: {
-        studentId,
-        classSession: { startTime: { gt: now }, cancelled: false },
-      },
-      select: { classSessionId: true },
-    });
-
-    const result = await prisma.classAssignment.deleteMany({
-      where: {
-        studentId,
-        classSession: { startTime: { gt: now }, cancelled: false },
-      },
-    });
-
-    // Delete any ClassSession that's been left with zero live assignments —
-    // those are orphans and nobody can join them.
-    if (affected.length) {
-      const sessionIds = [...new Set(affected.map((a) => a.classSessionId))];
-      await prisma.classSession.deleteMany({
+    // Wrap in a transaction so we can't end up with a half-cleaned state
+    // if a concurrent request re-adds an assignment between our read and
+    // our delete.
+    const result = await prisma.$transaction(async (tx) => {
+      const affected = await tx.classAssignment.findMany({
         where: {
-          id: { in: sessionIds },
-          assignments: { none: { student: { deletedAt: null } } },
+          studentId,
+          classSession: { startTime: { gt: now }, cancelled: false },
+        },
+        select: { classSessionId: true },
+      });
+
+      const deleted = await tx.classAssignment.deleteMany({
+        where: {
+          studentId,
+          classSession: { startTime: { gt: now }, cancelled: false },
         },
       });
-    }
+
+      if (affected.length) {
+        const sessionIds = [...new Set(affected.map((a) => a.classSessionId))];
+        await tx.classSession.deleteMany({
+          where: {
+            id: { in: sessionIds },
+            assignments: { none: { student: { deletedAt: null } } },
+          },
+        });
+      }
+
+      return deleted;
+    });
 
     auditLog('STUDENT_FUTURE_ASSIGNMENTS_CLEARED', {
       studentId,
@@ -588,7 +591,7 @@ router.put('/classes/:id', validate(classSessionUpdateSchema), async (req, res, 
       where: { id: req.params.id, createdByAdminId: req.user.id },
       select: { id: true },
     });
-    if (!owned) return res.status(404).json({ error: 'Class not found' });
+    if (!owned) return res.status(404).json({ error: t('schedule.classNotFound', lang) });
 
     if (updateData.startTime) updateData.startTime = new Date(updateData.startTime);
     if (updateData.endTime) updateData.endTime = new Date(updateData.endTime);
@@ -630,7 +633,7 @@ router.post('/classes/:id/cancel', async (req, res, next) => {
       where: { id: req.params.id, createdByAdminId: req.user.id },
       select: { id: true },
     });
-    if (!owned) return res.status(404).json({ error: 'Class not found' });
+    if (!owned) return res.status(404).json({ error: t('schedule.classNotFound', lang) });
 
     const classSession = await prisma.classSession.update({
       where: { id: req.params.id },
@@ -675,9 +678,9 @@ router.post('/classes/:id/cancel-series', async (req, res, next) => {
       where: { id: req.params.id },
       select: { id: true, seriesId: true, startTime: true, createdByAdminId: true },
     });
-    if (!anchor) return res.status(404).json({ error: 'Class not found' });
+    if (!anchor) return res.status(404).json({ error: t('schedule.classNotFound', lang) });
     if (!anchor.seriesId) {
-      return res.status(400).json({ error: 'This class is not part of a series.' });
+      return res.status(400).json({ error: t('schedule.notSeries', lang) });
     }
 
     // Find every not-already-cancelled session in the same series at or
@@ -740,7 +743,7 @@ router.post('/classes/:id/reschedule', validate(rescheduleClassSchema), async (r
     const existing = await prisma.classSession.findFirst({
       where: { id: req.params.id, createdByAdminId: req.user.id },
     });
-    if (!existing) return res.status(404).json({ error: 'Class not found' });
+    if (!existing) return res.status(404).json({ error: t('schedule.classNotFound', lang) });
 
     // Preserve the first original times (don't overwrite on subsequent reschedules)
     const originalStartTime = existing.originalStartTime || existing.startTime;
@@ -803,7 +806,7 @@ router.delete('/classes/:id', async (req, res, next) => {
     const result = await prisma.classSession.deleteMany({
       where: { id: req.params.id, createdByAdminId: req.user.id },
     });
-    if (result.count === 0) return res.status(404).json({ error: 'Class not found' });
+    if (result.count === 0) return res.status(404).json({ error: t('schedule.classNotFound', lang) });
     auditLog('CLASS_DELETED', { classId: req.params.id, adminId: req.user.id });
     res.json({ message: t('schedule.deleted', lang) });
   } catch (error) {
@@ -863,6 +866,28 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
   try {
     const lang = getLang(req);
     const { studentId, title, titleAr, subject, timezone, sessions, resolutions = {} } = req.body;
+
+    // Guard against the batch itself containing overlapping sessions. The
+    // frontend hits /check-conflicts against existing DB rows, but an admin
+    // picking two overlapping days-of-the-week for the same time slot would
+    // generate internal collisions that checkConflicts doesn't see.
+    const sortedSessions = sessions
+      .map((s) => ({
+        startMs: new Date(s.startTime).getTime(),
+        endMs: new Date(s.endTime).getTime(),
+        raw: s,
+      }))
+      .sort((a, b) => a.startMs - b.startMs);
+    for (let i = 1; i < sortedSessions.length; i++) {
+      const prev = sortedSessions[i - 1];
+      const curr = sortedSessions[i];
+      if (curr.startMs < prev.endMs) {
+        return res.status(400).json({
+          error: t('schedule.intraBatchOverlap', lang) || 'The selected days/time produce overlapping sessions. Choose a different time or drop one of the days.',
+          conflictAt: new Date(curr.startMs).toISOString(),
+        });
+      }
+    }
 
     // Get global meeting link
     const meetingLinkSetting = await prisma.siteSetting.findUnique({ where: { key: 'meetingLink' } });
@@ -1296,7 +1321,7 @@ router.put(
         where: { classSessionId_studentId: { classSessionId, studentId } },
       });
       if (!assignment) {
-        return res.status(404).json({ error: 'This student is not assigned to that class.' });
+        return res.status(404).json({ error: t('schedule.studentNotAssigned', getLang(req)) });
       }
 
       const log = await prisma.classLog.upsert({
@@ -1364,7 +1389,7 @@ router.post('/students/:id/payments', validate(paymentSchema), async (req, res, 
       select: { id: true },
     });
     if (!student) {
-      return res.status(404).json({ error: 'Student not found' });
+      return res.status(404).json({ error: t('student.notFound', getLang(req)) });
     }
 
     const payment = await prisma.payment.create({
@@ -1412,7 +1437,7 @@ router.put('/payments/:id', validate(paymentUpdateSchema), async (req, res, next
     res.json({ payment });
   } catch (error) {
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Payment not found' });
+      return res.status(404).json({ error: t('payment.notFound', getLang(req)) });
     }
     next(error);
   }
@@ -1429,7 +1454,7 @@ router.delete('/payments/:id', async (req, res, next) => {
     res.json({ success: true });
   } catch (error) {
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Payment not found' });
+      return res.status(404).json({ error: t('payment.notFound', getLang(req)) });
     }
     next(error);
   }
@@ -1448,7 +1473,7 @@ router.get('/students/:id/export.csv', async (req, res, next) => {
       where: { id: req.params.id },
       select: { id: true, firstName: true, lastName: true, email: true },
     });
-    if (!student) return res.status(404).json({ error: 'Student not found' });
+    if (!student) return res.status(404).json({ error: t('student.notFound', getLang(req)) });
 
     const [logs, payments] = await Promise.all([
       prisma.classLog.findMany({

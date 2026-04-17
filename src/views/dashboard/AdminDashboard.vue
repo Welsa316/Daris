@@ -3,10 +3,10 @@
     <div class="max-w-screen-2xl mx-auto">
       <!-- Header -->
       <div class="flex items-center justify-between mb-8">
-        <h1 class="text-2xl font-display font-bold text-primary">{{ $t('admin.title') }}</h1>
+        <h1 class="text-2xl font-display font-bold text-primary text-balance">{{ $t('admin.title') }}</h1>
         <div class="flex items-center gap-3">
           <LanguageSwitcher />
-          <button @click="handleLogout" class="text-sm text-slate-400 hover:text-primary transition">{{ $t('auth.logout') }}</button>
+          <button @click="handleLogout" class="text-sm text-slate-400 hover:text-primary transition-colors">{{ $t('auth.logout') }}</button>
         </div>
       </div>
 
@@ -19,7 +19,7 @@
             </button>
           </template>
           <template v-else>
-            <p class="text-3xl font-bold text-primary">{{ stats?.totalEnrolled ?? '-' }}</p>
+            <p class="text-3xl font-bold text-primary tabular-nums">{{ stats?.totalEnrolled ?? '-' }}</p>
           </template>
           <p class="text-sm text-slate-500 mt-1">{{ $t('admin.totalEnrolled') }}</p>
         </div>
@@ -30,7 +30,7 @@
             </button>
           </template>
           <template v-else>
-            <p class="text-3xl font-bold text-amber-600">{{ stats?.totalPending ?? '-' }}</p>
+            <p class="text-3xl font-bold text-amber-600 tabular-nums">{{ stats?.totalPending ?? '-' }}</p>
           </template>
           <p class="text-sm text-slate-500 mt-1">{{ $t('admin.totalPending') }}</p>
         </div>
@@ -41,7 +41,7 @@
             </button>
           </template>
           <template v-else>
-            <p class="text-3xl font-bold text-blue-600">{{ stats?.upcomingClasses ?? '-' }}</p>
+            <p class="text-3xl font-bold text-blue-600 tabular-nums">{{ stats?.upcomingClasses ?? '-' }}</p>
           </template>
           <p class="text-sm text-slate-500 mt-1">{{ $t('admin.upcomingClasses') }}</p>
         </div>
@@ -52,7 +52,7 @@
             </button>
           </template>
           <template v-else>
-            <p class="text-3xl font-bold text-green-600">{{ stats?.recentActivity?.length ?? 0 }}</p>
+            <p class="text-3xl font-bold text-green-600 tabular-nums">{{ stats?.recentActivity?.length ?? 0 }}</p>
           </template>
           <p class="text-sm text-slate-500 mt-1">{{ $t('admin.recentActions') }}</p>
         </div>
@@ -64,7 +64,7 @@
         <div v-if="!upcomingClasses.length" class="text-slate-400 text-sm py-4 text-center">{{ $t('admin.noUpcomingClasses') }}</div>
         <div v-else class="space-y-3">
           <div v-for="cls in upcomingClasses" :key="cls.id"
-            class="flex items-center justify-between border border-slate-100 rounded-xl p-4 hover:border-primary/30 transition">
+            class="flex items-center justify-between border border-slate-100 rounded-xl p-4 hover:border-primary/30 transition-colors">
             <div>
               <h3 class="font-semibold text-primary">{{ classDisplayName(cls) }}</h3>
               <p class="text-sm text-slate-500 mt-0.5">
@@ -83,7 +83,7 @@
             <template v-if="cls.meetingLink || globalMeetingLink">
               <button v-if="isJoinable(cls)"
                 @click="joinClass(cls)"
-                class="bg-green-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-green-700 transition shrink-0 flex items-center gap-2">
+                class="bg-green-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-green-700 transition-colors shrink-0 flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                 {{ $t('admin.joinClass') }}
               </button>
@@ -124,7 +124,7 @@
             <button
               v-if="!step.done"
               @click="step.action"
-              class="bg-primary text-cream px-4 py-1.5 rounded-full text-xs font-medium hover:bg-primary-800 transition shrink-0"
+              class="bg-primary text-cream px-4 py-1.5 rounded-full text-xs font-medium hover:bg-primary-800 transition-colors shrink-0"
             >
               {{ $t(step.ctaKey) }}
             </button>
@@ -135,7 +135,7 @@
       <!-- Tabs -->
       <div class="flex gap-2 mb-6 overflow-x-auto">
         <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
-          class="px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap"
+          class="px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
           :class="activeTab === tab.key ? 'bg-primary text-cream' : 'bg-white text-slate-600 hover:bg-primary/5'">
           {{ $t(tab.label) }}
         </button>
@@ -144,7 +144,10 @@
       <!-- Pending Enrollments -->
       <div v-if="activeTab === 'enrollments'" class="bg-white rounded-2xl shadow-card p-6">
         <h2 class="text-lg font-bold text-primary mb-4">{{ $t('admin.pendingEnrollments') }}</h2>
-        <div v-if="!enrollments.length" class="text-slate-400 text-sm py-8 text-center">{{ $t('admin.noPending') }}</div>
+        <div v-if="!enrollments.length" class="text-center py-10">
+          <p class="text-slate-400 text-sm">{{ $t('admin.noPending') }}</p>
+          <p class="text-xs text-slate-400 mt-1">{{ $t('admin.noPendingHint') }}</p>
+        </div>
         <div v-else class="space-y-4">
           <div v-for="req in enrollments" :key="req.id" class="border border-slate-100 rounded-xl p-5">
             <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -158,10 +161,10 @@
                 <p v-if="req.enrollmentMessage" class="text-sm text-slate-600 mt-2 bg-slate-50 p-3 rounded-lg">{{ req.enrollmentMessage }}</p>
               </div>
               <div class="flex gap-2 shrink-0">
-                <button @click="handleApprove(req.id)" class="bg-green-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-green-700 transition">
+                <button @click="handleApprove(req.id)" class="bg-green-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-green-700 transition-colors">
                   {{ $t('admin.approve') }}
                 </button>
-                <button @click="handleReject(req.id)" class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-200 transition">
+                <button @click="handleReject(req.id)" class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-200 transition-colors">
                   {{ $t('admin.reject') }}
                 </button>
               </div>
@@ -176,7 +179,13 @@
           <h2 class="text-lg font-bold text-primary">{{ $t('admin.enrolledStudents') }}</h2>
           <input v-model="studentSearch" type="text" :placeholder="$t('admin.searchStudents')" class="px-4 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" />
         </div>
-        <div v-if="!students.length" class="text-slate-400 text-sm py-8 text-center">{{ $t('admin.noStudents') }}</div>
+        <div v-if="!students.length" class="text-center py-10">
+          <p class="text-slate-400 text-sm">{{ $t('admin.noStudents') }}</p>
+          <button @click="activeTab = 'enrollments'"
+            class="mt-3 text-primary hover:text-primary-800 text-sm font-medium underline">
+            {{ $t('admin.noStudentsCta') }}
+          </button>
+        </div>
         <div v-else class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
@@ -191,9 +200,9 @@
             </thead>
             <tbody>
               <tr v-for="s in students" :key="s.id" class="border-b border-slate-50 hover:bg-slate-50/50">
-                <td class="py-3 px-2">{{ s.firstName }} {{ s.lastName }}</td>
-                <td class="py-3 px-2 text-slate-500">{{ s.email }}</td>
-                <td class="py-3 px-2 text-slate-500">{{ s.country }}</td>
+                <td class="py-3 px-2 truncate max-w-[12rem]">{{ s.firstName }} {{ s.lastName }}</td>
+                <td class="py-3 px-2 text-slate-500 truncate max-w-[16rem]">{{ s.email }}</td>
+                <td class="py-3 px-2 text-slate-500 truncate max-w-[10rem]">{{ s.country }}</td>
                 <td class="py-3 px-2">
                   <BalancePill :student="s" />
                 </td>
@@ -216,7 +225,7 @@
             <input v-model="globalMeetingLink" type="url" :placeholder="$t('admin.meetingLinkPlaceholder')"
               class="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
             <button @click="saveMeetingLink" :disabled="savingLink"
-              class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50 shrink-0">
+              class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition-colors disabled:opacity-50 shrink-0">
               {{ savingLink ? $t('admin.saving') : $t('admin.save') }}
             </button>
           </div>
@@ -267,7 +276,7 @@
               <button @click="prevWeek" class="text-slate-500 hover:text-primary text-sm font-medium">&larr; {{ $t('admin.prevWeek') }}</button>
               <div class="flex items-center gap-3">
                 <button v-if="!isThisWeek" @click="calendarWeekStart = getMonday(new Date()); selectedClass = null"
-                  class="text-xs text-primary border border-primary/30 px-2 py-0.5 rounded-full hover:bg-primary/5 transition">
+                  class="text-xs text-primary border border-primary/30 px-2 py-0.5 rounded-full hover:bg-primary/5 transition-colors">
                   {{ $t('admin.today') }}
                 </button>
                 <span class="text-sm font-medium text-primary">
@@ -377,7 +386,13 @@
 
           <!-- List View (original) -->
           <div v-else>
-            <div v-if="!classes.length" class="text-slate-400 text-sm py-8 text-center">{{ $t('admin.noClasses') }}</div>
+            <div v-if="!classes.length" class="text-center py-10">
+              <p class="text-slate-400 text-sm">{{ $t('admin.noClasses') }}</p>
+              <button @click="showScheduleForm = true"
+                class="mt-3 bg-primary text-cream text-sm font-medium px-4 py-2 rounded-full hover:bg-primary-800 transition-colors">
+                {{ $t('admin.scheduleStudent') }}
+              </button>
+            </div>
             <div v-else class="space-y-3">
               <div v-for="cls in classes" :key="cls.id" class="border border-slate-100 rounded-xl p-4" :class="cls.cancelled ? 'opacity-50' : ''">
                 <div class="flex items-start justify-between">
@@ -423,11 +438,11 @@
       </div>
 
       <!-- Student Detail Modal -->
-      <div v-if="selectedStudent" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="selectedStudent = null">
+      <div v-if="selectedStudent" role="dialog" aria-modal="true" aria-labelledby="studentDetailTitle" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="selectedStudent = null">
         <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
           <div class="flex items-start justify-between mb-4 gap-3">
             <div class="min-w-0">
-              <h2 class="text-lg font-bold text-primary">{{ selectedStudent.firstName }} {{ selectedStudent.lastName }}</h2>
+              <h2 id="studentDetailTitle" class="text-lg font-bold text-primary">{{ selectedStudent.firstName }} {{ selectedStudent.lastName }}</h2>
               <div class="mt-1">
                 <BalancePill :student="balancePillStudent" />
               </div>
@@ -486,7 +501,7 @@
                 <button
                   @click="saveStudentProfile(selectedStudent.id)"
                   :disabled="savingProfile"
-                  class="bg-primary text-cream px-4 py-1.5 rounded-full text-xs font-medium hover:bg-primary-800 transition disabled:opacity-50"
+                  class="bg-primary text-cream px-4 py-1.5 rounded-full text-xs font-medium hover:bg-primary-800 transition-colors disabled:opacity-50"
                 >
                   {{ savingProfile ? $t('admin.saving') : $t('admin.save') }}
                 </button>
@@ -500,7 +515,7 @@
               v-for="tab in ['classes', 'payments', 'export']"
               :key="tab"
               @click="studentDetailTab = tab"
-              class="px-4 py-2 text-sm font-medium border-b-2 transition"
+              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
               :class="studentDetailTab === tab
                 ? 'border-primary text-primary'
                 : 'border-transparent text-slate-400 hover:text-slate-600'"
@@ -608,7 +623,7 @@
                     </button>
                     <button @click="saveClassLog(a.classSession.id, selectedStudent.id)"
                       :disabled="savingLog"
-                      class="bg-primary text-cream px-4 py-1.5 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
+                      class="bg-primary text-cream px-4 py-1.5 rounded-full text-sm font-medium hover:bg-primary-800 transition-colors disabled:opacity-50">
                       {{ savingLog ? $t('admin.saving') : $t('admin.classLog.save') }}
                     </button>
                   </div>
@@ -619,12 +634,12 @@
               <button
                 @click="clearUpcomingClasses(selectedStudent.id)"
                 :disabled="clearingUpcoming"
-                class="bg-amber-100 text-amber-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-amber-200 transition disabled:opacity-50"
+                class="bg-amber-100 text-amber-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-amber-200 transition-colors disabled:opacity-50"
               >
                 {{ clearingUpcoming ? $t('admin.saving') : $t('admin.clearUpcoming') }}
               </button>
               <button @click="handleSuspend(selectedStudent.id)"
-                class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-200 transition">
+                class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-200 transition-colors">
                 {{ $t('admin.suspendStudent') }}
               </button>
             </div>
@@ -657,7 +672,7 @@
 
             <div class="mt-4">
               <button v-if="!showPaymentForm" @click="openPaymentForm(null)"
-                class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition">
+                class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition-colors">
                 + {{ $t('admin.payments.record') }}
               </button>
               <div v-else class="border border-slate-200 rounded-lg p-4 space-y-3 bg-slate-50">
@@ -702,7 +717,7 @@
                   <button @click="showPaymentForm = false"
                     class="px-3 py-1.5 text-sm text-slate-500 hover:text-slate-700">{{ $t('admin.cancel') }}</button>
                   <button @click="savePayment(selectedStudent.id)" :disabled="savingPayment"
-                    class="bg-primary text-cream px-4 py-1.5 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
+                    class="bg-primary text-cream px-4 py-1.5 rounded-full text-sm font-medium hover:bg-primary-800 transition-colors disabled:opacity-50">
                     {{ savingPayment ? $t('admin.saving') : $t('admin.payments.save') }}
                   </button>
                 </div>
@@ -714,15 +729,15 @@
           <div v-else-if="studentDetailTab === 'export'" class="mt-4 space-y-3">
             <p class="text-sm text-slate-500">{{ $t('admin.export.desc') }}</p>
             <button @click="downloadStudentCsv(selectedStudent.id)"
-              class="w-full bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition">
+              class="w-full bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition-colors">
               {{ $t('admin.export.student') }}
             </button>
             <button @click="downloadAllPaymentsCsv"
-              class="w-full bg-slate-100 text-slate-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-200 transition">
+              class="w-full bg-slate-100 text-slate-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-200 transition-colors">
               {{ $t('admin.export.allPayments') }}
             </button>
             <button @click="downloadAllClassLogsCsv"
-              class="w-full bg-slate-100 text-slate-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-200 transition">
+              class="w-full bg-slate-100 text-slate-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-200 transition-colors">
               {{ $t('admin.export.allClassLogs') }}
             </button>
           </div>
@@ -730,9 +745,9 @@
       </div>
 
       <!-- Schedule Student Modal -->
-      <div v-if="showScheduleForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="closeScheduleForm">
+      <div v-if="showScheduleForm" role="dialog" aria-modal="true" aria-labelledby="scheduleFormTitle" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="closeScheduleForm">
         <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
-          <h2 class="text-lg font-bold text-primary mb-4">{{ $t('admin.scheduleStudent') }}</h2>
+          <h2 id="scheduleFormTitle" class="text-lg font-bold text-primary mb-4">{{ $t('admin.scheduleStudent') }}</h2>
           <form @submit.prevent="scheduleStudent" class="space-y-4">
             <!-- Student -->
             <div>
@@ -750,7 +765,7 @@
                 <label
                   v-for="s in SUBJECTS"
                   :key="s.key"
-                  class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-sm transition flex-1 justify-center"
+                  class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-sm transition-colors flex-1 justify-center"
                   :class="scheduleForm.subject === s.key
                     ? `${s.bg} ${s.text} border-current`
                     : 'border-slate-200 text-slate-500 hover:border-slate-300'"
@@ -767,7 +782,7 @@
               <label class="block text-sm text-slate-500 mb-2">{{ $t('admin.classDays') }}</label>
               <div class="flex flex-wrap gap-2">
                 <label v-for="(dayKey, i) in FULL_DAY_KEYS" :key="i"
-                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border cursor-pointer text-sm transition"
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border cursor-pointer text-sm transition-colors"
                   :class="scheduleForm.days.includes(i) ? 'bg-primary/10 border-primary text-primary' : 'border-slate-200 text-slate-500 hover:border-slate-300'">
                   <input type="checkbox" :value="i" v-model="scheduleForm.days" class="sr-only" />
                   {{ $t('admin.' + dayKey) }}
@@ -818,7 +833,7 @@
             </div>
 
             <!-- Preview -->
-            <div v-if="scheduleForm.days.length && scheduleForm.studentId" class="bg-primary/5 rounded-lg p-3 text-sm text-primary">
+            <div v-if="scheduleForm.days.length && scheduleForm.studentId" class="bg-primary/5 rounded-lg p-3 text-sm text-primary text-pretty">
               {{ schedulePreview }}
             </div>
 
@@ -885,7 +900,7 @@
             <div class="flex gap-3 justify-end">
               <button type="button" @click="closeScheduleForm" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $t('admin.cancel') }}</button>
               <button type="submit" :disabled="creatingClass || !scheduleForm.days.length || !scheduleForm.studentId"
-                class="bg-primary text-cream px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition disabled:opacity-50">
+                class="bg-primary text-cream px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition-colors disabled:opacity-50">
                 <template v-if="creatingClass">{{ $t('admin.creating') }}</template>
                 <template v-else-if="conflictModal.conflicts.length">{{ $t('admin.conflict.confirm') }}</template>
                 <template v-else>{{ $t('admin.scheduleNow') }}</template>
@@ -896,10 +911,10 @@
       </div>
 
       <!-- Reschedule Modal -->
-      <div v-if="showRescheduleModal && rescheduleTarget" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showRescheduleModal = false">
+      <div v-if="showRescheduleModal && rescheduleTarget" role="dialog" aria-modal="true" aria-labelledby="rescheduleTitle" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showRescheduleModal = false">
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
           <div class="flex items-start justify-between mb-4">
-            <h2 class="text-lg font-bold text-primary">{{ $t('admin.rescheduleTitle') }}</h2>
+            <h2 id="rescheduleTitle" class="text-lg font-bold text-primary">{{ $t('admin.rescheduleTitle') }}</h2>
             <button @click="showRescheduleModal = false" :aria-label="$t('admin.close')" class="text-slate-400 hover:text-slate-600">&times;</button>
           </div>
           <p class="text-sm text-slate-500 mb-4">{{ rescheduleTarget.title }}</p>
@@ -916,7 +931,7 @@
           <div class="flex gap-3 justify-end mt-6">
             <button @click="showRescheduleModal = false" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $t('admin.cancel') }}</button>
             <button @click="rescheduleClass" :disabled="!rescheduleDate || !rescheduleTime"
-              class="bg-amber-600 text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-amber-700 transition disabled:opacity-50">
+              class="bg-amber-600 text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-amber-700 transition-colors disabled:opacity-50">
               {{ $t('admin.reschedule') }}
             </button>
           </div>
@@ -2051,6 +2066,10 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+/* Keep under baseline-ui's 200ms max for interaction feedback. */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease-out; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .fade-enter-active, .fade-leave-active { transition: none; }
+}
 </style>

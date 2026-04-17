@@ -65,3 +65,18 @@ export const generalLimiter = rateLimit({
   handler: tooManyHandler,
   keyGenerator: (req) => req.user?.id || req.ip,
 });
+
+/**
+ * Meeting-link gate: max 20 per user per minute. The endpoint already logs
+ * every attempt, but without a rate limit a compromised account could still
+ * brute-force class IDs to trigger audit noise. 20/min leaves room for a
+ * fumble-click or a tab reload but stops scripted attempts dead.
+ */
+export const meetingLinkLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: tooManyHandler,
+  keyGenerator: (req) => req.user?.id || req.ip,
+});
