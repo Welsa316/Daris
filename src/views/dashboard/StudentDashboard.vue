@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-cream pt-24 pb-12 px-4">
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-3xl mx-auto">
       <!-- Header -->
       <div class="flex items-center justify-between mb-8">
         <div>
@@ -33,61 +33,113 @@
           </div>
         </div>
 
-        <!-- Upcoming Classes -->
-        <div class="bg-white rounded-2xl shadow-card p-6 mb-6">
-          <h2 class="text-lg font-bold text-primary mb-4">{{ $t('dashboard.upcomingClasses') }}</h2>
-          <div v-if="!dashboard?.upcomingClasses?.length" class="text-slate-400 text-sm py-4 text-center">
-            {{ $t('dashboard.noUpcoming') }}
+        <!-- Hero card: the very next class. Big, prominent, no clutter. -->
+        <div v-if="nextClass" class="bg-white rounded-2xl shadow-card p-6 mb-6 border-l-4 border-gold">
+          <p class="text-xs font-semibold tracking-[0.15em] uppercase text-gold/80 mb-3">
+            {{ $t('dashboard.nextClass') }}
+          </p>
+          <h2 class="text-xl font-display font-bold text-primary">
+            {{ isAr ? (nextClass.titleAr || nextClass.title) : nextClass.title }}
+            <span v-if="nextClass.rescheduled" class="text-amber-600 text-xs font-medium">({{ $t('admin.rescheduled') }})</span>
+          </h2>
+          <p class="text-slate-600 mt-1">
+            {{ relativeWhen(nextClass) }}
+          </p>
+          <p class="text-xs text-slate-400 mt-0.5">
+            {{ formatClassTime(nextClass) }}
+            <span v-if="viewerTimezoneDiffers(nextClass)">
+              · {{ $t('dashboard.yourTime') }}: {{ formatInViewerTz(nextClass) }}
+            </span>
+          </p>
+
+          <div class="mt-5">
+            <button
+              v-if="nextClass.canJoin"
+              @click="joinClass(nextClass.id)"
+              class="bg-primary text-cream text-sm font-semibold px-6 py-2.5 rounded-full hover:bg-primary-800 transition"
+            >
+              {{ $t('dashboard.joinClass') }}
+            </button>
+            <p v-else class="text-xs text-slate-400">
+              {{ $t('dashboard.linkOpensBefore') }}
+            </p>
           </div>
-          <div v-else class="space-y-3">
-            <div v-for="cls in dashboard.upcomingClasses" :key="cls.id" class="border border-slate-100 rounded-xl p-4 hover:border-primary/20 transition">
-              <div class="flex items-start justify-between">
-                <div>
-                  <h3 class="font-semibold text-primary">{{ isAr ? (cls.titleAr || cls.title) : cls.title }}
-                    <span v-if="cls.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
-                  </h3>
-                  <p class="text-sm text-slate-500 mt-1">{{ formatDate(cls.startTime) }} - {{ formatTime(cls.endTime) }}</p>
-                  <p v-if="cls.rescheduled && cls.originalStartTime" class="text-xs text-slate-400 mt-0.5 line-through">{{ $t('admin.originalTime') }}: {{ formatDate(cls.originalStartTime) }}</p>
-                  <p v-if="cls.description" class="text-sm text-slate-400 mt-1">{{ isAr ? (cls.descriptionAr || cls.description) : cls.description }}</p>
-                </div>
-                <button v-if="cls.canJoin" @click="joinClass(cls.id)" class="shrink-0 bg-primary text-cream text-sm font-medium px-4 py-2 rounded-full hover:bg-primary-800 transition">
-                  {{ $t('dashboard.joinClass') }}
-                </button>
-                <span v-else-if="cls.meetingLinkAvailableIn" class="shrink-0 text-xs text-slate-400 bg-slate-50 px-3 py-1.5 rounded-full">
-                  {{ $t('dashboard.linkAvailableIn', { minutes: cls.meetingLinkAvailableIn }) }}
-                </span>
+        </div>
+
+        <!-- Rest of the upcoming schedule: compact rows, collapsed by default -->
+        <div v-if="laterClasses.length" class="bg-white rounded-2xl shadow-card p-6 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">
+              {{ $t('dashboard.comingUp') }}
+            </h2>
+            <button
+              v-if="dashboard.upcomingClasses.length > 4"
+              @click="showAllUpcoming = !showAllUpcoming"
+              class="text-xs text-primary hover:text-primary-800 underline"
+            >
+              {{ showAllUpcoming ? $t('dashboard.showLess') : $t('dashboard.showAll') }}
+            </button>
+          </div>
+          <ul class="divide-y divide-slate-100">
+            <li
+              v-for="cls in (showAllUpcoming ? laterClasses : laterClasses.slice(0, 3))"
+              :key="cls.id"
+              class="py-3 flex items-center justify-between gap-3"
+            >
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-primary truncate">
+                  {{ isAr ? (cls.titleAr || cls.title) : cls.title }}
+                </p>
+                <p class="text-xs text-slate-400 mt-0.5">{{ formatClassTime(cls) }}</p>
               </div>
-            </div>
-          </div>
+              <button
+                v-if="cls.canJoin"
+                @click="joinClass(cls.id)"
+                class="shrink-0 bg-primary text-cream text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-primary-800 transition"
+              >
+                {{ $t('dashboard.joinClass') }}
+              </button>
+            </li>
+          </ul>
         </div>
 
-        <!-- Past Classes -->
-        <div class="bg-white rounded-2xl shadow-card p-6 mb-6">
-          <h2 class="text-lg font-bold text-primary mb-4">{{ $t('dashboard.classHistory') }}</h2>
-          <div v-if="!dashboard?.pastClasses?.length" class="text-slate-400 text-sm py-4 text-center">
-            {{ $t('dashboard.noPast') }}
-          </div>
-          <div v-else class="space-y-2">
-            <div v-for="cls in dashboard.pastClasses" :key="cls.id" class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
-              <span class="text-sm text-slate-600">{{ isAr ? (cls.titleAr || cls.title) : cls.title }}</span>
-              <span class="text-xs text-slate-400">{{ formatDate(cls.startTime) }}</span>
-            </div>
-          </div>
+        <!-- Nothing on the schedule at all -->
+        <div v-if="!nextClass && !laterClasses.length" class="bg-white rounded-2xl shadow-card p-10 text-center mb-6">
+          <p class="text-slate-400 text-sm">{{ $t('dashboard.noUpcoming') }}</p>
         </div>
 
-        <!-- Profile -->
-        <div class="bg-white rounded-2xl shadow-card p-6">
-          <h2 class="text-lg font-bold text-primary mb-4">{{ $t('dashboard.profile') }}</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div><span class="text-slate-400">{{ $t('auth.email') }}:</span> <span class="text-slate-700 ltr:ml-2 rtl:mr-2">{{ user?.email }}</span></div>
-            <div><span class="text-slate-400">{{ $t('auth.country') }}:</span> <span class="text-slate-700 ltr:ml-2 rtl:mr-2">{{ user?.country }}</span></div>
-          </div>
-          <div class="mt-4 flex gap-3">
-            <RouterLink to="/change-password" class="text-sm text-primary hover:text-primary-800 transition font-medium">
+        <!-- Past classes — collapsed, opt-in -->
+        <details v-if="dashboard?.pastClasses?.length" class="bg-white rounded-2xl shadow-card p-6 mb-6">
+          <summary class="cursor-pointer list-none flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">
+              {{ $t('dashboard.classHistory') }}
+            </h2>
+            <span class="text-xs text-slate-400">{{ dashboard.pastClasses.length }}</span>
+          </summary>
+          <ul class="mt-4 divide-y divide-slate-100">
+            <li v-for="cls in dashboard.pastClasses" :key="cls.id" class="py-2 flex items-center justify-between text-sm">
+              <span class="text-slate-600">{{ isAr ? (cls.titleAr || cls.title) : cls.title }}</span>
+              <span class="text-xs text-slate-400">{{ formatClassTime(cls) }}</span>
+            </li>
+          </ul>
+        </details>
+
+        <!-- Profile — minimal -->
+        <details class="bg-white rounded-2xl shadow-card p-6">
+          <summary class="cursor-pointer list-none flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">
+              {{ $t('dashboard.profile') }}
+            </h2>
+            <span class="text-slate-300">›</span>
+          </summary>
+          <div class="mt-4 space-y-2 text-sm">
+            <div><span class="text-slate-400">{{ $t('auth.email') }}:</span> <span class="text-slate-700 ms-2">{{ user?.email }}</span></div>
+            <div><span class="text-slate-400">{{ $t('auth.country') }}:</span> <span class="text-slate-700 ms-2">{{ user?.country }}</span></div>
+            <RouterLink to="/change-password" class="inline-block mt-2 text-sm text-primary hover:text-primary-800 transition font-medium">
               {{ $t('auth.changePassword') }}
             </RouterLink>
           </div>
-        </div>
+        </details>
       </template>
     </div>
   </div>
@@ -99,32 +151,104 @@ import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth.js';
 import { api } from '@/config/api.js';
 
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 const { user, logout } = useAuth();
 const isAr = computed(() => locale.value === 'ar');
 
 const dashboard = ref(null);
 const loading = ref(true);
+const showAllUpcoming = ref(false);
+
+// The first non-cancelled upcoming class gets the hero slot. Everything
+// after it gets collapsed into the compact list below.
+const nextClass = computed(() => {
+  const list = dashboard.value?.upcomingClasses || [];
+  return list.find((c) => !c.cancelled) || null;
+});
+const laterClasses = computed(() => {
+  const list = dashboard.value?.upcomingClasses || [];
+  return list.filter((c) => c.id !== nextClass.value?.id && !c.cancelled);
+});
 
 async function handleLogout() { await logout(); }
 
-function formatDate(date) {
-  return new Date(date).toLocaleDateString(locale.value === 'ar' ? 'ar-EG' : 'en-US', {
-    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
+// Viewer's resolved browser timezone, used only to decide whether we should
+// ALSO show the time in the viewer's local zone (for students scheduled in
+// a TZ different from where they're currently viewing).
+const viewerTz = (() => {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone; }
+  catch { return 'UTC'; }
+})();
+
+function viewerTimezoneDiffers(cls) {
+  return cls.timezone && cls.timezone !== viewerTz;
 }
 
-function formatTime(date) {
-  return new Date(date).toLocaleTimeString(locale.value === 'ar' ? 'ar-EG' : 'en-US', {
-    hour: '2-digit', minute: '2-digit',
-  });
+// Primary time display: in the class's own timezone (that's the time the
+// sheikh teaches in, so it's the shared source of truth).
+function formatClassTime(cls) {
+  const tz = cls.timezone || 'Africa/Cairo';
+  const localeTag = isAr.value ? 'ar-EG' : 'en-US';
+  return new Intl.DateTimeFormat(localeTag, {
+    timeZone: tz,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(new Date(cls.startTime)) + ` (${tz.split('/').pop().replace('_', ' ')})`;
 }
 
-// When the student clicks Join, ask the server for the actual meeting URL
-// via the gated endpoint. The server checks the student is assigned to
-// that class AND the class is currently in its 15-min window before
-// revealing the URL — we never embed it in the page payload.
+function formatInViewerTz(cls) {
+  const localeTag = isAr.value ? 'ar-EG' : 'en-US';
+  return new Intl.DateTimeFormat(localeTag, {
+    timeZone: viewerTz,
+    weekday: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(new Date(cls.startTime));
+}
+
+// Human-friendly "when" for the hero card: "Live now", "Starts in 12 min",
+// "Today at 1:00 PM", "Tomorrow at 1:00 PM", or "Mon Apr 21 at 1:00 PM".
+function relativeWhen(cls) {
+  const now = Date.now();
+  const start = new Date(cls.startTime).getTime();
+  const end = new Date(cls.endTime).getTime();
+  if (now >= start && now <= end) return t('dashboard.liveNow');
+  if (now > end) return t('dashboard.ended');
+
+  const diffMin = Math.round((start - now) / 60_000);
+  if (diffMin <= 60) {
+    return t('dashboard.startsInMin').replace('{n}', diffMin);
+  }
+
+  const tz = cls.timezone || 'Africa/Cairo';
+  const localeTag = isAr.value ? 'ar-EG' : 'en-US';
+  const zonedDate = (ms) => new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date(ms));
+  const timeStr = new Intl.DateTimeFormat(localeTag, {
+    timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true,
+  }).format(new Date(start));
+
+  if (zonedDate(start) === zonedDate(now)) {
+    return t('dashboard.todayAt').replace('{time}', timeStr);
+  }
+  if (zonedDate(start) === zonedDate(now + 86400000)) {
+    return t('dashboard.tomorrowAt').replace('{time}', timeStr);
+  }
+
+  const dateStr = new Intl.DateTimeFormat(localeTag, {
+    timeZone: tz, weekday: 'short', month: 'short', day: 'numeric',
+  }).format(new Date(start));
+  return t('dashboard.onDateAt').replace('{date}', dateStr).replace('{time}', timeStr);
+}
+
+// Hits the gated endpoint; the server verifies the student is assigned AND
+// the 15-min-before-to-end window is open before revealing the URL.
 async function joinClass(classId) {
   try {
     const { meetingLink } = await api.get(`/api/meeting/${classId}/link`);
