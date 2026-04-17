@@ -4,7 +4,10 @@
       <!-- Header -->
       <div class="flex items-center justify-between mb-8">
         <h1 class="text-2xl font-display font-bold text-primary">{{ $t('admin.title') }}</h1>
-        <button @click="handleLogout" class="text-sm text-slate-400 hover:text-primary transition">{{ $t('auth.logout') }}</button>
+        <div class="flex items-center gap-3">
+          <LanguageSwitcher />
+          <button @click="handleLogout" class="text-sm text-slate-400 hover:text-primary transition">{{ $t('auth.logout') }}</button>
+        </div>
       </div>
 
       <!-- Stats -->
@@ -35,17 +38,21 @@
           <div v-for="cls in upcomingClasses" :key="cls.id"
             class="flex items-center justify-between border border-slate-100 rounded-xl p-4 hover:border-primary/30 transition">
             <div>
-              <h3 class="font-semibold text-primary">{{ isAr && cls.titleAr ? cls.titleAr : cls.title }}</h3>
+              <h3 class="font-semibold text-primary">{{ classDisplayName(cls) }}</h3>
               <p class="text-sm text-slate-500 mt-0.5">{{ formatClassTime(cls.startTime) }} – {{ new Date(cls.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</p>
-              <p class="text-xs text-slate-400 mt-0.5">{{ cls.assignments?.map(a => a.student.firstName + ' ' + a.student.lastName).join(', ') }}</p>
               <p class="text-xs mt-1" :class="classTimeLabel(cls).color">{{ classTimeLabel(cls).text }}</p>
             </div>
-            <a v-if="cls.meetingLink || globalMeetingLink"
-              :href="cls.meetingLink || globalMeetingLink" target="_blank" rel="noopener"
-              class="bg-green-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-green-700 transition shrink-0 flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-              {{ $t('admin.joinClass') || 'Join' }}
-            </a>
+            <template v-if="cls.meetingLink || globalMeetingLink">
+              <a v-if="isJoinable(cls)"
+                :href="cls.meetingLink || globalMeetingLink" target="_blank" rel="noopener"
+                class="bg-green-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-green-700 transition shrink-0 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                {{ $t('admin.joinClass') || 'Join' }}
+              </a>
+              <span v-else class="text-xs text-slate-400 italic shrink-0 text-end" :title="new Date(cls.startTime).toLocaleString()">
+                {{ joinAvailabilityLabel(cls) }}
+              </span>
+            </template>
             <span v-else class="text-xs text-slate-400 italic shrink-0">{{ $t('admin.noMeetingLink') || 'No meeting link set' }}</span>
           </div>
         </div>
@@ -197,7 +204,7 @@
                   @click="selectedClass = cls"
                   class="mb-1 rounded-lg p-2 text-xs cursor-pointer hover:ring-2 hover:ring-primary/30 transition"
                   :class="[cls.cancelled ? 'bg-slate-100 text-slate-400 line-through' : cls.rescheduled ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-primary/10 text-primary', selectedClass?.id === cls.id ? 'ring-2 ring-primary' : '']">
-                  <p class="font-medium truncate">{{ isAr && cls.titleAr ? cls.titleAr : cls.title }}</p>
+                  <p class="font-medium truncate">{{ classDisplayName(cls) }}</p>
                   <p class="text-[10px] opacity-70">{{ new Date(cls.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</p>
                 </div>
                 <div v-if="!(classesByDay[day.toISOString().split('T')[0]] || []).length" class="text-[10px] text-slate-300 text-center pt-4">—</div>
@@ -208,7 +215,7 @@
             <div v-if="selectedClass" class="mt-4 border border-slate-200 rounded-xl p-4 bg-slate-50/50">
               <div class="flex items-start justify-between">
                 <div>
-                  <h3 class="font-semibold text-primary">{{ isAr && selectedClass.titleAr ? selectedClass.titleAr : selectedClass.title }}
+                  <h3 class="font-semibold text-primary">{{ classDisplayName(selectedClass) }}
                     <span v-if="selectedClass.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span>
                     <span v-if="selectedClass.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
                   </h3>
@@ -236,7 +243,7 @@
               <div v-for="cls in classes" :key="cls.id" class="border border-slate-100 rounded-xl p-4" :class="cls.cancelled ? 'opacity-50' : ''">
                 <div class="flex items-start justify-between">
                   <div>
-                    <h3 class="font-semibold text-primary">{{ cls.title }} <span v-if="cls.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span><span v-if="cls.rescheduled" class="text-amber-600 text-xs"> ({{ $t('admin.rescheduled') }})</span></h3>
+                    <h3 class="font-semibold text-primary">{{ classDisplayName(cls) }} <span v-if="cls.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span><span v-if="cls.rescheduled" class="text-amber-600 text-xs"> ({{ $t('admin.rescheduled') }})</span></h3>
                     <p class="text-sm text-slate-500">{{ new Date(cls.startTime).toLocaleString() }} - {{ new Date(cls.endTime).toLocaleTimeString() }}</p>
                     <p class="text-xs text-slate-400 mt-1">{{ cls.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
                   </div>
@@ -544,51 +551,65 @@
         </div>
       </div>
 
-      <!-- Conflict Resolution Modal -->
+      <!-- Conflict Resolution Modal — grouped by kind, one decision per group -->
       <div v-if="conflictModal.open" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" @click.self="cancelConflictResolution">
         <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-6">
           <h2 class="text-lg font-bold text-primary mb-2">{{ $t('admin.conflict.title') }}</h2>
           <p class="text-sm text-slate-500 mb-4">{{ $t('admin.conflict.subtitle') }}</p>
-          <div class="space-y-3">
-            <div v-for="c in conflictModal.conflicts" :key="c.startTime" class="border border-slate-200 rounded-lg p-3">
-              <p class="font-medium text-sm text-primary">{{ formatConflictTime(c.startTime) }}</p>
-              <p v-if="c.kind === 'same_student'" class="text-sm text-amber-700 mt-1">
-                {{ $t('admin.conflict.sameStudent').replace('{title}', c.existingTitle || '') }}
-              </p>
-              <p v-else class="text-sm text-slate-600 mt-1">
-                {{ $t('admin.conflict.existingSlot')
-                  .replace('{title}', c.existingTitle || '')
-                  .replace('{students}', (c.existingStudents || []).map(s => `${s.firstName} ${s.lastName}`).join(', ')) }}
-              </p>
-              <div class="mt-3 flex flex-col gap-2 text-sm">
-                <template v-if="c.kind === 'same_student'">
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" :name="`res-${c.startTime}`" value="skip" v-model="conflictModal.resolutions[c.startTime]" />
-                    <span>{{ $t('admin.conflict.skip') }}</span>
-                  </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" :name="`res-${c.startTime}`" value="force" v-model="conflictModal.resolutions[c.startTime]" />
-                    <span>{{ $t('admin.conflict.scheduleAnyway') }}</span>
-                  </label>
-                </template>
-                <template v-else>
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" :name="`res-${c.startTime}`" value="merge" v-model="conflictModal.resolutions[c.startTime]" />
-                    <span>{{ $t('admin.conflict.merge') }}</span>
-                  </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" :name="`res-${c.startTime}`" value="create" v-model="conflictModal.resolutions[c.startTime]" />
-                    <span>{{ $t('admin.conflict.createSeparate') }}</span>
-                  </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" :name="`res-${c.startTime}`" value="skip" v-model="conflictModal.resolutions[c.startTime]" />
-                    <span>{{ $t('admin.conflict.skip') }}</span>
-                  </label>
-                </template>
-              </div>
+
+          <!-- Existing-slot group: merge / create separate / skip -->
+          <div v-if="existingSlotConflicts.length" class="border border-slate-200 rounded-xl p-4 mb-4 bg-slate-50/50">
+            <p class="text-sm font-medium text-primary mb-1">
+              {{ $t('admin.conflict.existingSlotGroup').replace('{count}', existingSlotConflicts.length) }}
+            </p>
+            <p class="text-xs text-slate-500 mb-3">{{ conflictGroupPreview(existingSlotConflicts) }}</p>
+            <div class="space-y-2 text-sm">
+              <label class="flex items-start gap-2 cursor-pointer">
+                <input type="radio" name="bulk-existing" value="merge" v-model="conflictModal.bulkExisting" class="mt-1" />
+                <span>{{ $t('admin.conflict.merge') }}</span>
+              </label>
+              <label class="flex items-start gap-2 cursor-pointer">
+                <input type="radio" name="bulk-existing" value="create" v-model="conflictModal.bulkExisting" class="mt-1" />
+                <span>{{ $t('admin.conflict.createSeparate') }}</span>
+              </label>
+              <label class="flex items-start gap-2 cursor-pointer">
+                <input type="radio" name="bulk-existing" value="skip" v-model="conflictModal.bulkExisting" class="mt-1" />
+                <span>{{ $t('admin.conflict.skip') }}</span>
+              </label>
             </div>
           </div>
-          <div class="mt-5 flex justify-end gap-3">
+
+          <!-- Same-student group: skip / force -->
+          <div v-if="sameStudentConflicts.length" class="border border-amber-200 rounded-xl p-4 mb-4 bg-amber-50/50">
+            <p class="text-sm font-medium text-amber-800 mb-1">
+              {{ $t('admin.conflict.sameStudentGroup').replace('{count}', sameStudentConflicts.length) }}
+            </p>
+            <p class="text-xs text-amber-700 mb-3">{{ conflictGroupPreview(sameStudentConflicts) }}</p>
+            <div class="space-y-2 text-sm">
+              <label class="flex items-start gap-2 cursor-pointer">
+                <input type="radio" name="bulk-same" value="skip" v-model="conflictModal.bulkSame" class="mt-1" />
+                <span>{{ $t('admin.conflict.skip') }}</span>
+              </label>
+              <label class="flex items-start gap-2 cursor-pointer">
+                <input type="radio" name="bulk-same" value="force" v-model="conflictModal.bulkSame" class="mt-1" />
+                <span>{{ $t('admin.conflict.scheduleAnyway') }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Collapsed per-session list for full transparency -->
+          <details class="text-xs text-slate-500 mb-4">
+            <summary class="cursor-pointer hover:text-primary">
+              {{ $t('admin.conflict.showSessions').replace('{count}', conflictModal.conflicts.length) }}
+            </summary>
+            <ul class="mt-2 space-y-1 list-disc list-inside">
+              <li v-for="c in conflictModal.conflicts" :key="c.startTime">
+                {{ formatConflictTime(c.startTime) }}
+              </li>
+            </ul>
+          </details>
+
+          <div class="flex justify-end gap-3">
             <button @click="cancelConflictResolution"
               class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">
               {{ $t('admin.cancel') }}
@@ -640,25 +661,19 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth.js';
 import { api } from '@/config/api.js';
-import { setLocale } from '@/i18n/index.js';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 
 const { locale, t } = useI18n();
 const { logout } = useAuth();
 
-// Admin dashboard defaults to Arabic — restore previous locale on leave
-const previousLocale = locale.value;
-if (locale.value !== 'ar') {
-  setLocale('ar');
-}
-onUnmounted(() => {
-  if (locale.value === 'ar' && previousLocale !== 'ar') {
-    setLocale(previousLocale);
-  }
-});
+// Admin locale is controlled by the LanguageSwitcher in the header. We used
+// to force Arabic on mount, but that fought with the toggle the sheikh now
+// uses to flip between views — it just snapped back to Arabic on every
+// component re-render.
 
 const isAr = computed(() => locale.value === 'ar');
 
@@ -704,13 +719,16 @@ const savingPayment = ref(false);
 const clearingUpcoming = ref(false);
 
 // --- Conflict resolution modal -------------------------------------------
-// Populated when the admin submits the schedule form and the backend finds
-// overlaps with existing classes.
+// One decision per *kind* (not per session). We found the sheikh was being
+// asked to pick 12x "merge" in a row for a recurring class — so now the
+// modal asks once for all existing_slot conflicts and once for all
+// same_student conflicts.
 const conflictModal = reactive({
   open: false,
-  conflicts: [], // array from /classes/check-conflicts
-  resolutions: {}, // keyed by session startTime ISO
-  pendingPayload: null, // the scheduleForm payload we'll re-POST after resolving
+  conflicts: [], // raw array from /classes/check-conflicts
+  bulkExisting: 'merge', // merge | create | skip — applied to every existing_slot conflict
+  bulkSame: 'skip',      // skip | force — applied to every same_student conflict
+  pendingPayload: null,
 });
 
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -818,6 +836,13 @@ const studentClasses = computed(() => {
   if (!selectedStudent.value?.classAssignments) return [];
   return selectedStudent.value.classAssignments;
 });
+
+const existingSlotConflicts = computed(() =>
+  (conflictModal.conflicts || []).filter((c) => c.kind === 'existing_slot')
+);
+const sameStudentConflicts = computed(() =>
+  (conflictModal.conflicts || []).filter((c) => c.kind === 'same_student')
+);
 
 const schedulePreview = computed(() => {
   const weeks = parseInt(scheduleForm.weeks) || 12;
@@ -1013,16 +1038,12 @@ async function scheduleStudent() {
     const payload = { studentId: scheduleForm.studentId, title, sessions };
 
     if (conflicts?.length) {
-      // Default each conflict's resolution to the "safe" pick:
-      //   - existing_slot -> 'merge' (probably a co-taught class)
-      //   - same_student  -> 'skip'  (admin must explicitly confirm)
-      const defaults = {};
-      for (const c of conflicts) {
-        defaults[c.startTime] = c.kind === 'existing_slot' ? 'merge' : 'skip';
-      }
+      // Group-level defaults: merge existing slots (co-taught) and skip
+      // same-student double-bookings unless the admin explicitly flips it.
       conflictModal.open = true;
       conflictModal.conflicts = conflicts;
-      conflictModal.resolutions = defaults;
+      conflictModal.bulkExisting = 'merge';
+      conflictModal.bulkSame = 'skip';
       conflictModal.pendingPayload = payload;
       return; // wait for the user to resolve
     }
@@ -1037,20 +1058,21 @@ async function scheduleStudent() {
   }
 }
 
-// Submit from the conflict modal once the admin has picked an action per row.
+// Build the per-session resolution map from the two group choices and POST.
 async function submitConflictResolution() {
   if (creatingClass.value) return;
   const payload = conflictModal.pendingPayload;
   if (!payload) return;
   creatingClass.value = true;
   try {
-    await api.post('/api/admin/classes/batch', {
-      ...payload,
-      resolutions: conflictModal.resolutions,
-    });
+    const resolutions = {};
+    for (const c of conflictModal.conflicts) {
+      resolutions[c.startTime] =
+        c.kind === 'existing_slot' ? conflictModal.bulkExisting : conflictModal.bulkSame;
+    }
+    await api.post('/api/admin/classes/batch', { ...payload, resolutions });
     conflictModal.open = false;
     conflictModal.conflicts = [];
-    conflictModal.resolutions = {};
     conflictModal.pendingPayload = null;
     showScheduleForm.value = false;
     Object.assign(scheduleForm, { studentId: '', days: [], time: '15:00', duration: '60', weeks: '12' });
@@ -1065,8 +1087,59 @@ async function submitConflictResolution() {
 function cancelConflictResolution() {
   conflictModal.open = false;
   conflictModal.conflicts = [];
-  conflictModal.resolutions = {};
   conflictModal.pendingPayload = null;
+}
+
+// A ticking "now" ref so Join-button visibility and countdown labels update
+// without a manual refresh. 30-second granularity is plenty for minute-level
+// messaging.
+const now = ref(Date.now());
+const nowTick = setInterval(() => { now.value = Date.now(); }, 30_000);
+
+// The join link only becomes active 30 min before class start and stays
+// active until class end. Outside that window the button is replaced with a
+// countdown label so the sheikh can see exactly when it will open.
+const JOIN_WINDOW_MIN = 30;
+
+function isJoinable(cls) {
+  if (cls.cancelled) return false;
+  const start = new Date(cls.startTime).getTime();
+  const end = new Date(cls.endTime).getTime();
+  return now.value >= start - JOIN_WINDOW_MIN * 60_000 && now.value <= end;
+}
+
+function joinAvailabilityLabel(cls) {
+  const start = new Date(cls.startTime).getTime();
+  const end = new Date(cls.endTime).getTime();
+  if (now.value > end) return t('admin.joinEnded') || 'Class ended';
+  const minsUntilOpen = Math.ceil((start - JOIN_WINDOW_MIN * 60_000 - now.value) / 60_000);
+  if (minsUntilOpen <= 0) return t('admin.joinLive') || 'Live now';
+  if (minsUntilOpen < 60) {
+    return (t('admin.joinOpensInMin') || 'Opens in {n} min').replace('{n}', minsUntilOpen);
+  }
+  const hours = Math.ceil(minsUntilOpen / 60);
+  return (t('admin.joinOpensInHr') || 'Opens in {n}h').replace('{n}', hours);
+}
+
+// Display name for a class. When multiple students share a class (co-taught),
+// the stored `title` is just whoever was scheduled first — show the actual
+// attendee list so the calendar reflects reality. Falls back to the stored
+// title if assignments haven't loaded.
+function classDisplayName(cls) {
+  const names = (cls.assignments || [])
+    .map((a) => a.student?.firstName)
+    .filter(Boolean);
+  if (names.length === 0) return isAr.value && cls.titleAr ? cls.titleAr : (cls.title || '—');
+  return names.join(' + ');
+}
+
+// Used by the conflict modal to show a "Fri 1:00 PM · Fri 1:00 PM · +3 more"
+// style preview without listing every single occurrence.
+function conflictGroupPreview(group) {
+  if (!group.length) return '';
+  const firstThree = group.slice(0, 3).map((c) => formatConflictTime(c.startTime));
+  const more = group.length - firstThree.length;
+  return firstThree.join(' · ') + (more > 0 ? ` · +${more} ${t('admin.conflict.more')}` : '');
 }
 
 function formatConflictTime(iso) {
@@ -1245,6 +1318,10 @@ onMounted(() => {
   loadEnrollments();
   loadClasses();
   loadSettings();
+});
+
+onBeforeUnmount(() => {
+  clearInterval(nowTick);
 });
 </script>
 

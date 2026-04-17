@@ -453,6 +453,10 @@
     "upcomingClassesTitle": "Upcoming Classes",
     "noUpcomingClasses": "No upcoming classes",
     "joinClass": "Join",
+    "joinLive": "Live now",
+    "joinEnded": "Class ended",
+    "joinOpensInMin": "Opens in {n} min",
+    "joinOpensInHr": "Opens in {n}h",
     "noMeetingLink": "No meeting link set",
     "edit": "Edit",
     "tab": {
@@ -498,13 +502,15 @@
     "clearUpcomingDone": "Removed {count} upcoming classes.",
     "conflict": {
       "title": "Scheduling conflict",
-      "subtitle": "Some of the sessions overlap with what's already on the calendar. Pick what to do with each.",
-      "sameStudent": "This student already has a class \"{title}\" at this time.",
-      "existingSlot": "A class \"{title}\" already exists at this slot with: {students}.",
+      "subtitle": "Some of these sessions overlap with classes already on the calendar. Choose once — it applies to every matching session.",
+      "existingSlotGroup": "{count} session(s) already have a class at that time with other students.",
+      "sameStudentGroup": "{count} session(s) — this student already has another class at that time.",
+      "showSessions": "Show all {count} sessions",
+      "more": "more",
       "merge": "Add this student to the existing class",
       "createSeparate": "Create a separate class anyway",
       "scheduleAnyway": "Schedule anyway (student will be double-booked)",
-      "skip": "Skip this session",
+      "skip": "Skip these sessions",
       "confirm": "Confirm and schedule"
     }
   }
