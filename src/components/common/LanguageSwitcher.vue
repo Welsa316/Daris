@@ -59,7 +59,7 @@ const currentLocale = computed(() => locale.value);
 
 // Swap the URL prefix so /en/<page> ↔ /ar/<page> and the new locale becomes
 // the indexed URL. If we're on a non-marketing route (auth, dashboard) we
-// don't rewrite the path — just flip the i18n locale in place.
+// don't rewrite the path. just flip the i18n locale in place.
 function setLang(next) {
   if (locale.value === next) return;
   setLocale(next);

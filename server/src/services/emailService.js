@@ -5,7 +5,7 @@ const RESEND_API_URL = 'https://api.resend.com/emails';
 
 /**
  * Send an email via Resend HTTPS API.
- * No SMTP needed — uses fetch() on port 443, which works on all Railway plans.
+ * No SMTP needed. uses fetch() on port 443, which works on all Railway plans.
  */
 export async function sendEmail({ to, subject, html }) {
   if (!env.RESEND_API_KEY) {
@@ -14,8 +14,8 @@ export async function sendEmail({ to, subject, html }) {
       logger.debug(`[DEV] EMAIL BODY: ${html}`);
       return;
     }
-    // In production this is fatal — surface it instead of silently dropping the email.
-    logger.error('Email service: RESEND_API_KEY not set — refusing to send email', {
+    // In production this is fatal. surface it instead of silently dropping the email.
+    logger.error('Email service: RESEND_API_KEY not set. refusing to send email', {
       to: to.substring(0, 3) + '***',
       subject,
     });
@@ -89,8 +89,8 @@ export async function sendVerificationEmail(email, token, lang = 'en') {
   const verifyUrl = `${env.FRONTEND_URL}/verify-email?token=${token}`;
 
   const subject = lang === 'ar'
-    ? 'دارس — تأكيد البريد الإلكتروني'
-    : 'Daris — Verify Your Email';
+    ? 'دارس. تأكيد البريد الإلكتروني'
+    : 'Daris. Verify Your Email';
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ${lang === 'ar' ? 'rtl' : 'ltr'};">
@@ -117,8 +117,8 @@ export async function sendPasswordResetEmail(email, token, lang = 'en') {
   const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${token}`;
 
   const subject = lang === 'ar'
-    ? 'دارس — إعادة تعيين كلمة المرور'
-    : 'Daris — Password Reset';
+    ? 'دارس. إعادة تعيين كلمة المرور'
+    : 'Daris. Password Reset';
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ${lang === 'ar' ? 'rtl' : 'ltr'};">
@@ -145,8 +145,8 @@ export async function sendEnrollmentApprovedEmail(email, firstName, message, lan
   const loginUrl = `${env.FRONTEND_URL}/login`;
 
   const subject = lang === 'ar'
-    ? 'دارس — تمت الموافقة على تسجيلك!'
-    : 'Daris — Your Enrollment is Approved!';
+    ? 'دارس. تمت الموافقة على تسجيلك!'
+    : 'Daris. Your Enrollment is Approved!';
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ${lang === 'ar' ? 'rtl' : 'ltr'};">
@@ -166,8 +166,8 @@ export async function sendEnrollmentApprovedEmail(email, firstName, message, lan
 
 export async function sendEnrollmentRejectedEmail(email, firstName, message, lang = 'en') {
   const subject = lang === 'ar'
-    ? 'دارس — تحديث طلب التسجيل'
-    : 'Daris — Enrollment Update';
+    ? 'دارس. تحديث طلب التسجيل'
+    : 'Daris. Enrollment Update';
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ${lang === 'ar' ? 'rtl' : 'ltr'};">
@@ -187,8 +187,8 @@ export async function sendEnrollmentRejectedEmail(email, firstName, message, lan
 
 export async function sendAccountLockedEmail(email, lang = 'en') {
   const subject = lang === 'ar'
-    ? 'دارس — تنبيه أمني'
-    : 'Daris — Security Alert';
+    ? 'دارس. تنبيه أمني'
+    : 'Daris. Security Alert';
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ${lang === 'ar' ? 'rtl' : 'ltr'};">
@@ -207,8 +207,8 @@ export async function sendAccountLockedEmail(email, lang = 'en') {
 
 export async function sendClassCancelledEmail(email, firstName, classTitle, classDate, lang = 'en') {
   const subject = lang === 'ar'
-    ? 'دارس — إلغاء حصة'
-    : 'Daris — Class Cancelled';
+    ? 'دارس. إلغاء حصة'
+    : 'Daris. Class Cancelled';
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ${lang === 'ar' ? 'rtl' : 'ltr'};">
@@ -228,8 +228,8 @@ export async function sendClassCancelledEmail(email, firstName, classTitle, clas
 
 export async function sendClassRescheduledEmail(email, firstName, classTitle, oldDate, newDate, lang = 'en') {
   const subject = lang === 'ar'
-    ? 'دارس — إعادة جدولة حصة'
-    : 'Daris — Class Rescheduled';
+    ? 'دارس. إعادة جدولة حصة'
+    : 'Daris. Class Rescheduled';
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ${lang === 'ar' ? 'rtl' : 'ltr'};">
@@ -253,12 +253,12 @@ export async function sendClassRescheduledEmail(email, firstName, classTitle, ol
  * their email and is waiting for enrollment review.
  *
  * Uses the same RESEND_API_KEY as verification emails. Recipient is taken
- * from env.ADMIN_EMAIL — if that isn't set we log loudly and skip rather
+ * from env.ADMIN_EMAIL. if that isn't set we log loudly and skip rather
  * than crashing the verify-email flow.
  */
 export async function sendNewEnrollmentNotification(student) {
   if (!env.ADMIN_EMAIL) {
-    logger.error('ADMIN_EMAIL not configured — cannot send enrollment notification', {
+    logger.error('ADMIN_EMAIL not configured. cannot send enrollment notification', {
       studentId: student.id,
       studentEmail: student.email,
     });
@@ -313,7 +313,7 @@ export async function sendNewEnrollmentNotification(student) {
 
   await sendEmail({
     to: env.ADMIN_EMAIL,
-    subject: `دارس — طلب تسجيل جديد: ${name}`,
+    subject: `دارس. طلب تسجيل جديد: ${name}`,
     html,
   });
 
@@ -338,7 +338,7 @@ function formatClassDateTime(date, lang = 'en', timeZone = 'UTC') {
   try {
     return new Intl.DateTimeFormat(locale, { ...opts, timeZone }).format(new Date(date));
   } catch {
-    // Invalid timezone string — retry without it so we still return something.
+    // Invalid timezone string. retry without it so we still return something.
     try {
       return new Intl.DateTimeFormat(locale, opts).format(new Date(date));
     } catch {
@@ -363,11 +363,11 @@ export async function sendClassReminderStudent(student, classSession, label) {
 
   const subjectMap = {
     '30min': lang === 'ar'
-      ? 'دارس — تذكير: حصتك تبدأ خلال ٣٠ دقيقة'
-      : 'Daris — Reminder: your class starts in 30 minutes',
+      ? 'دارس. تذكير: حصتك تبدأ خلال ٣٠ دقيقة'
+      : 'Daris. Reminder: your class starts in 30 minutes',
     '24hr': lang === 'ar'
-      ? 'دارس — تذكير: حصتك غداً'
-      : 'Daris — Reminder: your class is tomorrow',
+      ? 'دارس. تذكير: حصتك غداً'
+      : 'Daris. Reminder: your class is tomorrow',
   };
   const headingMap = {
     '30min': lang === 'ar' ? 'حصتك تبدأ خلال ٣٠ دقيقة' : 'Your class starts in 30 minutes',
@@ -404,7 +404,7 @@ export async function sendClassReminderStudent(student, classSession, label) {
  */
 export async function sendClassReminderAdmin(classSession, studentNames) {
   if (!env.ADMIN_EMAIL) {
-    logger.error('ADMIN_EMAIL not configured — cannot send class reminder to admin', {
+    logger.error('ADMIN_EMAIL not configured. cannot send class reminder to admin', {
       classId: classSession.id,
     });
     return;
@@ -438,7 +438,7 @@ export async function sendClassReminderAdmin(classSession, studentNames) {
 
   await sendEmail({
     to: env.ADMIN_EMAIL,
-    subject: `دارس — تذكير: حصة مع ${students} بعد ٣٠ دقيقة`,
+    subject: `دارس. تذكير: حصة مع ${students} بعد ٣٠ دقيقة`,
     html,
   });
 }
@@ -449,8 +449,8 @@ export async function sendClassReminderAdmin(classSession, studentNames) {
  */
 export async function sendFutureAssignmentsClearedEmail(student, count, lang = 'en') {
   const subject = lang === 'ar'
-    ? 'دارس — تم إلغاء حصصك القادمة'
-    : 'Daris — Your upcoming classes have been cleared';
+    ? 'دارس. تم إلغاء حصصك القادمة'
+    : 'Daris. Your upcoming classes have been cleared';
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ${lang === 'ar' ? 'rtl' : 'ltr'};">
@@ -462,8 +462,8 @@ export async function sendFutureAssignmentsClearedEmail(student, count, lang = '
         ? `تمت إزالتك من ${count} حصة قادمة. إذا كان هذا خطأً أو كنت ترغب في العودة للجدول، يرجى التواصل مع الشيخ.`
         : `You have been removed from ${count} upcoming class${count === 1 ? '' : 'es'}. If this was a mistake or you'd like to return to the schedule, please contact the Sheikh.`}</p>
       <p style="color: #999; font-size: 12px;">${lang === 'ar'
-        ? 'حسابك لا يزال نشطاً — تم تحديث جدول الحصص فقط.'
-        : 'Your account is still active — only your class schedule was updated.'}</p>
+        ? 'حسابك لا يزال نشطاً. تم تحديث جدول الحصص فقط.'
+        : 'Your account is still active. only your class schedule was updated.'}</p>
     </div>
   `;
 

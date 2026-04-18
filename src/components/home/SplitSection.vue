@@ -1,7 +1,7 @@
 <template>
   <section class="relative overflow-hidden" :class="sectionBg">
     <div class="grid md:grid-cols-2 min-h-[520px] md:min-h-[600px]">
-      <!-- Visual half — full bleed -->
+      <!-- Visual half. full bleed -->
       <div
         :class="[
           'relative overflow-hidden',
@@ -14,13 +14,13 @@
           :alt="imageAlt"
           class="absolute inset-0 w-full h-full object-cover"
         />
-        <!-- Solid color fill when no image — no pattern, no clutter -->
+        <!-- Solid color fill when no image. no pattern, no clutter -->
         <div v-else class="absolute inset-0" :class="fillClass" aria-hidden="true"></div>
         <!-- Subtle vignette for depth -->
         <div class="absolute inset-0 bg-gradient-to-t from-black/8 via-transparent to-black/4" aria-hidden="true"></div>
       </div>
 
-      <!-- Text half — generous padding, left-aligned -->
+      <!-- Text half. generous padding, left-aligned -->
       <div
         :class="[
           'flex items-center',
@@ -72,7 +72,7 @@ const sectionBg = computed(() => {
   }
 });
 
-// Solid fills — no pattern overlay, each surface is visually distinct
+// Solid fills. no pattern overlay, each surface is visually distinct
 const fillClass = computed(() => {
   switch (props.surface) {
     case 'warm': return 'bg-primary-800';

@@ -2,7 +2,7 @@
   <div>
     <!-- ═══════════════════════════════════════════
          SECTION 1: Editorial Hero
-         Short, direct — FAQ is a utility page, not a
+         Short, direct. FAQ is a utility page, not a
          brand statement. Same visual register as
          /about so the site reads as one world.
          ═══════════════════════════════════════════ -->
@@ -28,7 +28,7 @@
 
     <!-- ═══════════════════════════════════════════
          SECTION 2: FAQ entries
-         Semantic <details> elements — keyboard-
+         Semantic <details> elements. keyboard-
          friendly, native expand/collapse, indexable
          by crawlers even if closed.
          ═══════════════════════════════════════════ -->
@@ -127,7 +127,7 @@ usePageSeo('faq');
 const { contactEmail } = contactConfig;
 const { whatsAppHref } = useWhatsApp();
 
-// 10 FAQ entries — question/answer i18n key pairs. The same list drives
+// 10 FAQ entries. question/answer i18n key pairs. The same list drives
 // FAQPage schema on both server (seoMeta.js) and client (usePageSeo.js).
 const faqEntries = Array.from({ length: 10 }, (_, i) => ({
   qKey: `faq.q${i + 1}`,

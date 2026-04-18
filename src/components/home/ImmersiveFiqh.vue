@@ -1,10 +1,10 @@
 <template>
-  <!-- FIQH — Grounded & Practical
+  <!-- FIQH. Grounded & Practical
        Upper panel overlay. Image (scholars) breathes at the bottom.
        Bottom-up light. Documentary frame feel.
        Strongest contrast of the three immersive sections. -->
   <section class="relative overflow-hidden min-h-[70vh] md:min-h-[80vh] flex items-start">
-    <!-- Painting — scholars gathered in a mosque courtyard.
+    <!-- Painting. scholars gathered in a mosque courtyard.
          Explicit width/height prevents CLS while `object-cover` handles
          the real layout. Renamed from the raw WhatsApp export so the
          filename carries a useful SEO signal. -->
@@ -19,18 +19,18 @@
         decoding="async"
       />
     </div>
-    <!-- Bottom-up gradient — image is bright at bottom, fades into panel at top -->
+    <!-- Bottom-up gradient. image is bright at bottom, fades into panel at top -->
     <div class="absolute inset-0 bg-gradient-to-t from-black/10 via-black/20 to-black/80" aria-hidden="true"></div>
-    <!-- Grain — heavier, grittier feel -->
+    <!-- Grain. heavier, grittier feel -->
     <div class="absolute inset-0 grain-texture opacity-60" aria-hidden="true"></div>
 
-    <!-- Upper panel — text anchored to the top, image breathes below -->
+    <!-- Upper panel. text anchored to the top, image breathes below -->
     <div class="relative w-full">
       <!-- Soft frosted panel with hard bottom edge for documentary feel -->
       <div class="bg-gradient-to-t from-primary-950/65 via-primary-950/45 to-primary-950/25 backdrop-blur-[2px] border-b border-white/[0.05]">
         <div class="section-wide py-8 md:py-12">
           <div class="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-10 md:gap-16 items-end">
-            <!-- Text — left column of the panel -->
+            <!-- Text. left column of the panel -->
             <div>
               <p
                 class="text-[10px] font-semibold tracking-[0.4em] uppercase text-gold/60 mb-4"
@@ -55,7 +55,7 @@
               </p>
             </div>
 
-            <!-- CTA — right column, vertically aligned to bottom -->
+            <!-- CTA. right column, vertically aligned to bottom -->
             <div class="md:text-right" data-reveal data-reveal-delay="300">
               <a
                 :href="whatsAppHref"

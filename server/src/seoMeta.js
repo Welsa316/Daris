@@ -1,18 +1,18 @@
 /**
  * Server-side SEO meta injection for marketing pages (per locale).
  *
- * Daris serves the same four "pages" under two locale subpaths — /en/* and
- * /ar/* — so crawlers can index each language version as a distinct URL.
+ * Daris serves the same four "pages" under two locale subpaths, /en/* and
+ * /ar/*, so crawlers can index each language version as a distinct URL.
  * For every request to a marketing route, the server injects:
  *   - <title>, <meta name="description">, Open Graph, Twitter Card
  *   - <link rel="canonical"> pointing to the current-locale URL
  *   - <link rel="alternate" hreflang="en|ar|x-default"> mutual pairs
  *   - <script type="application/ld+json"> structured data
  *
- * ...into index.html *before* the SPA hydrates. Crawlers without JS execution
+ * ...into index.html before the SPA hydrates. Crawlers without JS execution
  * (Bingbot, Yandex, legacy tools) still get fully populated metadata.
  *
- * Client-side @unhead/vue re-asserts matching tags after hydration — the two
+ * Client-side @unhead/vue re-asserts matching tags after hydration. The two
  * sources are kept intentionally consistent. Server is the source of truth
  * for the first paint; client keeps them reactive during SPA navigation.
  */
@@ -26,31 +26,31 @@ const pageContent = {
   home: {
     en: {
       title: 'Daris | Online Quran, Arabic & Fiqh Lessons',
-      description: 'Online 1-on-1 Quran, Arabic, and Fiqh lessons in the methodology of Al-Azhar Al-Sharif. Bilingual, patient teaching for students worldwide.',
+      description: 'Online Quran, Arabic, and Fiqh lessons in the methodology of Al-Azhar Al-Sharif. Bilingual teaching for men and children, worldwide.',
     },
     ar: {
       title: 'دارس | دروس القرآن والعربية والفقه عبر الإنترنت',
-      description: 'دروس فردية في القرآن الكريم واللغة العربية والفقه عبر الإنترنت، وفق منهج الأزهر الشريف. للرجال والنساء والأطفال حول العالم.',
+      description: 'دروس في القرآن الكريم واللغة العربية والفقه عبر الإنترنت، وفق منهج الأزهر الشريف. للرجال والأطفال حول العالم.',
     },
   },
   about: {
     en: {
       title: 'About Daris | Al-Azhar Methodology Online',
-      description: 'How Daris teaches — structured, progressive curriculum in Quran, Arabic, and Islamic studies, in the methodology of Al-Azhar Al-Sharif.',
+      description: 'How Daris teaches: structured, progressive curriculum in Quran, Arabic, and Islamic studies, in the methodology of Al-Azhar Al-Sharif.',
     },
     ar: {
       title: 'عن دارس | منهج الأزهر عبر الإنترنت',
-      description: 'كيف يُدرّس دارس — منهج متدرّج في القرآن والعربية والعلوم الشرعية، وفق المنهجية المعتمدة في الأزهر الشريف.',
+      description: 'كيف يُدرّس دارس: منهج متدرّج في القرآن والعربية والعلوم الشرعية، وفق المنهجية المعتمدة في الأزهر الشريف.',
     },
   },
   programs: {
     en: {
-      title: 'Programs | Quran, Arabic & Fiqh Courses — Daris',
-      description: 'Daris programs: Quran recitation and tajwid, classical Arabic for non-native speakers, and Hanafi fiqh. Structured progression at your pace.',
+      title: 'Programs | Quran, Arabic & Fiqh Courses · Daris',
+      description: 'Daris programs: Quran recitation, tajwid, and tafsir; classical Arabic for non-native speakers; and Hanafi fiqh, taught in Arabic.',
     },
     ar: {
-      title: 'البرامج | دروس القرآن والعربية والفقه — دارس',
-      description: 'برامج دارس: تلاوة القرآن وأحكام التجويد، واللغة العربية الفصحى لغير الناطقين بها، والفقه الحنفي. تدرّج منظم حسب وتيرتك.',
+      title: 'البرامج | دروس القرآن والعربية والفقه · دارس',
+      description: 'برامج دارس: القرآن تلاوةً وتجويداً وتفسيراً؛ العربية الفصحى لغير الناطقين بها؛ والفقه الحنفي باللغة العربية.',
     },
   },
   contact: {
@@ -66,136 +66,136 @@ const pageContent = {
   faq: {
     en: {
       title: 'FAQ | Online Quran, Arabic & Fiqh with Daris',
-      description: 'Answers to the most common questions about Daris — lesson format, ijazah, children\u2019s programs, languages, timezones, and how to start.',
+      description: 'Answers to the most common questions about Daris. Lesson format, ijazah, children\u2019s programs, languages, timezones, and how to start.',
     },
     ar: {
       title: 'الأسئلة الشائعة | دارس لدروس القرآن والعربية والفقه',
-      description: 'أجوبة على أكثر الأسئلة تكراراً عن دارس — صيغة الدرس، الإجازة، برامج الأطفال، اللغات، المناطق الزمنية، وكيفية البدء.',
+      description: 'أجوبة على أكثر الأسئلة تكراراً عن دارس: صيغة الدرس، الإجازة، برامج الأطفال، اللغات، المناطق الزمنية، وكيفية البدء.',
     },
   },
   articles: {
     en: {
-      title: 'Articles | Online Quran, Arabic & Fiqh Studies — Daris',
-      description: 'Long-form articles on learning Quran, Arabic, and fiqh online — methodology, ijazah, classical Arabic, Hanafi tradition, and choosing a teacher.',
+      title: 'Articles | Online Quran, Arabic & Fiqh Studies · Daris',
+      description: 'Long-form articles on learning Quran, Arabic, and fiqh online. Methodology, ijazah, classical Arabic, Hanafi tradition, and choosing a teacher.',
     },
     ar: {
-      title: 'المقالات | دراسة القرآن والعربية والفقه عبر الإنترنت — دارس',
-      description: 'مقالات مطوّلة عن الدراسة الإسلامية عبر الإنترنت — المنهجية، والإجازة، والعربية الفصحى، والمذهب الحنفي، واختيار المعلّم.',
+      title: 'المقالات | دراسة القرآن والعربية والفقه عبر الإنترنت · دارس',
+      description: 'مقالات مطوّلة عن الدراسة الإسلامية عبر الإنترنت: المنهجية، والإجازة، والعربية الفصحى، والمذهب الحنفي، واختيار المعلّم.',
     },
   },
 };
 
 // Per-article metadata. The same slugs live in src/content/articles/registry.js
 // (which adds lazy component imports for the Vue runtime). Keep these two
-// lists in sync — if an article is added or renamed, update both files.
+// lists in sync. If an article is added or renamed, update both files.
 // Articles are currently English-only; Arabic translations are a planned
 // follow-up and AR article URLs redirect to EN at the router level.
 const articleMeta = {
   'complete-guide-online-quran-learning': {
-    title: 'The complete guide to online Quran learning — Daris',
-    description: 'A practical guide to learning Quran online with a qualified teacher — tajwid, memorisation, ijazah pathways, and what to evaluate before enrolling.',
+    title: 'The complete guide to online Quran learning · Daris',
+    description: 'A practical guide to learning Quran online with a qualified teacher. Tajwid, memorisation, ijazah, and what to evaluate before enrolling.',
     date: '2026-04-17',
     tag: 'Quran',
   },
   'what-is-ijazah-and-how-to-earn-it-online': {
-    title: 'What is ijazah, and how do you earn one online? — Daris',
-    description: 'Ijazah explained — what the certification actually means in Islamic scholarship, and the realistic path to earning one through online Quran study.',
+    title: 'What is ijazah, and how do you earn one online? · Daris',
+    description: 'Ijazah explained. What the certification actually means in Islamic scholarship, and the realistic path to earning one through online Quran study.',
     date: '2026-04-17',
     tag: 'Quran',
   },
   'how-to-choose-online-quran-teacher': {
-    title: 'How to choose an online Quran teacher (seven honest checks) — Daris',
-    description: 'A checklist for evaluating online Quran teachers — methodology, credentials, curriculum structure, lesson format, and the questions to ask before the first trial.',
+    title: 'How to choose an online Quran teacher (seven honest checks) · Daris',
+    description: 'A checklist for evaluating online Quran teachers. Methodology, credentials, curriculum structure, lesson format, and the questions to ask first.',
     date: '2026-04-17',
     tag: 'Quran',
   },
   'online-quran-classes-uk-muslims': {
-    title: 'Online Quran classes for UK Muslims: a practical guide — Daris',
-    description: 'Guidance for UK-based Muslims considering online Quran lessons — GMT-friendly scheduling, finding a qualified teacher, fitting consistent study around work and family.',
+    title: 'Online Quran classes for UK Muslims: a practical guide · Daris',
+    description: 'Guidance for UK-based Muslims considering online Quran lessons. GMT scheduling, finding a qualified teacher, fitting study around work and family.',
     date: '2026-04-17',
     tag: 'Guides',
   },
   'quranic-arabic-vs-modern-arabic': {
-    title: 'Quranic Arabic vs. Modern Standard Arabic — Daris',
+    title: 'Quranic Arabic vs. Modern Standard Arabic · Daris',
     description: 'The difference between Quranic Arabic and Modern Standard Arabic, what each is good for, and how to choose a course that fits your actual goal.',
     date: '2026-04-17',
     tag: 'Arabic',
   },
   'arabic-tutoring-for-non-native-speakers': {
-    title: 'Arabic tutoring for non-native speakers — Daris',
-    description: 'A realistic guide to learning Arabic as a non-native speaker — the progression that works, the resources worth buying, and where live tutoring fits in.',
+    title: 'Arabic tutoring for non-native speakers · Daris',
+    description: 'A realistic guide to learning Arabic as a non-native speaker. The progression that works, the resources worth buying, and where tutoring fits.',
     date: '2026-04-17',
     tag: 'Arabic',
   },
   'hanafi-fiqh-online-for-adults': {
-    title: 'Hanafi fiqh online for adults — Daris',
-    description: 'How Hanafi fiqh is taught online to adult learners — recognised manuals, traditional sequence, aqeedah and hadith alongside, and the role of live teaching.',
+    title: 'Hanafi fiqh online for adults · Daris',
+    description: 'How Hanafi fiqh is taught online to adult learners. Recognised manuals, traditional sequence, aqeedah and hadith alongside, and the role of live teaching.',
     date: '2026-04-17',
     tag: 'Fiqh',
   },
   'private-islamic-tutor-what-to-expect': {
-    title: 'Hiring a private Islamic tutor online: the first month — Daris',
-    description: 'What actually happens in the first month with a private online Islamic tutor — goal-setting, assessment, first lessons, and how to tell it is working.',
+    title: 'Hiring an online Islamic tutor: what to expect in the first month · Daris',
+    description: 'What actually happens in the first month with an online Islamic tutor. Goal-setting, assessment, first lessons, and how to tell it is working.',
     date: '2026-04-17',
     tag: 'Guides',
   },
 };
 
 // 10 FAQ entries per locale. The same ten questions are rendered on the
-// page and serialised into FAQPage schema below — keeping one source of
-// truth means answers cannot drift between the visible page and the
-// crawler-facing JSON-LD.
+// page and serialised into FAQPage schema below. One source of truth means
+// answers cannot drift between the visible page and the crawler-facing
+// JSON-LD. Keep in sync with the faq block of src/i18n/locales/{en,ar}.json.
 const faqEntries = {
   en: [
     {
       q: 'What does a Daris lesson look like?',
-      a: 'A Daris lesson is one-on-one, live, and scheduled in your timezone. For Quran students that means reciting aloud for the instructor, receiving correction on tajwid and articulation in real time, and working through a structured plan. Arabic students work through grammar and reading with the same live correction. Fiqh students engage with a recognised Hanafi manual section-by-section, in Arabic, with English support where needed.',
+      a: 'It depends on the subject. Quran students read aloud and the teacher corrects tajwid and articulation as it happens, working through a structured plan. Arabic runs the same way: grammar and reading with live correction. Fiqh is usually taught in a small group, in Arabic, using a recognised Hanafi manual. Every lesson is live and scheduled in the student\u2019s timezone.',
     },
     {
       q: 'How is Daris different from a Quran app or YouTube channel?',
-      a: 'Apps drill vocabulary; channels broadcast recitation. Neither replaces the part of Islamic study that has always required a teacher — someone who hears you read, catches the mistake you cannot hear yourself, explains what a classical text actually means, and adjusts your curriculum based on what you are struggling with this week. That is what Daris is built around.',
+      a: 'Apps drill vocabulary. Channels broadcast recitation. Neither replaces the part of Islamic study that has always needed a teacher: someone who hears you read, catches the mistake you can\u2019t hear yourself, explains what a classical text actually means, and adjusts your curriculum based on what you\u2019re struggling with this week. That\u2019s what Daris is built around.',
     },
     {
       q: 'Do you teach beginners, or only advanced students?',
-      a: 'Both. The platform is used by absolute beginners working on the correct articulation of Arabic letters and by advanced students polishing recitation toward ijazah-level standards. The order and depth of material adapts to the student; the structure does not change.',
+      a: 'Both. Absolute beginners working on the correct articulation of Arabic letters are welcome, and so are advanced students polishing recitation at a serious level. Order and depth adapt to the student. The structure doesn\u2019t change.',
     },
     {
       q: 'Do you teach children?',
-      a: 'Yes. Children have their own curriculum path — shorter lessons, age-appropriate texts (stories of the prophets, the Prophetic seerah, the 40 Hadith of an-Nawawi), and a pace that respects attention span without lowering the standard of what is being learned.',
+      a: 'Yes. Children have their own curriculum path: shorter lessons, age-appropriate material (stories of the prophets, the Prophetic seerah, the 40 Hadith of an-Nawawi), and a pace that respects attention span without dropping the standard of what\u2019s being learned.',
     },
     {
-      q: 'What is ijazah, and does Daris support students pursuing one?',
-      a: 'An ijazah is a traditional certification from a qualified teacher that the student has recited the Quran (or read a specific text) with correct tajwid and without omissions or additions. It carries a sanad — a chain of transmission traceable through teachers over centuries. The Daris Quran program is structured to support students working toward ijazah-level recitation; the specific certification path is discussed during enrollment once the student\u2019s current level is assessed.',
+      q: 'What is ijazah?',
+      a: 'An ijazah is a traditional certification from a qualified teacher that the student has recited the Quran (or read a specific text) with correct tajwid and without omissions or additions. It carries a sanad, a chain of transmission traceable through teachers over centuries. The Daris Quran track is built on the traditional sequence that leads in that direction. Whether a specific ijazah path is right for a given student is a conversation to have once the teacher has assessed their level.',
     },
     {
       q: 'Is the instruction in English or Arabic?',
-      a: 'Arabic is the language of the text and of recitation; instruction uses Arabic where the tradition requires it. English support is available from the Daris team for scheduling, general communication, and clarification during lessons. Fiqh and aqeedah are taught in Arabic.',
+      a: 'Quran and tajwid are available in English and Arabic. Fiqh and aqeedah are taught in Arabic only, which is how the tradition keeps its texts accurate. Arabic lessons are conducted in Arabic with English support where it helps, especially early on. General communication and scheduling can happen in either language.',
     },
     {
       q: 'Which timezones does Daris support?',
-      a: 'Any. Lessons are scheduled in the student\u2019s local time. The student chooses a slot during the week that fits their schedule and the lesson runs in that slot permanently unless both sides agree to move it.',
+      a: 'Any. Lessons are scheduled in the student\u2019s local time. The student picks a weekly slot that fits their schedule, and that slot stays the slot unless both sides agree to move it.',
     },
     {
       q: 'What do I need to attend a lesson?',
-      a: 'A reliable internet connection and a device with a microphone. Video is strongly preferred so the instructor can see the student\u2019s mouth position for tajwid correction. No special software to install — lessons run over widely available video-call tools.',
+      a: 'A reliable internet connection and a device with a microphone. Video is strongly preferred so the teacher can see the student\u2019s mouth position for tajwid correction. Nothing special to install. Lessons run over widely available video-call tools.',
     },
     {
       q: 'Can I combine multiple programs?',
-      a: 'Yes. Many students take Quran alongside Arabic, or Arabic alongside fiqh. The weekly schedule is built from the student\u2019s goals — one program, two, or all three — rather than packaged tiers.',
+      a: 'Yes. Many students take Quran alongside Arabic, or Arabic alongside fiqh. The weekly schedule is built from the student\u2019s goals: one program, two, or all three. No packaged tiers to fit into.',
     },
     {
       q: 'How do I get started?',
-      a: 'Message Daris via WhatsApp or email with your goals, current level, how many lessons per week you are aiming for, and your timezone. A short assessment — a recitation check, a reading check, or a conversation in Arabic — sets the entry point. Lessons begin once an appropriate plan is agreed.',
+      a: 'Message Daris via WhatsApp or email with your goals, current level, how many lessons a week you\u2019d like, and your timezone. A short assessment sets the entry point. Lessons begin once a plan is agreed.',
     },
   ],
   ar: [
     {
       q: 'كيف يسير درس دارس؟',
-      a: 'درس دارس فردي ومباشر ومُجدوَل حسب منطقتك الزمنية. لطلاب القرآن، هذا يعني التلاوة أمام المعلّم، وتلقّي التصحيح في التجويد ومخارج الحروف لحظياً، والسير على خطة منظمة. طلاب العربية يدرسون النحو والقراءة بالتصحيح المباشر نفسه. طلاب الفقه يعاملون كتاباً حنفياً معتمداً فصلاً فصلاً بالعربية، مع دعم بالإنجليزية عند الحاجة.',
+      a: 'يعتمد على المادة. في القرآن: يقرأ الطالب بصوته، والمعلّم يصحّح التجويد ومخارج الحروف لحظياً، وفق خطة منظّمة. في العربية: نحو وقراءة بالتصحيح المباشر نفسه. في الفقه: عادةً في مجموعة صغيرة، باللغة العربية، وفق كتاب حنفي معتمد. كل درس مباشر ومُجدوَل حسب المنطقة الزمنية للطالب.',
     },
     {
       q: 'ما الفرق بين دارس وتطبيق القرآن أو قناة يوتيوب؟',
-      a: 'التطبيقات تدرّب على المفردات، والقنوات تبث التلاوة. وكلاهما لا يحلّ محلّ الجزء من التعليم الإسلامي الذي تطلّب دائماً معلّماً — شخصاً يسمع قراءتك ويلتقط الخطأ الذي لا تسمعه بنفسك، ويشرح معنى النصّ الكلاسيكي، ويُعدّل منهجك حسب ما تعثر فيه هذا الأسبوع. هذا ما بُني عليه دارس.',
+      a: 'التطبيقات تدرّب على المفردات. القنوات تبثّ التلاوة. وكلاهما لا يحلّ محلّ الجزء من التعليم الإسلامي الذي تطلّب دائماً معلّماً يسمع قراءتك، ويلتقط الخطأ الذي لا تسمعه بنفسك، ويشرح النصّ الكلاسيكي شرحاً حقيقياً، ويُعدّل منهجك حسب ما تعثر فيه هذا الأسبوع. هذا ما بُني عليه دارس.',
     },
     {
       q: 'هل تعلّمون المبتدئين، أم المتقدّمين فقط؟',
@@ -203,15 +203,15 @@ const faqEntries = {
     },
     {
       q: 'هل تدرّسون الأطفال؟',
-      a: 'نعم. للأطفال مسار خاص — دروس أقصر، ونصوص مناسبة للعمر (قصص الأنبياء، السيرة النبوية، الأربعين النووية)، ووتيرة تحترم قدرة الانتباه من غير أن تنزل بمعيار ما يُتعلَّم.',
+      a: 'نعم. للأطفال مسار خاص: دروس أقصر، ونصوص مناسبة للعمر (قصص الأنبياء، السيرة النبوية، الأربعين النووية)، ووتيرة تحترم قدرة الانتباه من غير أن تنزل بمعيار ما يُتعلَّم.',
     },
     {
-      q: 'ما الإجازة؟ وهل يدعم دارس الطلاب الراغبين فيها؟',
-      a: 'الإجازة شهادة تقليدية من معلّم مؤهَّل بأن الطالب قرأ القرآن (أو نصّاً بعينه) بتجويد صحيح من دون إسقاط ولا زيادة. ويحمل هذا سنداً متّصلاً بسلسلة المعلّمين عبر القرون. برنامج دارس القرآني مُصمَّم ليدعم السير نحو التلاوة بمستوى الإجازة؛ ومسار الشهادة تحديداً يُناقَش عند التسجيل بعد تقييم مستوى الطالب.',
+      q: 'ما الإجازة؟',
+      a: 'الإجازة شهادة تقليدية من معلّم مؤهَّل بأن الطالب قرأ القرآن (أو نصّاً بعينه) بتجويد صحيح من دون إسقاط ولا زيادة. ويحمل سنداً متّصلاً بسلسلة المعلّمين عبر القرون. مسار القرآن في دارس مبنيّ على التسلسل التقليدي الذي يسير في هذا الاتجاه. أمّا مناسبة مسار إجازة بعينه لطالب بعينه فتُناقَش بعد أن يقيّم المعلّم مستواه.',
     },
     {
       q: 'هل التدريس بالعربية أم بالإنجليزية؟',
-      a: 'العربية لغة النصّ والتلاوة؛ والتدريس يكون بالعربية حيث يقتضي المقام. الدعم بالإنجليزية متاح عبر فريق دارس للجدولة، والتواصل العام، والتوضيح أثناء الدرس. الفقه والعقيدة يُدرَّسان بالعربية.',
+      a: 'القرآن والتجويد متاحان بالإنجليزية والعربية. الفقه والعقيدة بالعربية فقط، وذلك حفاظاً على دقة النصوص الأصلية. العربية تُدرَّس بالعربية مع دعم بالإنجليزية حين يساعد، خاصة في البدايات. أمّا التواصل العام والجدولة فيمكن أن يكون بأيّ من اللغتين.',
     },
     {
       q: 'ما المناطق الزمنية التي يدعمها دارس؟',
@@ -219,15 +219,15 @@ const faqEntries = {
     },
     {
       q: 'ما الذي أحتاجه لحضور الدرس؟',
-      a: 'اتصال إنترنت موثوق وجهاز يحتوي على ميكروفون. الفيديو مفضّل بشدّة حتى يرى المعلّم وضع الفم للتصحيح في التجويد. لا برامج خاصة تُحمَّل — الدروس تجري عبر أدوات فيديو معروفة.',
+      a: 'اتصال إنترنت موثوق وجهاز يحتوي على ميكروفون. الفيديو مفضّل بشدّة حتى يرى المعلّم وضع الفم للتصحيح في التجويد. لا برامج خاصة تُحمَّل. الدروس تجري عبر أدوات فيديو معروفة.',
     },
     {
       q: 'هل يمكن الجمع بين أكثر من برنامج؟',
-      a: 'نعم. كثير من الطلاب يجمعون القرآن مع العربية، أو العربية مع الفقه. الجدول الأسبوعي يُبنى من أهداف الطالب — برنامج واحد أو اثنان أو الثلاثة — لا من باقات جاهزة.',
+      a: 'نعم. كثير من الطلاب يجمعون القرآن مع العربية، أو العربية مع الفقه. الجدول الأسبوعي يُبنى من أهداف الطالب، برنامجاً واحداً أو اثنين أو الثلاثة، لا من باقات جاهزة.',
     },
     {
       q: 'كيف أبدأ؟',
-      a: 'راسل دارس عبر واتساب أو البريد الإلكتروني بأهدافك ومستواك الحالي وعدد الدروس الأسبوعية التي تستهدفها ومنطقتك الزمنية. تقييم قصير — اختبار تلاوة أو قراءة أو محادثة بالعربية — يحدّد نقطة الانطلاق. الدروس تبدأ بعد الاتفاق على خطة مناسبة.',
+      a: 'راسل دارس عبر واتساب أو البريد الإلكتروني بأهدافك ومستواك الحالي وعدد الدروس الأسبوعية التي تستهدفها ومنطقتك الزمنية. تقييم قصير يحدّد نقطة الانطلاق. الدروس تبدأ بعد الاتفاق على خطة مناسبة.',
     },
   ],
 };
@@ -396,7 +396,7 @@ function schemaFor(page, locale) {
             '@type': 'ListItem',
             position: i + 1,
             url: `${SITE_URL}/en/articles/${slug}`,
-            name: meta.title.replace(' — Daris', ''),
+            name: meta.title.replace(' · Daris', ''),
           })),
         },
       },
@@ -418,7 +418,7 @@ function articleSchema(slug) {
     {
       '@context': 'https://schema.org',
       '@type': 'Article',
-      headline: meta.title.replace(' — Daris', ''),
+      headline: meta.title.replace(' · Daris', ''),
       description: meta.description,
       inLanguage: 'en',
       datePublished: meta.date,
@@ -478,7 +478,7 @@ export function resolveRoute(routePath) {
 /**
  * Build the meta HTML string to inject into <head> for a given route.
  * Returns null if the route isn't a known marketing page (auth/dashboard
- * get no injection — the SPA fallback serves default HTML).
+ * get no injection; the SPA fallback serves default HTML).
  */
 export function buildMetaHtml(routePath) {
   const resolved = resolveRoute(routePath);
@@ -532,7 +532,7 @@ export function buildMetaHtml(routePath) {
   const ogLocale = locale === 'ar' ? 'ar_SA' : 'en_US';
   const ogLocaleAlt = locale === 'ar' ? 'en_US' : 'ar_SA';
 
-  // Conservative escape — titles/descriptions are authored strings in this
+  // Conservative escape. Titles/descriptions are authored strings in this
   // file (not user input), but double quotes would still break the HTML.
   const esc = (s) => String(s).replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
@@ -572,6 +572,6 @@ export function buildMetaHtml(routePath) {
  */
 export function pickLocaleFromHeader(acceptLanguage) {
   if (!acceptLanguage) return 'en';
-  // "ar" or "ar-EG" or "en, ar;q=0.8" — look for an ar tag at any position.
+  // "ar" or "ar-EG" or "en, ar;q=0.8": look for an ar tag at any position.
   return /\bar\b/i.test(acceptLanguage) ? 'ar' : 'en';
 }

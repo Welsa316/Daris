@@ -131,7 +131,7 @@ router.get('/dashboard', requireEnrolled, async (req, res, next) => {
     });
 
     // We used to embed the meeting URL in this response during the 15-min
-    // window. That's a leak — anyone with network-tab access could grab
+    // window. That's a leak. anyone with network-tab access could grab
     // the URL and reconnect outside class hours. Instead, return only a
     // `canJoin` flag and make the student hit /api/meeting/:id/link to
     // actually retrieve the URL; that endpoint enforces the window server-
@@ -287,7 +287,7 @@ router.get('/schedule', requireEnrolled, async (req, res, next) => {
 /**
  * Student-visible lesson reports. Only returns rows the sheikh explicitly
  * published (visibility='student'). adminNotes is stripped from the
- * response regardless of visibility — it's never shared.
+ * response regardless of visibility. it's never shared.
  */
 router.get('/lesson-reports', requireEnrolled, async (req, res, next) => {
   try {

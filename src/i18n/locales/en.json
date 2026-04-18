@@ -6,10 +6,10 @@
     },
     "about": {
       "title": "About Daris | Al-Azhar Methodology Online",
-      "description": "How Daris teaches — structured, progressive online instruction in Quran, Arabic, and fiqh, in the methodology of Al-Azhar Al-Sharif."
+      "description": "How Daris teaches: structured, progressive online instruction in Quran, Arabic, and fiqh, in the methodology of Al-Azhar Al-Sharif."
     },
     "programs": {
-      "title": "Programs | Quran, Arabic & Fiqh Courses — Daris",
+      "title": "Programs | Quran, Arabic & Fiqh Courses · Daris",
       "description": "Explore our structured programs in Quran recitation and tajwid, classical Arabic language, and Hanafi fiqh. Group and individual sessions available."
     },
     "contact": {
@@ -18,11 +18,11 @@
     },
     "faq": {
       "title": "FAQ | Online Quran, Arabic & Fiqh with Daris",
-      "description": "Answers to the most common questions about Daris — lesson format, ijazah, children's programs, languages, timezones, and how to start."
+      "description": "Answers to the most common questions about Daris. Lesson format, ijazah, children's programs, languages, timezones, and how to start."
     },
     "articles": {
-      "title": "Articles | Online Quran, Arabic & Fiqh Studies — Daris",
-      "description": "Long-form articles on learning Quran, Arabic, and fiqh online — methodology, ijazah, classical Arabic, Hanafi tradition, and choosing a teacher."
+      "title": "Articles | Online Quran, Arabic & Fiqh Studies · Daris",
+      "description": "Long-form articles on learning Quran, Arabic, and fiqh online. Methodology, ijazah, classical Arabic, Hanafi tradition, and choosing a teacher."
     }
   },
   "nav": {
@@ -44,7 +44,7 @@
     "titleHighlight": "Quran, Arabic & Fiqh",
     "titleRest": "guidance for serious learners.",
     "subtitle": "Online lessons with an Al-Azhar-trained Sheikh. Personalised, patient, and available worldwide.",
-    "description": "An educational platform offering a structured, progressive curriculum in Quran, Arabic language, and Islamic studies, following the methodology of Al-Azhar Al-Sharif, for men, women, and children, in Arabic and English.",
+    "description": "An educational platform offering a structured, progressive curriculum in Quran, Arabic, and Islamic studies, following the methodology of Al-Azhar Al-Sharif. For men and children, in Arabic and English.",
     "ctaWhatsApp": "Contact on WhatsApp",
     "ctaPrograms": "View programs",
     "cardTitle": "How to begin",
@@ -73,7 +73,7 @@
     "quranTitle": "Quran",
     "quranDesc": "Tajwid, tafsir, recitation, and memorisation with live correction.",
     "arabicTitle": "Arabic",
-    "arabicDesc": "Arabic for non-native speakers — reading, grammar, and classical texts.",
+    "arabicDesc": "Arabic for non-native speakers. Reading, grammar, and classical texts.",
     "fiqhTitle": "Fiqh & Aqeedah",
     "fiqhDesc": "Hanafi fiqh, aqeedah, prophets, and the 40 Nawawi hadiths.",
 
@@ -87,7 +87,7 @@
     "splitArabicHeadline2": "Revelation",
     "splitArabicTitle": "Read and understand classical Arabic",
     "splitArabicBody": "Core grammar, vocabulary, and guided reading practice with classical texts. Build real confidence with the language of the Quran.",
-    "splitArabicQuote": "The Arabic language is the finest of tongues, and learning it is part of the religion — for it is the instrument of knowledge and the key to understanding the faith.",
+    "splitArabicQuote": "The Arabic language is the finest of tongues, and learning it is part of the religion, for it is the instrument of knowledge and the key to understanding the faith.",
     "splitArabicAttribution": "Al-Tha'alibi",
     "quranVerseRef": "Surah Ash-Shu'ara, 26:195",
     "quranVerseTranslation": "In a clear Arabic tongue",
@@ -96,7 +96,7 @@
 
     "splitFiqhEyebrow": "Fiqh · Aqeedah · Hadith",
     "splitFiqhTitle": "Apply Islamic knowledge to daily life",
-    "splitFiqhBody": "Hanafi fiqh, aqeedah, the stories of the prophets, and the 40 Nawawi hadiths. Group or individual sessions, taught in Arabic.",
+    "splitFiqhBody": "Hanafi fiqh, aqeedah, the stories of the prophets, and the 40 Nawawi hadiths. Taught in Arabic, usually in a group.",
     "splitFiqhPlaceholder": "Add Fiqh study image",
 
     "credibilityTitle": "Why Daris?",
@@ -104,14 +104,14 @@
     "azharTitle": "Graduate of Al-Azhar University, Cairo",
     "azharBody": "Formal training from one of the world's oldest and most respected institutions of Islamic scholarship.",
 
-    "stat1Value": "13+",
-    "stat1Label": "Years of teaching",
-    "stat2Value": "500+",
-    "stat2Label": "Students taught",
-    "stat3Value": "30+",
-    "stat3Label": "Countries reached",
-    "stat4Value": "24/7",
-    "stat4Label": "Timezone flexibility",
+    "stat1Value": "12+",
+    "stat1Label": "Years teaching",
+    "stat2Value": "Al-Azhar",
+    "stat2Label": "Cairo graduate",
+    "stat3Value": "Hanafi",
+    "stat3Label": "Fiqh lineage",
+    "stat4Value": "EN · AR",
+    "stat4Label": "Bilingual",
 
     "countriesLabel": "Our students come from",
     "countriesList": "Egypt, Poland, Uzbekistan, Pakistan, Saudi Arabia, Qatar, Netherlands, England, USA",
@@ -134,29 +134,29 @@
   "about": {
     "eyebrow": "About",
     "title": "About Daris",
-    "description": "Structured, progressive online Islamic education — in the methodology of Al-Azhar Al-Sharif.",
+    "description": "Structured, progressive online Islamic education, in the methodology of Al-Azhar Al-Sharif.",
 
-    "story1": "Daris is an online Islamic-education platform built around one idea: serious students deserve serious teaching, wherever they live.",
-    "story2": "The world has plenty of apps that drill Arabic flashcards and channels that recite the Quran. What's harder to find is what traditional Islamic study has always required — a qualified teacher who hears you recite, corrects what's wrong, explains what's unclear, and walks you through a structured progression. Daris exists to provide that, online, for students who take their learning seriously.",
-    "story3": "The methodology follows Al-Azhar Al-Sharif — the institution in Cairo whose curriculum still sets the standard for classical Islamic scholarship. That means tajwid before memorisation, grammar before reading, and fiqh grounded in one of the four madhahib (Daris teaches the Hanafi tradition) rather than loose opinion.",
-    "story4": "Lessons are one-on-one, live, and paced around the student. A beginner starting with letter articulation and an advanced student polishing ijazah-level recitation use the same platform but follow very different plans. The order and depth of material adapts to each student — not because it's a marketing claim, but because that's how serious Islamic instruction has always worked.",
-    "story5": "Three programs cover most of what students come looking for: Quran (tajwid, tafsir, recitation, memorisation), classical Arabic for non-native speakers, and fiqh and aqeedah in Arabic following the Hanafi tradition. Daris serves students in more than thirty countries; lessons are scheduled in the student's timezone, and English support is available for students whose Arabic is still developing.",
+    "story1": "Daris is an online platform for students who want serious Islamic study. Quran, Arabic, and fiqh, taught the Al-Azhar way.",
+    "story2": "There are plenty of Arabic flashcard apps and Quran recitation channels online. What's harder to find is the thing traditional Islamic study has always needed: a qualified teacher who listens to you read, catches the mistakes you can't hear yourself make, and walks you through real material in the right order. That's what Daris is, online.",
+    "story3": "The methodology follows Al-Azhar Al-Sharif, the institution in Cairo whose curriculum still sets the standard for classical Islamic scholarship. Tajwid before memorisation. Grammar before reading. Hanafi fiqh grounded in recognised texts rather than loose opinion.",
+    "story4": "Lessons are live. Quran and Arabic are usually close, corrective teaching where the teacher hears every recitation or reading as it happens. Fiqh is usually taught in a group, which fits the nature of the material. A beginner working on letter articulation and an advanced student polishing recitation use the same platform but follow very different plans.",
+    "story5": "Three programs cover most of what students come looking for. Quran, with tajwid, tafsir, recitation, and memorisation, taught in English or Arabic. Classical Arabic for non-native speakers. Fiqh and aqeedah taught in Arabic, on the Hanafi madhhab, including the stories of the prophets and the 40 Hadith of an-Nawawi. Lessons are scheduled in the student's timezone, and English support is available when Arabic alone would slow the student down.",
 
     "methodologyTitle": "How we teach",
-    "methodologyIntro": "Every Daris lesson is shaped by the same small set of principles. They are not optional extras — they are the reason the work produces lasting understanding instead of surface progress.",
+    "methodologyIntro": "Every Daris lesson runs on the same small set of principles. They're not optional extras. They're the reason the work produces real understanding instead of surface progress.",
     "method1Title": "Structured progression",
-    "method1Body": "Every program follows a documented sequence. A student starting Quran begins with letter articulation (makhārij al-ḥurūf), progresses through the rules of tajwid, and only then builds toward extended memorisation. No skipping steps.",
+    "method1Body": "Every program follows a documented sequence. A student starting Quran begins with letter articulation (makhārij al-ḥurūf), works through the rules of tajwid in order, and only then builds toward extended memorisation. No skipping steps.",
     "method2Title": "Live correction",
-    "method2Body": "A teacher hears the student recite, in real time, in every lesson. Mistakes are caught the day they are made — not after weeks of embedded repetition that have to be undone.",
+    "method2Body": "A teacher listens in real time. Mistakes get caught the same day they happen, before weeks of repetition embed them.",
     "method3Title": "Classical sources",
-    "method3Body": "Arabic grammar is taught from traditional naḥw texts. Fiqh follows recognised Hanafi manuals. Students are told what they are reading and why — every curriculum choice has a traceable source.",
-    "method4Title": "One-on-one pacing",
-    "method4Body": "Lessons move at the student's pace. A beginner is not pushed ahead, an advanced student is not held back. Curriculum depth adapts without changing standards.",
+    "method3Body": "Arabic grammar is taught from traditional naḥw texts. Fiqh follows recognised Hanafi manuals. Students know what they're reading and why. Every curriculum choice has a source you can point to.",
+    "method4Title": "Pace fits the student",
+    "method4Body": "Lessons move at the student's pace. A beginner isn't pushed ahead, and an advanced student isn't held back. Depth adapts without dropping the standard.",
     "method5Title": "Bilingual support",
-    "method5Body": "Instruction happens in Arabic where the tradition requires it; English explanation is available alongside for students whose Arabic is still developing.",
+    "method5Body": "Instruction happens in Arabic when the material needs it (Fiqh and aqeedah always). English support is available for students whose Arabic is still developing, and for Quran or Arabic lessons where it helps.",
 
     "philosophyTitle": "Teaching philosophy",
-    "philosophyText": "Knowledge connected with practice. A realistic pace that fits the week you actually have — not the idealised one.",
+    "philosophyText": "Knowledge connected with practice. A pace that fits the week you actually have, not the one you wish you had.",
     "langTitle": "Languages & support",
     "langText": "Arabic for text and recitation. English support available through the Daris team. Students welcome from any country.",
 
@@ -170,9 +170,9 @@
     "credArabicLabel": "Arabic instruction:",
     "credArabicVal": "Grammar-first, classical-text progression",
     "credStudentsLabel": "Students served:",
-    "credStudentsVal": "Adults and children, 30+ countries",
+    "credStudentsVal": "Men and children, beginners to advanced",
     "credFormatLabel": "Format:",
-    "credFormatVal": "1-on-1, online, timezone-flexible",
+    "credFormatVal": "Online, timezone-flexible, group or individual",
 
     "ctaTitle": "Interested in studying with Daris?",
     "ctaText": "Share your goals and timezone and we'll guide you from there.",
@@ -204,9 +204,9 @@
     "fiqhNote": "Taught in Arabic. Structured lessons with recognised texts.",
 
     "syllabusLabel": "Course progression",
-    "quranSyllabus": "Absolute beginners start with makhārij al-ḥurūf — the correct articulation of each Arabic letter — before touching a single verse. Once articulation is reliable, the tajwid rules follow in traditional sequence: noon and meem sakin, madd, qalqala, the rules of ra and lam, and wakf. Recitation is paced against each student's current level; memorisation, when part of the plan, is built on top of secure tajwid rather than alongside it. Advanced students work on polishing toward ijazah-level standards and, when they ask, on tafsir paired with verses being memorised.",
-    "arabicSyllabus": "The Arabic program is built for non-native speakers — particularly those who want to engage with the Quran and classical texts rather than hold a modern conversation. The sequence is grammar-first: letter and word forms, then the basics of iʿrāb, then verb patterns, then sentence structure. Vocabulary is pulled from the Quran and recognised classical readers rather than contemporary lists. Once the foundation is set, students begin guided reading of short classical passages with live correction, then progress to more substantial texts at a pace that keeps accuracy ahead of breadth.",
-    "fiqhSyllabus": "For adults, the fiqh track follows recognised Hanafi manuals section-by-section — purity, prayer, fasting, zakat, hajj, and related topics, with aqeedah alongside and hadith work (including mustalah al-hadith) layered in as the student progresses. For children the path is different in texture but not in seriousness: stories of the prophets and the Prophetic seerah build the narrative foundation, the 40 Hadith of an-Nawawi builds memorised reference points, and an age-appropriate introduction to fiqh sits alongside. Fiqh teaching happens in Arabic.",
+    "quranSyllabus": "Absolute beginners start with makhārij al-ḥurūf, the correct articulation of each Arabic letter, before touching a single verse. Once articulation is reliable, the tajwid rules follow in traditional order: noon and meem sakin, madd, qalqala, the rules of ra and lam, and wakf. Recitation is paced against the student's current level. Memorisation, when it's part of the plan, is built on top of secure tajwid rather than alongside it. Quran study is available in both English and Arabic.",
+    "arabicSyllabus": "The Arabic program is built for non-native speakers, particularly those who want to engage with the Quran and classical texts rather than hold a modern conversation. Grammar-first: letter and word forms, then the basics of iʿrāb, then verb patterns, then sentence structure. Vocabulary comes from the Quran and recognised classical readers, not contemporary lists. Once the foundation is set, students read short classical passages with live correction, then move to longer texts at a pace that keeps accuracy ahead of breadth.",
+    "fiqhSyllabus": "Fiqh is taught in Arabic, on the Hanafi madhhab, using recognised manuals section by section: purity, prayer, fasting, zakat, hajj, and related topics. Aqeedah sits alongside. For adults the track runs in small groups (which suits the material); a solo option is available for students who prefer it. For children the shape is different: stories of the prophets and the Prophetic seerah build the narrative foundation, the 40 Hadith of an-Nawawi builds memorised reference points, and an age-appropriate fiqh introduction sits alongside.",
 
     "startTitle": "How to start",
     "startText": "Message Daris with your goals, current level, how many lessons per week you're aiming for, and your timezone. A short assessment sets the entry point, and lessons begin once an appropriate plan is agreed.",
@@ -221,7 +221,7 @@
   "articles": {
     "eyebrow": "Articles",
     "title": "Writing on Quran, Arabic and fiqh",
-    "description": "Long-form pieces on online Islamic study — what to expect, how to choose a teacher, the real shape of ijazah, and what serious Arabic instruction looks like."
+    "description": "Long-form pieces on online Islamic study. What to expect, how to choose a teacher, the real shape of ijazah, and what serious Arabic instruction looks like."
   },
   "faq": {
     "eyebrow": "Answers",
@@ -229,37 +229,37 @@
     "description": "Short answers to the questions students and parents ask most often before starting at Daris.",
 
     "q1": "What does a Daris lesson look like?",
-    "a1": "A Daris lesson is one-on-one, live, and scheduled in your timezone. For Quran students that means reciting aloud for the instructor, receiving correction on tajwid and articulation in real time, and working through a structured plan — not whatever passage you happened to have open. Arabic students work through grammar and reading with the same live correction. Fiqh students engage with a recognised Hanafi manual section-by-section, in Arabic, with English support where needed.",
+    "a1": "It depends on the subject. Quran students read aloud and the teacher corrects tajwid and articulation as it happens, working through a structured plan. Arabic runs the same way: grammar and reading with live correction. Fiqh is usually taught in a small group, in Arabic, using a recognised Hanafi manual. Every lesson is live and scheduled in the student's timezone.",
 
     "q2": "How is Daris different from a Quran app or YouTube channel?",
-    "a2": "Apps drill vocabulary; channels broadcast recitation. Neither replaces the part of Islamic study that has always required a teacher — someone who hears you read, catches the mistake you cannot hear yourself, explains what a classical text actually means, and adjusts your curriculum based on what you are struggling with this week. That is what Daris is built around.",
+    "a2": "Apps drill vocabulary. Channels broadcast recitation. Neither replaces the part of Islamic study that has always needed a teacher: someone who hears you read, catches the mistake you can't hear yourself, explains what a classical text actually means, and adjusts your curriculum based on what you're struggling with this week. That's what Daris is built around.",
 
     "q3": "Do you teach beginners, or only advanced students?",
-    "a3": "Both. The platform is used by absolute beginners working on the correct articulation of Arabic letters and by advanced students polishing recitation toward ijazah-level standards. The order and depth of material adapts to the student; the structure does not change.",
+    "a3": "Both. Absolute beginners working on the correct articulation of Arabic letters are welcome, and so are advanced students polishing recitation at a serious level. Order and depth adapt to the student. The structure doesn't change.",
 
     "q4": "Do you teach children?",
-    "a4": "Yes. Children have their own curriculum path — shorter lessons, age-appropriate texts (stories of the prophets, the Prophetic seerah, the 40 Hadith of an-Nawawi), and a pace that respects attention span without lowering the standard of what is being learned.",
+    "a4": "Yes. Children have their own curriculum path: shorter lessons, age-appropriate material (stories of the prophets, the Prophetic seerah, the 40 Hadith of an-Nawawi), and a pace that respects attention span without dropping the standard of what's being learned.",
 
-    "q5": "What is ijazah, and does Daris support students pursuing one?",
-    "a5": "An ijazah is a traditional certification from a qualified teacher that the student has recited the Quran (or read a specific text) with correct tajwid and without omissions or additions. It carries a sanad — a chain of transmission traceable through teachers over centuries. The Daris Quran program is structured to support students working toward ijazah-level recitation; the specific certification path is discussed during enrollment once the student's current level is assessed.",
+    "q5": "What is ijazah?",
+    "a5": "An ijazah is a traditional certification from a qualified teacher that the student has recited the Quran (or read a specific text) with correct tajwid and without omissions or additions. It carries a sanad, a chain of transmission traceable through teachers over centuries. The Daris Quran track is built on the traditional sequence that leads in that direction. Whether a specific ijazah path is right for a given student is a conversation to have once the teacher has assessed their level.",
 
     "q6": "Is the instruction in English or Arabic?",
-    "a6": "Arabic is the language of the text and of recitation; instruction uses Arabic where the tradition requires it. English support is available from the Daris team for scheduling, general communication, and clarification during lessons. Fiqh and aqeedah are taught in Arabic.",
+    "a6": "Quran and tajwid are available in English and Arabic. Fiqh and aqeedah are taught in Arabic only, which is how the tradition keeps its texts accurate. Arabic lessons are conducted in Arabic with English support where it helps, especially early on. General communication and scheduling can happen in either language.",
 
     "q7": "Which timezones does Daris support?",
-    "a7": "Any. Lessons are scheduled in the student's local time. The student chooses a slot during the week that fits their schedule and the lesson runs in that slot permanently unless both sides agree to move it.",
+    "a7": "Any. Lessons are scheduled in the student's local time. The student picks a weekly slot that fits their schedule, and that slot stays the slot unless both sides agree to move it.",
 
     "q8": "What do I need to attend a lesson?",
-    "a8": "A reliable internet connection and a device with a microphone. Video is strongly preferred so the instructor can see the student's mouth position for tajwid correction. No special software to install — lessons run over widely available video-call tools.",
+    "a8": "A reliable internet connection and a device with a microphone. Video is strongly preferred so the teacher can see the student's mouth position for tajwid correction. Nothing special to install. Lessons run over widely available video-call tools.",
 
     "q9": "Can I combine multiple programs?",
-    "a9": "Yes. Many students take Quran alongside Arabic, or Arabic alongside fiqh. The weekly schedule is built from the student's goals — one program, two, or all three — rather than packaged tiers.",
+    "a9": "Yes. Many students take Quran alongside Arabic, or Arabic alongside fiqh. The weekly schedule is built from the student's goals: one program, two, or all three. No packaged tiers to fit into.",
 
     "q10": "How do I get started?",
-    "a10": "Message Daris via WhatsApp or email with your goals, current level, how many lessons per week you are aiming for, and your timezone. A short assessment — a recitation check, a reading check, or a conversation in Arabic — sets the entry point. Lessons begin once an appropriate plan is agreed.",
+    "a10": "Message Daris via WhatsApp or email with your goals, current level, how many lessons a week you'd like, and your timezone. A short assessment sets the entry point. Lessons begin once a plan is agreed.",
 
     "ctaTitle": "Didn't find your answer?",
-    "ctaText": "Message Daris directly — we reply within a few working days.",
+    "ctaText": "Message Daris directly. We reply within a few working days.",
     "ctaWhatsApp": "Contact on WhatsApp",
     "ctaEmail": "Email Daris"
   },
@@ -288,13 +288,13 @@
   "footer": {
     "brand": "Daris",
     "brandAr": "دارس",
-    "tagline": "Quran, Arabic & Fiqh — online worldwide.",
+    "tagline": "Quran, Arabic & Fiqh. Online, worldwide.",
     "quickLinksTitle": "Quick links",
     "contactTitle": "Contact",
     "supportNote": "English support available.",
     "whatsapp": "WhatsApp",
     "copyright": "© {year} Daris. All rights reserved.",
-    "bottomTagline": "Quran · Arabic · Fiqh — Online worldwide"
+    "bottomTagline": "Quran · Arabic · Fiqh · Online worldwide"
   },
   "whatsappFloat": {
     "ariaLabel": "Contact Daris on WhatsApp"
@@ -580,7 +580,7 @@
       "languageEn": "English"
     },
     "firstRun": {
-      "title": "Welcome — let's get you set up",
+      "title": "Welcome. Let's get you set up",
       "subtitle": "Three quick steps to start using Daris.",
       "step1": "Add your first student",
       "step1Hint": "Approve an enrollment request or wait for one to come in.",
@@ -593,7 +593,7 @@
       "step3Cta": "Schedule class"
     },
     "batchSummary": "Scheduled {created} · Merged {merged} · Skipped {skipped}",
-    "schedulePreview": "{count} classes for {name} — {days} at {time}",
+    "schedulePreview": "{count} classes for {name} · {days} at {time}",
     "statsFailed": "Couldn't load · tap to retry",
     "actionFailed": {
       "loadStats": "Couldn't load stats",
@@ -640,7 +640,7 @@
       "nextStepsLabel": "Next session",
       "nextStepsPh": "Continue with Surah Al-Baqarah...",
       "privateLabel": "Private notes",
-      "privateHint": "admin only — never shared",
+      "privateHint": "admin only, never shared",
       "privatePh": "Struggles with qalqalah, needs patience...",
       "shareWithStudent": "Share this report with the student",
       "shareWithStudentHint": "Covered, homework, and next session will appear in the student's dashboard. Private notes stay hidden."
@@ -673,9 +673,9 @@
     "clearUpcomingDone": "Removed {count} upcoming classes.",
     "conflict": {
       "title": "Scheduling conflict",
-      "subtitle": "Some of these sessions overlap with classes already on the calendar. Choose once — it applies to every matching session.",
+      "subtitle": "Some of these sessions overlap with classes already on the calendar. Choose once, and it applies to every matching session.",
       "existingSlotGroup": "{count} session(s) already have a class at that time with other students.",
-      "sameStudentGroup": "{count} session(s) — this student already has another class at that time.",
+      "sameStudentGroup": "{count} session(s). This student already has another class at that time.",
       "showSessions": "Show all {count} sessions",
       "more": "more",
       "merge": "Add this student to the existing class",

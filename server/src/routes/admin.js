@@ -294,7 +294,7 @@ router.post('/students/:id/suspend', async (req, res, next) => {
   }
 });
 
-// Update the editable admin-facing fields on a student's profile — currently
+// Update the editable admin-facing fields on a student's profile. currently
 // preferred language and expected monthly tuition. These drive the balance
 // pill and the language used in reminder emails.
 router.put(
@@ -409,7 +409,7 @@ router.delete('/students/:id/future-assignments', async (req, res, next) => {
       adminId: req.user.id,
     });
 
-    // Fire-and-forget email in the STUDENT's preferred language — not the
+    // Fire-and-forget email in the STUDENT's preferred language. not the
     // admin's current UI language.
     if (result.count > 0) {
       const studentLang = student.preferredLanguage === 'en' ? 'en' : 'ar';
@@ -501,7 +501,7 @@ router.get('/classes', validate(paginationSchema, 'query'), async (req, res, nex
     const { page, limit } = req.query;
     const skip = (page - 1) * limit;
 
-    // Hide classes with zero live students — they're orphans left behind
+    // Hide classes with zero live students. they're orphans left behind
     // when a student was removed. The class row is preserved in the DB for
     // audit purposes, but there's no reason the sheikh should see it in
     // the scheduling list or calendar.
@@ -684,7 +684,7 @@ router.post('/classes/:id/cancel-series', async (req, res, next) => {
     }
 
     // Find every not-already-cancelled session in the same series at or
-    // after this anchor — we cancel all of them.
+    // after this anchor. we cancel all of them.
     const targets = await prisma.classSession.findMany({
       where: {
         seriesId: anchor.seriesId,
@@ -801,7 +801,7 @@ router.post('/classes/:id/reschedule', validate(rescheduleClassSchema), async (r
 router.delete('/classes/:id', async (req, res, next) => {
   try {
     const lang = getLang(req);
-    // Scope the delete to classes this admin owns — a stranger can't nuke
+    // Scope the delete to classes this admin owns. a stranger can't nuke
     // another admin's class by guessing the ID.
     const result = await prisma.classSession.deleteMany({
       where: { id: req.params.id, createdByAdminId: req.user.id },
@@ -905,7 +905,7 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
       for (const session of sessions) {
         // The resolution map is keyed by startMs-endMs. We used ISO strings
         // before, but any client that serializes with a non-UTC offset would
-        // produce a string the backend doesn't recognize — numbers are
+        // produce a string the backend doesn't recognize. numbers are
         // canonical and survive any serializer.
         const key = `${new Date(session.startTime).getTime()}-${new Date(session.endTime).getTime()}`;
         const resolution = resolutions[key] || 'create';
@@ -929,7 +929,7 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
           });
 
           if (existing) {
-            // `upsert` via unique index — if the student was somehow already
+            // `upsert` via unique index. if the student was somehow already
             // in this class we silently succeed instead of throwing on the
             // unique constraint.
             await tx.classAssignment.upsert({
@@ -945,7 +945,7 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
             merged += 1;
             continue;
           }
-          // No matching slot anymore — fall through to create instead.
+          // No matching slot anymore. fall through to create instead.
         }
 
         // 'create' and 'force' both land here: make a fresh ClassSession.
@@ -1368,7 +1368,7 @@ router.get('/students/:id/payments', async (req, res, next) => {
       where: { studentId: req.params.id },
       orderBy: { paidAt: 'desc' },
     });
-    // Running total by currency (can't just sum — student may have paid in EGP + USD).
+    // Running total by currency (can't just sum. student may have paid in EGP + USD).
     const totals = payments.reduce((acc, p) => {
       acc[p.currency] = (acc[p.currency] || 0) + p.amount;
       return acc;
@@ -1466,7 +1466,7 @@ function formatMoney(minorUnits) {
   return (minorUnits / 100).toFixed(2);
 }
 
-// Per-student bundle — one CSV with two sections (class logs + payments).
+// Per-student bundle. one CSV with two sections (class logs + payments).
 router.get('/students/:id/export.csv', async (req, res, next) => {
   try {
     const student = await prisma.user.findUnique({
@@ -1518,7 +1518,7 @@ router.get('/students/:id/export.csv', async (req, res, next) => {
   }
 });
 
-// All payments across all students — for tax/reconciliation.
+// All payments across all students. for tax/reconciliation.
 router.get('/export/payments.csv', async (req, res, next) => {
   try {
     const payments = await prisma.payment.findMany({

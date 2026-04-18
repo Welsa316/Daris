@@ -290,7 +290,7 @@
               <button @click="nextWeek" class="text-slate-500 hover:text-primary text-sm font-medium shrink-0">{{ $t('admin.nextWeek') }} &rarr;</button>
             </div>
 
-            <!-- Subject legend — small cheatsheet so the sheikh always knows
+            <!-- Subject legend. small cheatsheet so the sheikh always knows
                  what each calendar color represents without guessing. -->
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3 text-xs text-slate-500">
               <span class="font-semibold uppercase tracking-wider">{{ $t('admin.legend') }}:</span>
@@ -348,7 +348,7 @@
                     </p>
                   </div>
                   <div v-if="!(classesByDay[localDateKey(day)] || []).length"
-                    class="text-xs text-slate-300 text-center py-2 sm:py-0 sm:pt-6">—</div>
+                    class="text-xs text-slate-300 text-center py-2 sm:py-0 sm:pt-6">, </div>
                 </div>
               </div>
             </div>
@@ -545,7 +545,7 @@
           <!-- Classes tab: upcoming section + past section, both using the
                same row template via a sections computed list. Section
                headers carry the upcoming/past signal so the per-row pill
-               was dropped — a group of rows under "Upcoming" says it all. -->
+               was dropped. a group of rows under "Upcoming" says it all. -->
           <div v-else-if="studentDetailTab === 'classes'" class="mt-4">
             <div v-if="!studentClasses.length" class="text-slate-400 text-sm py-4">{{ $t('admin.noStudentClasses') }}</div>
             <div v-else class="space-y-2 max-h-96 overflow-y-auto">
@@ -779,7 +779,7 @@
               </select>
             </div>
 
-            <!-- Subject — drives the calendar block colour + legend -->
+            <!-- Subject. drives the calendar block colour + legend -->
             <div>
               <label class="block text-sm text-slate-500 mb-2">{{ $t('admin.subject') }}</label>
               <div class="flex gap-2">
@@ -986,7 +986,7 @@ const { logout } = useAuth();
 
 // Admin locale is controlled by the LanguageSwitcher in the header. We used
 // to force Arabic on mount, but that fought with the toggle the sheikh now
-// uses to flip between views — it just snapped back to Arabic on every
+// uses to flip between views. it just snapped back to Arabic on every
 // component re-render.
 
 const isAr = computed(() => locale.value === 'ar');
@@ -1050,16 +1050,16 @@ const clearingUpcoming = ref(false);
 
 // --- Conflict resolution modal -------------------------------------------
 // One decision per *kind* (not per session). We found the sheikh was being
-// asked to pick 12x "merge" in a row for a recurring class — so now the
+// asked to pick 12x "merge" in a row for a recurring class. so now the
 // modal asks once for all existing_slot conflicts and once for all
 // same_student conflicts.
-// Inline conflict banner state. Conflict modal no longer opens — the banner
+// Inline conflict banner state. Conflict modal no longer opens. the banner
 // lives inside the schedule form itself. `conflicts.length > 0` is what
 // drives the banner's visibility.
 const conflictModal = reactive({
   conflicts: [], // raw array from /classes/check-conflicts
-  bulkExisting: 'merge', // merge | create | skip — applied to every existing_slot conflict
-  bulkSame: 'skip',      // skip | force — applied to every same_student conflict
+  bulkExisting: 'merge', // merge | create | skip. applied to every existing_slot conflict
+  bulkSame: 'skip',      // skip | force. applied to every same_student conflict
   pendingPayload: null,
 });
 
@@ -1071,7 +1071,7 @@ const FULL_DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', '
 // is, not where whoever happens to be filling out the form is.
 const scheduleForm = reactive({
   studentId: '',
-  subject: 'quran',  // 'quran' | 'fiqh' | 'arabic' — drives calendar colour
+  subject: 'quran',  // 'quran' | 'fiqh' | 'arabic'. drives calendar colour
   days: [],      // array of dayOfWeek numbers (0=Sun, 1=Mon, ...)
   time: '17:00', // HH:MM in scheduleForm.timezone
   timezone: 'Africa/Cairo',
@@ -1139,7 +1139,7 @@ const calendarDays = computed(() => {
   return days;
 });
 
-// YYYY-MM-DD in the admin's local timezone — matches the calendar header
+// YYYY-MM-DD in the admin's local timezone. matches the calendar header
 // dates, which are also local-tz. Using `toISOString` here would bucket
 // classes by UTC date and they'd land in the wrong column for anyone not
 // on UTC (very visible when the admin is abroad).
@@ -1174,7 +1174,7 @@ const upcomingClasses = computed(() => {
       !cls.cancelled
       && new Date(cls.startTime) >= now
       && new Date(cls.startTime) <= threeDays
-      // Drop classes whose only students have been removed — backend already
+      // Drop classes whose only students have been removed. backend already
       // strips soft-deleted assignments, so length === 0 means nobody is left.
       && (cls.assignments?.length ?? 0) > 0
     )
@@ -1183,7 +1183,7 @@ const upcomingClasses = computed(() => {
 });
 
 // Format a class time in the VIEWER's timezone. The admin sees the class
-// at the hour it actually happens for them — not in the sheikh's time
+// at the hour it actually happens for them. not in the sheikh's time
 // zone halfway across the world.
 function formatClassTime(iso, tz = viewerTz) {
   const d = new Date(iso);
@@ -1214,7 +1214,7 @@ function formatClassTime(iso, tz = viewerTz) {
   return `${dateStr}, ${timeStr}`;
 }
 
-// Short "HH:MM AM/PM" in the viewer's timezone — used where we don't want
+// Short "HH:MM AM/PM" in the viewer's timezone. used where we don't want
 // the full relative-date wrapper.
 function formatClassTimeShort(iso, tz = viewerTz) {
   return new Intl.DateTimeFormat(isAr.value ? 'ar-EG' : 'en-GB', {
@@ -1226,7 +1226,7 @@ function formatClassTimeShort(iso, tz = viewerTz) {
 }
 
 // True when the class was scheduled in a timezone other than what the
-// viewer's browser says they're in — drives whether we render the
+// viewer's browser says they're in. drives whether we render the
 // secondary "1:00 PM (Africa/Cairo)" caption.
 function viewerTzDiffersFrom(cls) {
   return cls.timezone && cls.timezone !== viewerTz;
@@ -1264,7 +1264,7 @@ const studentClasses = computed(() => {
 // Split the student's classes into upcoming (not yet started) and past.
 // Upcoming sorts ascending (soonest first) so the admin's eye lands on the
 // next lesson immediately. Past sorts descending (most recent first).
-// Cancelled classes are treated as past regardless of date — an admin
+// Cancelled classes are treated as past regardless of date. an admin
 // viewing the tab shouldn't see a cancelled slot marketed as "Upcoming".
 const studentUpcomingClasses = computed(() => {
   const nowMs = now.value;
@@ -1363,7 +1363,7 @@ const firstRunSteps = computed(() => {
 });
 
 const showFirstRunChecklist = computed(() => {
-  // Hide once all three steps are done — no need to keep nagging.
+  // Hide once all three steps are done. no need to keep nagging.
   return firstRunSteps.value.some((s) => !s.done);
 });
 
@@ -1535,7 +1535,7 @@ async function cancelSeriesFromHere(cls) {
 function cancelClass(id) {
   // Optimistic UI: mark the class cancelled locally, fire the real API call
   // after a 6-second undo window. If the admin hits "Undo" in that window
-  // we restore the previous state and skip the API call — no "are you
+  // we restore the previous state and skip the API call. no "are you
   // sure?" modal at all.
   const cls = classes.value.find((c) => c.id === id);
   if (!cls) return;
@@ -1738,7 +1738,7 @@ function showBatchOutcomeToast(result) {
 // The browser's IANA timezone. Used as the PRIMARY display TZ everywhere
 // (we used to show class times in their stored class-TZ, but that's
 // confusing for an admin looking at the dashboard from a different
-// continent — they want to see "when is this class happening to ME").
+// continent. they want to see "when is this class happening to ME").
 const viewerTz = (() => {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone; }
   catch { return 'UTC'; }
@@ -1765,7 +1765,7 @@ function isJoinable(cls) {
 
 // Go through the server-side gate rather than opening the meeting URL
 // directly. The gate enforces the 15-min-before-to-end window and that the
-// caller is actually assigned — so even if someone has the raw Zoom URL
+// caller is actually assigned. so even if someone has the raw Zoom URL
 // saved, they can't use our dashboard to get back in outside class hours.
 async function joinClass(cls) {
   try {
@@ -1786,7 +1786,7 @@ function joinAvailabilityLabel(cls) {
   const opens = start - JOIN_WINDOW_MIN * 60_000;
   if (now.value >= opens) return t('admin.joinLive');
 
-  // Unit-scaled countdown — never depends on Intl.DateTimeFormat, so it can't
+  // Unit-scaled countdown. never depends on Intl.DateTimeFormat, so it can't
   // collapse into a bare "Opens " label if a locale or timezone argument
   // produces an empty string. Minutes for the last hour (most actionable),
   // hours for the next day, days further out.
@@ -1803,14 +1803,14 @@ function joinAvailabilityLabel(cls) {
 }
 
 // Display name for a class. When multiple students share a class (co-taught),
-// the stored `title` is just whoever was scheduled first — show the actual
+// the stored `title` is just whoever was scheduled first. show the actual
 // attendee list so the calendar reflects reality. Falls back to the stored
 // title if assignments haven't loaded.
 function classDisplayName(cls) {
   const names = (cls.assignments || [])
     .map((a) => a.student?.firstName)
     .filter(Boolean);
-  if (names.length === 0) return isAr.value && cls.titleAr ? cls.titleAr : (cls.title || '—');
+  if (names.length === 0) return isAr.value && cls.titleAr ? cls.titleAr : (cls.title || ', ');
   return names.join(' + ');
 }
 
@@ -2083,7 +2083,7 @@ watch(studentSearch, () => { loadStudents(); });
 watch(showScheduleForm, (v) => { if (v && !students.value.length) loadStudents(); });
 
 // Escape key closes the topmost open modal. The ConfirmDialog component
-// handles its own escape — so we don't touch it here.
+// handles its own escape. so we don't touch it here.
 function handleGlobalKeydown(e) {
   if (e.key !== 'Escape') return;
   if (showScheduleForm.value) { closeScheduleForm(); return; }

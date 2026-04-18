@@ -25,7 +25,7 @@
 
     <!-- ═══════════════════════════════════════════
          SECTION 2: Article list
-         Simple editorial stack — title, excerpt, tag
+         Simple editorial stack. title, excerpt, tag
          + read-time meta. Each row is a RouterLink.
          ═══════════════════════════════════════════ -->
     <section class="bg-cream py-20 md:py-28">
@@ -78,7 +78,7 @@ const { t, locale } = useI18n();
 
 // Articles are currently English-only. We deliberately DON'T emit hreflang
 // alternates because the AR counterpart (`/ar/articles`) 301-redirects to
-// the EN page — pointing a `hreflang="ar"` at a redirect confuses crawlers.
+// the EN page. pointing a `hreflang="ar"` at a redirect confuses crawlers.
 // When real AR translations exist, swap back to `usePageSeo('articles')`.
 const title = computed(() => t('seo.articles.title'));
 const description = computed(() => t('seo.articles.description'));
@@ -114,7 +114,7 @@ useHead({
         url: canonicalUrl,
         inLanguage: 'en',
         description:
-          'Long-form articles on learning Quran, Arabic, and fiqh online — methodology, ijazah, classical Arabic, Hanafi tradition, and choosing a teacher.',
+          'Long-form articles on learning Quran, Arabic, and fiqh online. Methodology, ijazah, classical Arabic, Hanafi tradition, and choosing a teacher.',
         mainEntity: {
           '@type': 'ItemList',
           itemListElement: articles.map((a, i) => ({

@@ -1,9 +1,9 @@
 <template>
-  <!-- QURAN — Reverent & Warm
+  <!-- QURAN. Reverent & Warm
        Centered composition. Golden vignette. Frosted text backdrop.
        This is the emotional anchor of the page. -->
   <section class="relative overflow-hidden min-h-[75vh] md:min-h-[85vh] flex items-center">
-    <!-- Photograph — close-up illuminated Quran pages, warm golden light -->
+    <!-- Photograph. close-up illuminated Quran pages, warm golden light -->
     <div class="absolute inset-0">
       <img
         src="https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=1920&q=80"
@@ -12,7 +12,7 @@
         loading="lazy"
       />
     </div>
-    <!-- Warm golden vignette — radiates from center, darkens at edges -->
+    <!-- Warm golden vignette. radiates from center, darkens at edges -->
     <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_20%,_rgba(12,32,25,0.7)_100%)]" aria-hidden="true"></div>
     <!-- Vertical cinematic bars -->
     <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/55" aria-hidden="true"></div>

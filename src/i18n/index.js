@@ -3,7 +3,7 @@ import en from './locales/en.json';
 import ar from './locales/ar.json';
 
 /**
- * The URL is the source of truth for locale — /en/* is always English and
+ * The URL is the source of truth for locale. /en/* is always English and
  * /ar/* is always Arabic. On first paint we read the pathname so the initial
  * i18n locale matches the URL and no "wrong locale flash" occurs before the
  * router's nav guard runs. localStorage + navigator.language are fallbacks
@@ -12,11 +12,11 @@ import ar from './locales/ar.json';
 function detectInitialLocale() {
   if (typeof window === 'undefined') return 'en';
 
-  // 1. URL — authoritative for marketing routes
+  // 1. URL. authoritative for marketing routes
   const match = window.location.pathname.match(/^\/(en|ar)(\/|$)/);
   if (match) return match[1];
 
-  // 2. localStorage — user's last explicit choice
+  // 2. localStorage. user's last explicit choice
   const saved = localStorage.getItem('daris-locale');
   if (saved === 'en' || saved === 'ar') return saved;
 

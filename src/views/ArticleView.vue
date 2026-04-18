@@ -1,7 +1,7 @@
 <template>
   <div v-if="article">
     <!-- ═══════════════════════════════════════════
-         SECTION 1: Article hero — eyebrow tag, title,
+         SECTION 1: Article hero. eyebrow tag, title,
          excerpt, read-time meta. Same register as
          /about and /faq so the site reads as one world.
          ═══════════════════════════════════════════ -->
@@ -49,7 +49,7 @@
               Written by Daris
             </p>
             <p class="text-sm text-slate-500 leading-relaxed mb-6 text-pretty">
-              Daris is an online Islamic-education platform teaching Quran, Arabic, and Fiqh in the methodology of Al-Azhar Al-Sharif. One-on-one live instruction, bilingual (English + Arabic), worldwide.
+              Daris is an online Islamic education platform teaching Quran, Arabic, and Fiqh in the methodology of Al-Azhar Al-Sharif. Live teaching, bilingual (English and Arabic), worldwide.
             </p>
             <div class="flex flex-wrap gap-3">
               <RouterLink :to="`/${locale}/programs`" class="inline-flex items-center gap-2 rounded-full bg-primary text-cream px-5 py-2.5 text-sm font-semibold hover:bg-primary-800 transition-colors">
@@ -107,14 +107,14 @@ const formattedDate = computed(() => {
 
 // Per-article SEO: unique title, description, canonical, and JSON-LD
 // Article schema. The hreflang alternates point at the same slug under
-// both locales — when AR translations land the same URL serves the AR
+// both locales. when AR translations land the same URL serves the AR
 // version; until then the /ar/articles/<slug> URL is intentionally
 // omitted from the sitemap so Google does not try to index an empty page.
 const articleUrl = computed(() =>
   article.value ? `${SITE_URL}/${locale.value}/articles/${article.value.slug}` : SITE_URL
 );
 const metaTitle = computed(() =>
-  article.value ? `${article.value.title} — Daris` : 'Daris'
+  article.value ? `${article.value.title} · Daris` : 'Daris'
 );
 const metaDesc = computed(() => article.value?.description || '');
 

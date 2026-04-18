@@ -9,7 +9,7 @@ const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 const LOCKOUT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const VERIFICATION_TOKEN_EXPIRY_HOURS = 24;
 
-// Arab-world countries — used only as a fallback when we can't derive the
+// Arab-world countries. used only as a fallback when we can't derive the
 // user's preferred language from the Accept-Language / UI locale.
 const ARAB_COUNTRIES = new Set([
   'Egypt', 'Saudi Arabia', 'United Arab Emirates', 'Jordan', 'Lebanon',
@@ -248,7 +248,7 @@ export async function loginUser({ email, password }, { ipAddress, deviceInfo, la
     return { error: 'auth.invalidCredentials' };
   }
 
-  // Successful login — reset failed attempts
+  // Successful login. reset failed attempts
   await prisma.user.update({
     where: { id: user.id },
     data: {

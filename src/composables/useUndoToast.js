@@ -1,7 +1,7 @@
 import { reactive } from 'vue';
 
 /**
- * useUndoToast — pattern for destructive actions where a short grace window
+ * useUndoToast. pattern for destructive actions where a short grace window
  * beats a confirm dialog. Instead of asking "are you sure?", the action is
  * delayed; the UI updates immediately and a toast with an "Undo" button
  * appears. If undone within the window the action is cancelled; otherwise it
@@ -51,7 +51,7 @@ export function queueUndoable({
     try {
       await action();
     } catch (err) {
-      // Surface the failure — reuse the same toast slot with an error label.
+      // Surface the failure. reuse the same toast slot with an error label.
       undoToastState.visible = true;
       undoToastState.label = err?.data?.error || err?.message || 'Action failed';
       undoToastState.undoLabel = '';

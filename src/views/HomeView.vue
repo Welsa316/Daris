@@ -15,7 +15,7 @@
     <!-- 3. Fiqh -->
     <ImmersiveFiqh />
 
-    <!-- 4. Arabic + Authority — unified cream bg with shared gold Islamic pattern -->
+    <!-- 4. Arabic + Authority. unified cream bg with shared gold Islamic pattern -->
     <div class="relative bg-cream overflow-hidden">
       <!-- Shared gold Islamic geometric pattern covering both sections -->
       <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
@@ -30,7 +30,7 @@
         </svg>
       </div>
 
-      <!-- Decorative mosque arch outline — centered behind content -->
+      <!-- Decorative mosque arch outline. centered behind content -->
       <div class="absolute inset-0 flex items-start justify-center pointer-events-none" aria-hidden="true">
         <svg class="w-full max-w-5xl h-[900px] opacity-[0.08] mt-12" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
           <path d="M350 900 L350 380 Q350 120 600 20 Q850 120 850 380 L850 900" stroke="#C8A951" stroke-width="2.5" fill="none" />

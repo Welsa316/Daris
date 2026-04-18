@@ -6,7 +6,7 @@ import {
   sendClassReminderAdmin,
 } from './emailService.js';
 
-// How generous we are about "30 minutes before" — if the tick runs every
+// How generous we are about "30 minutes before". if the tick runs every
 // 5 min, a 5-min window means every class gets exactly one reminder even if
 // one tick misses.
 const WINDOW_MIN = 5;
@@ -44,7 +44,7 @@ async function sendWindow({ label, offsetMin, sentField, sendToAdmin }) {
   const lo = new Date(target.getTime() - WINDOW_MIN * 60_000);
   const hi = new Date(target.getTime() + WINDOW_MIN * 60_000);
 
-  // Find candidate class IDs first — don't include/hydrate yet. We'll claim
+  // Find candidate class IDs first. don't include/hydrate yet. We'll claim
   // them via an atomic updateMany below so that if two server instances
   // run this tick simultaneously, only one wins each class.
   const candidates = await prisma.classSession.findMany({
@@ -84,7 +84,7 @@ async function sendWindow({ label, offsetMin, sentField, sendToAdmin }) {
     try {
       if (!cls.assignments.length) return; // already marked; nothing to send
 
-      // All student emails in parallel — one bad address won't block others.
+      // All student emails in parallel. one bad address won't block others.
       await Promise.all(
         cls.assignments.map((a) =>
           sendClassReminderStudent(a.student, cls, label).catch((err) =>
@@ -115,7 +115,7 @@ async function sendWindow({ label, offsetMin, sentField, sendToAdmin }) {
         students: cls.assignments.length,
       });
     } catch (err) {
-      // A failure here doesn't roll back the flag claim — that's by design.
+      // A failure here doesn't roll back the flag claim. that's by design.
       // Retrying a partial batch would re-spam students who already got
       // the email. We'd rather drop one class's reminder than double-send.
       logger.error('classReminderJob: class processing failed', {

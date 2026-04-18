@@ -62,7 +62,7 @@ app.use('/api', publicRoutes);
 const frontendDist = path.resolve(__dirname, '../../dist');
 
 // Hashed assets (Vite emits /assets/<name>-<hash>.<ext>) are content-addressed
-// — cache them for a year. index.html changes on every deploy, so it must
+//. cache them for a year. index.html changes on every deploy, so it must
 // never be cached, otherwise a browser holding an old copy asks the server
 // for asset filenames that no longer exist and the SPA fallback serves HTML
 // in their place (MIME-type errors in the console).
@@ -86,7 +86,7 @@ app.get('/assets/*', (req, res) => {
 });
 
 // Locale-aware 301 redirects for bare marketing paths. Old bookmarks and
-// stale Google results that point at `/about` still work — they permanently
+// stale Google results that point at `/about` still work. they permanently
 // redirect to `/en/about` (or `/ar/about` if the browser prefers Arabic).
 // This is the single place where Accept-Language is consulted; once the
 // user is on a locale-prefixed URL their locale is determined by the URL
@@ -103,7 +103,7 @@ let indexHtml = '';
 try {
   indexHtml = fs.readFileSync(path.join(frontendDist, 'index.html'), 'utf-8');
 } catch {
-  // dist may not exist in dev — that's fine, fallback will 404
+  // dist may not exist in dev. that's fine, fallback will 404
 }
 
 // SPA fallback with server-side SEO meta injection.
@@ -111,7 +111,7 @@ try {
 // <title>, <meta>, and JSON-LD into the HTML so crawlers see full SEO content
 // without needing JavaScript execution.
 app.get(/^\/(?!api).*/, (req, res, next) => {
-  // Always fresh — never let the browser or a CDN cache this response.
+  // Always fresh. never let the browser or a CDN cache this response.
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
   if (!indexHtml) {
@@ -127,7 +127,7 @@ app.get(/^\/(?!api).*/, (req, res, next) => {
     const injected = indexHtml.replace('</head>', `${metaHtml}\n  </head>`);
     res.type('html').send(injected);
   } else {
-    // Non-marketing routes (auth, dashboard) — serve default HTML
+    // Non-marketing routes (auth, dashboard). serve default HTML
     res.type('html').send(indexHtml);
   }
 });
@@ -148,7 +148,7 @@ setInterval(async () => {
   }
 }, 60 * 60 * 1000);
 
-// --- Class reminders (every 5 min — sends 30-min and 24-h notices) ---
+// --- Class reminders (every 5 min. sends 30-min and 24-h notices) ---
 setInterval(() => {
   runClassReminderTick().catch((err) =>
     logger.error('Class reminder tick failed', { error: err.message })

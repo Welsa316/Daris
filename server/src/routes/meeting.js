@@ -8,23 +8,23 @@ const router = Router();
 
 // How far before a class starts the join link becomes valid. This single
 // constant governs both what students/admins see on their dashboard AND
-// what this endpoint returns — so the cosmetic gate and the real gate can
+// what this endpoint returns. so the cosmetic gate and the real gate can
 // never drift apart.
 const JOIN_WINDOW_MS = 15 * 60 * 1000;
 
 /**
  * Resolve the meeting link for a class after checking that the caller is
  * actually allowed to join it right now. This is the only place on our
- * side that enforces the "link only during the window" rule — the
+ * side that enforces the "link only during the window" rule. the
  * dashboard's show/hide is purely cosmetic and would leak if we embedded
  * the raw URL anywhere.
  *
  * The endpoint always responds; callers never see the URL, only get it
  * when they would actually be admitted.
  *
- *   200 { meetingLink }                — caller can join; URL included.
+ *   200 { meetingLink }               . caller can join; URL included.
  *   403 { error, reason: 'too_early' | 'too_late' | 'cancelled' | 'forbidden' | 'no_link' }
- *   404 { error }                      — class not found.
+ *   404 { error }                     . class not found.
  */
 router.get('/:classId/link', meetingLinkLimiter, authenticate, verifyTokenVersion, async (req, res, next) => {
   try {

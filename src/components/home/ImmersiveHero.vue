@@ -1,7 +1,7 @@
 <template>
   <section class="relative min-h-screen bg-black overflow-hidden">
     <!-- Full-width background photograph with warm gold tint.
-         This is the LCP element on the homepage — explicit width/height
+         This is the LCP element on the homepage. explicit width/height
          + fetchpriority="high" so the browser fetches it eagerly and
          layout doesn't shift once it loads. -->
     <div class="absolute inset-0">
@@ -19,13 +19,13 @@
     <!-- Warm gold tint overlay -->
     <div class="absolute inset-0 bg-gold/10" aria-hidden="true"></div>
 
-    <!-- Warm vignette overlay — LTR: dark left fading right -->
+    <!-- Warm vignette overlay. LTR: dark left fading right -->
     <div
       class="absolute inset-0 ltr:block rtl:hidden"
       style="background: linear-gradient(to right, rgba(20, 15, 10, 0.8) 0%, rgba(20, 15, 10, 0.2) 50%, transparent 100%);"
       aria-hidden="true"
     ></div>
-    <!-- Warm vignette overlay — RTL: dark right fading left -->
+    <!-- Warm vignette overlay. RTL: dark right fading left -->
     <div
       class="absolute inset-0 rtl:block ltr:hidden"
       style="background: linear-gradient(to left, rgba(20, 15, 10, 0.8) 0%, rgba(20, 15, 10, 0.2) 50%, transparent 100%);"
@@ -36,7 +36,7 @@
     <div class="relative z-10 flex items-center min-h-screen">
       <div class="relative px-8 md:px-16 lg:px-24 py-20">
 
-        <!-- Liquid glass box — dark tinted, gold outline, rounded -->
+        <!-- Liquid glass box. dark tinted, gold outline, rounded -->
         <div class="hero-entrance hero-entrance-1 bg-black/50 backdrop-blur-md border border-gold/30 rounded-2xl p-8 md:p-12 lg:p-14 max-w-2xl">
 
           <!-- Brand name + motto walking side by side.
@@ -45,14 +45,14 @@
                page's real intent (Online Quran/Arabic/Fiqh lessons). -->
           <div class="flex items-end flex-wrap gap-x-5 gap-y-2">
             <h1 class="font-display text-gold text-5xl sm:text-6xl md:text-7xl lg:text-8xl tracking-[0.1em] leading-none mb-0">
-              {{ $t('hero.eyebrow') }}<span class="sr-only"> — {{ $t('hero.srSubtitle') }}</span>
+              {{ $t('hero.eyebrow') }}<span class="sr-only">. {{ $t('hero.srSubtitle') }}</span>
             </h1>
             <p class="hero-entrance hero-entrance-2 font-display italic text-cream/70 text-sm sm:text-base md:text-lg leading-snug max-w-[12rem] sm:max-w-[14rem] mb-1 sm:mb-2 md:mb-3">
               {{ $t('hero.motto') }}
             </p>
           </div>
 
-          <!-- Book divider — gold line / open book icon / gold line -->
+          <!-- Book divider. gold line / open book icon / gold line -->
           <div class="flex items-center mt-8 md:mt-10 mb-8 max-w-[200px]" aria-hidden="true">
             <div class="h-px bg-gold flex-grow"></div>
             <div class="mx-2 text-gold">
@@ -68,9 +68,9 @@
             {{ $t('hero.description') }}
           </p>
 
-          <!-- CTA buttons — pill shape, side by side -->
+          <!-- CTA buttons. pill shape, side by side -->
           <div class="hero-entrance hero-entrance-3 flex flex-col sm:flex-row items-stretch gap-4">
-            <!-- WhatsApp — shiny metallic gold pill -->
+            <!-- WhatsApp. shiny metallic gold pill -->
             <a
               :href="whatsAppHref"
               target="_blank"
@@ -80,7 +80,7 @@
               {{ $t('hero.ctaWhatsApp') }}
               <svg class="h-4 w-4 text-primary-700 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
             </a>
-            <!-- View programs — solid dark green pill -->
+            <!-- View programs. solid dark green pill -->
             <RouterLink
               :to="programsPath"
               class="inline-flex items-center justify-between gap-6 rounded-full bg-primary-950 px-6 py-3 text-sm font-semibold text-cream hover:bg-primary-900 transition-all duration-200"

@@ -7,7 +7,7 @@ const SITE_URL = 'https://daris.education';
 
 /**
  * Structured-data schemas per page. Kept intentionally organisation-only
- * (no named Person / founder) — Daris is the brand; individual instructors
+ * (no named Person / founder). Daris is the brand; individual instructors
  * are not surfaced in schema. Institutional credibility comes from the
  * explicit Al-Azhar methodology signal in the description.
  *
@@ -23,7 +23,7 @@ const schemas = {
       name: 'Daris',
       url: SITE_URL,
       logo: `${SITE_URL}/images/daris-logo.png`,
-      description: 'Online 1-on-1 Quran, Arabic language, and Islamic studies lessons in the methodology of Al-Azhar Al-Sharif.',
+      description: 'Online Quran, Arabic language, and Islamic studies lessons in the methodology of Al-Azhar Al-Sharif. For men and children, worldwide.',
       availableLanguage: ['English', 'Arabic'],
       areaServed: 'Worldwide',
       knowsAbout: ['Quran recitation', 'Tajwid', 'Tafsir', 'Classical Arabic', 'Hanafi fiqh', 'Aqeedah', 'Hadith'],
@@ -206,7 +206,7 @@ export function usePageSeo(pageKey) {
     },
     link: [
       { rel: 'canonical', href: canonicalUrl },
-      // Hreflang alternates — bidirectional, self-referencing, with
+      // Hreflang alternates. Bidirectional, self-referencing, with
       // English as x-default. Both locales point at one another so crawlers
       // can index each as its own entity.
       { rel: 'alternate', hreflang: 'en', href: enUrl },

@@ -21,7 +21,7 @@ const isAdminRoute = computed(() => route.path.startsWith('/dashboard/admin'));
 
 // Auth pages have their own centered language switcher inside the form card,
 // and a transparent navbar leaves a floating English/Arabic pill on the cream
-// background — hide the navbar entirely on these routes.
+// background. hide the navbar entirely on these routes.
 const AUTH_ROUTES = new Set([
   'login',
   'register',

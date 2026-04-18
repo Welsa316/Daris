@@ -1,15 +1,15 @@
 <template>
-  <!-- Why Daris — photo-as-card anchored right, bg provided by parent wrapper in HomeView -->
+  <!-- Why Daris. photo-as-card anchored right, bg provided by parent wrapper in HomeView -->
 
   <section class="relative overflow-hidden py-20 md:py-28 lg:py-32">
 
-    <!-- Soft gold radial glow — shifted right to back the card -->
+    <!-- Soft gold radial glow. shifted right to back the card -->
     <div
       class="absolute top-1/2 left-2/3 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] rounded-full bg-gold/[0.06] blur-[140px]"
       aria-hidden="true"
     ></div>
 
-    <!-- ── Card — right-anchored ── -->
+    <!-- ── Card. right-anchored ── -->
     <div class="relative z-10 section-wide">
       <div class="relative max-w-4xl ml-auto">
 
@@ -32,10 +32,10 @@
           </div>
         </div>
 
-        <!-- ── Photo card — image is the surface ── -->
+        <!-- ── Photo card. image is the surface ── -->
         <div class="relative rounded-2xl md:rounded-3xl shadow-2xl shadow-black/20 overflow-hidden ring-1 ring-black/[0.06]">
 
-          <!-- Background photo — object-top to show the subject properly.
+          <!-- Background photo. object-top to show the subject properly.
                WebP saves ~2MB vs the old PNG; explicit width/height avoid
                CLS while Tailwind's object-cover handles the real layout. -->
           <img
@@ -68,7 +68,7 @@
               {{ $t('home.credibilityTitle') }}
             </h2>
 
-            <!-- Stats — staggered 2-column -->
+            <!-- Stats. staggered 2-column -->
             <div
               class="grid grid-cols-2 gap-x-8 md:gap-x-12 max-w-md"
               data-reveal
@@ -83,7 +83,7 @@
                   i % 2 === 1 ? 'md:translate-y-5' : ''
                 ]"
               >
-                <!-- Hairline divider — alternating gold / cream -->
+                <!-- Hairline divider. alternating gold / cream -->
                 <div
                   class="h-px mb-4 md:mb-5"
                   :class="[
@@ -91,7 +91,7 @@
                   ]"
                   aria-hidden="true"
                 ></div>
-                <p class="heading-display text-2xl sm:text-3xl md:text-4xl text-cream font-bold leading-none mb-1.5">
+                <p class="heading-display text-xl sm:text-2xl md:text-3xl text-cream font-bold leading-none mb-1.5 text-balance">
                   {{ $t(stat.valueKey) }}
                 </p>
                 <p class="text-[10px] text-cream/35 tracking-[0.2em] uppercase">

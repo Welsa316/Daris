@@ -1,5 +1,5 @@
 <template>
-  <!-- COUNTRIES + CTA — One continuous dark section.
+  <!-- COUNTRIES + CTA. One continuous dark section.
        3D spinning globe with gold markers, country labels surrounding it, flowing into CTA. -->
   <section class="relative overflow-hidden bg-primary-950">
     <!-- Grain texture -->
@@ -10,7 +10,7 @@
 
     <div class="relative z-10 py-24 md:py-32">
 
-      <!-- ─── Large heading — Cinzel Decorative to match "Language of Revelation" ─── -->
+      <!-- ─── Large heading. Cinzel Decorative to match "Language of Revelation" ─── -->
       <h2
         class="font-ornate text-4xl md:text-5xl lg:text-6xl text-cream text-center mb-12 md:mb-20 px-6 uppercase tracking-tighter"
         data-reveal
@@ -151,7 +151,7 @@ const countryKeys = [
   white-space: nowrap;
 }
 
-/* Arabic fallback font renders smaller at same size — bump up */
+/* Arabic fallback font renders smaller at same size. bump up */
 [dir="rtl"] .globe-label {
   font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
   font-size: 0.85rem;

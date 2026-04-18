@@ -1,4 +1,4 @@
-# Daris — crawl policy.
+# Daris. crawl policy.
 # Marketing pages (`/en/*` and `/ar/*`) are open to every crawler that honours
 # robots.txt. Auth and authenticated surfaces are closed to everyone.
 # AI-search crawlers (GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot,
@@ -19,7 +19,7 @@ Disallow: /admin
 Disallow: /api/
 
 # Explicit allowlist for AI search and LLM-training crawlers.
-# Listing each under its own `User-agent` is the safe pattern — some of these
+# Listing each under its own `User-agent` is the safe pattern. some of these
 # bots ignore rules under `User-agent: *` and read only their named section.
 
 User-agent: GPTBot

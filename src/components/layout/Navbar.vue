@@ -7,7 +7,7 @@
       class="w-full px-8 md:px-12 flex items-center justify-between h-20"
       aria-label="Main navigation"
     >
-      <!-- Logo — fades in on scroll -->
+      <!-- Logo. fades in on scroll -->
       <RouterLink
         :to="homePath"
         class="flex items-center gap-3 group transition-all duration-500"
@@ -23,7 +23,7 @@
         <span class="sr-only">{{ $t('nav.srBrand') }}</span>
       </RouterLink>
 
-      <!-- Spacer when logo is hidden — keeps nav items positioned correctly -->
+      <!-- Spacer when logo is hidden. keeps nav items positioned correctly -->
       <div v-if="!scrolled" class="w-12" aria-hidden="true"></div>
 
       <!-- Mobile hamburger -->
@@ -231,7 +231,7 @@ const isOpen = ref(false);
 const scrolled = ref(false);
 
 // Every marketing link picks up the current locale prefix so Google indexes
-// only /en/* or /ar/* URLs — never the bare paths (those 301 to the locale
+// only /en/* or /ar/* URLs. never the bare paths (those 301 to the locale
 // variants on the server). The array stays reactive via `computed`.
 const homePath = computed(() => `/${locale.value}`);
 const contactPath = computed(() => `/${locale.value}/contact`);

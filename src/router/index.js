@@ -13,7 +13,7 @@ import { i18n, setLocale } from '@/i18n';
 // Each route carries a `meta.locale` and a `meta.pageKey` so the SEO
 // composable + nav guard can react to the URL instead of guessing from
 // vue-i18n state. Non-marketing routes (auth, dashboard) keep their bare
-// paths — they're not indexed and don't need locale-scoped URLs.
+// paths. they're not indexed and don't need locale-scoped URLs.
 function marketingRoutes() {
   const pages = [
     { key: 'home', path: '', component: HomeView },
@@ -33,7 +33,7 @@ function marketingRoutes() {
       });
     }
   }
-  // Articles: index + dynamic slug route. Currently English-only — when
+  // Articles: index + dynamic slug route. Currently English-only. when
   // Arabic translations land, mirror these two entries under `/ar/articles`.
   out.push({
     path: '/en/articles',
@@ -76,7 +76,7 @@ const routes = [
   ...marketingRoutes(),
   ...bareRedirects,
 
-  // Auth routes (unscoped — not indexed, no SEO reason to fork URLs)
+  // Auth routes (unscoped. not indexed, no SEO reason to fork URLs)
   {
     path: '/login',
     name: 'login',
@@ -133,7 +133,7 @@ const routes = [
     meta: { auth: true, role: 'admin' },
   },
 
-  // Catch-all — redirect unknown paths to the current-locale home.
+  // Catch-all. redirect unknown paths to the current-locale home.
   { path: '/:pathMatch(.*)*', redirect: () => `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}` },
 ];
 
@@ -172,17 +172,17 @@ router.beforeEach(async (to) => {
 
   const isAuthenticated = !!user.value;
 
-  // Guest-only routes (login, register) — redirect if already logged in
+  // Guest-only routes (login, register). redirect if already logged in
   if (to.meta.guest && isAuthenticated) {
     return isAdmin.value ? '/admin' : '/dashboard';
   }
 
-  // Auth-required routes — redirect to login if not authenticated
+  // Auth-required routes. redirect to login if not authenticated
   if (to.meta.auth && !isAuthenticated) {
     return '/login';
   }
 
-  // Role-required routes — redirect home if wrong role
+  // Role-required routes. redirect home if wrong role
   if (to.meta.role && user.value?.role !== to.meta.role) {
     return `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}`;
   }

@@ -2,7 +2,7 @@
   <div>
     <!-- ═══════════════════════════════════════════
          SECTION 1: Editorial Hero
-         Matches About page register — dark surface,
+         Matches About page register. dark surface,
          large serif headline, no generic banner.
          ═══════════════════════════════════════════ -->
     <section class="relative overflow-hidden bg-primary-950 pt-36 md:pt-44 pb-24 md:pb-32">
@@ -43,7 +43,7 @@
               data-reveal
               :data-reveal-delay="i * 100"
             >
-              <!-- Visual header — deeper gradient, more presence -->
+              <!-- Visual header. deeper gradient, more presence -->
               <div class="relative h-32 bg-gradient-to-br from-primary-800 via-primary to-primary-950 flex items-center overflow-hidden">
                 <div class="absolute inset-0 grain-texture" aria-hidden="true"></div>
                 <!-- Subtle lateral glow -->
@@ -75,7 +75,7 @@
                   </div>
                 </div>
 
-                <!-- Course progression — the detailed syllabus block. This is
+                <!-- Course progression. the detailed syllabus block. This is
                      where the page grows from ~50 words per card to ~200, and
                      where target keywords (tajwid, iʿrāb, makhārij, Hanafi
                      manuals, ijazah) actually live in body copy. -->
@@ -98,7 +98,7 @@
           <!-- Sidebar -->
           <aside class="space-y-8 lg:sticky lg:top-28">
             <!-- "How to start" CTA. Deliberately no pricing copy on the site
-                 — any numbers happen in a direct conversation once we know
+                . any numbers happen in a direct conversation once we know
                  the student's goals, level, and frequency. -->
             <div
               class="relative overflow-hidden rounded-2xl bg-primary-950 text-cream p-8"

@@ -5,7 +5,7 @@
          Dark surface, large serif brand statement.
          ═══════════════════════════════════════════ -->
     <section class="relative overflow-hidden bg-primary-950 py-32 md:py-44">
-      <!-- Subtle radial glow — warm, off-center -->
+      <!-- Subtle radial glow. warm, off-center -->
       <div class="absolute top-1/2 ltr:left-1/3 rtl:right-1/3 -translate-y-1/2 w-[700px] h-[400px] rounded-full bg-gold/[0.025] blur-[140px]" aria-hidden="true"></div>
       <!-- Grain -->
       <div class="absolute inset-0 grain-texture" aria-hidden="true"></div>
@@ -19,12 +19,12 @@
             {{ $t('about.eyebrow') }}
           </p>
 
-          <!-- Brand statement — large serif -->
+          <!-- Brand statement. large serif -->
           <h1 class="font-display text-4xl sm:text-5xl md:text-6xl text-cream leading-[1.08] mb-8 hero-entrance hero-entrance-2 text-balance">
             {{ $t('about.title') }}
           </h1>
 
-          <!-- Mission — generous, understated -->
+          <!-- Mission. generous, understated -->
           <p class="text-lg md:text-xl text-cream/40 leading-relaxed max-w-xl hero-entrance hero-entrance-3 text-pretty">
             {{ $t('about.description') }}
           </p>
@@ -36,7 +36,7 @@
          SECTION 2: Narrative + Methodology card
          Five-paragraph org story, left column. The
          "Methodology & tradition" card (right) is
-         organisation-level — no personal credentials.
+         organisation-level. no personal credentials.
          ═══════════════════════════════════════════ -->
     <section class="bg-cream py-24 md:py-36">
       <div class="section-wide">
@@ -77,7 +77,7 @@
     </section>
 
     <!-- ═══════════════════════════════════════════
-         SECTION 3: Methodology grid — "How we teach"
+         SECTION 3: Methodology grid. "How we teach"
          Five principles, 2-up then 3-up grid. Dark
          cream background to break rhythm between two
          dark sections.
@@ -116,7 +116,7 @@
     </section>
 
     <!-- ═══════════════════════════════════════════
-         SECTION 4: Values band — Philosophy + Languages
+         SECTION 4: Values band. Philosophy + Languages
          Dark green surface. Two-column editorial.
          ═══════════════════════════════════════════ -->
     <section class="relative overflow-hidden bg-primary-950 py-24 md:py-32">
@@ -151,7 +151,7 @@
     </section>
 
     <!-- ═══════════════════════════════════════════
-         SECTION 5: CTA — cinematic close
+         SECTION 5: CTA. cinematic close
          ═══════════════════════════════════════════ -->
     <section class="relative overflow-hidden bg-primary-950 py-32 md:py-44">
       <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-gold/[0.02] blur-[150px]" aria-hidden="true"></div>
@@ -199,7 +199,7 @@ const { contactEmail } = contactConfig;
 const { whatsAppHref } = useWhatsApp();
 
 // Six rows on the "Methodology & tradition" card. All are organisation-
-// level — training lineage, fiqh school, what/how each program teaches.
+// level. training lineage, fiqh school, what/how each program teaches.
 // Deliberately no named instructor; Daris is the brand and E-E-A-T here
 // is carried by the Al-Azhar lineage rather than a personal biography.
 const credentialRows = [

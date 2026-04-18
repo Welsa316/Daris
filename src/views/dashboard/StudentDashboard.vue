@@ -108,7 +108,7 @@
           <p class="text-slate-400 text-sm">{{ $t('dashboard.noUpcoming') }}</p>
         </div>
 
-        <!-- Past classes — collapsed, opt-in -->
+        <!-- Past classes. collapsed, opt-in -->
         <details v-if="dashboard?.pastClasses?.length" class="bg-white rounded-2xl shadow-card p-6 mb-6">
           <summary class="cursor-pointer list-none flex items-center justify-between">
             <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">
@@ -124,7 +124,7 @@
           </ul>
         </details>
 
-        <!-- Profile — minimal -->
+        <!-- Profile. minimal -->
         <details class="bg-white rounded-2xl shadow-card p-6">
           <summary class="cursor-pointer list-none flex items-center justify-between">
             <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Daris sitemap — 8 marketing URLs (4 pages × 2 locales), each with the
+  Daris sitemap. 8 marketing URLs (4 pages × 2 locales), each with the
   full hreflang alternate block. `x-default` is set to the English version
   so crawlers without an Arabic preference see the English URL first.
 

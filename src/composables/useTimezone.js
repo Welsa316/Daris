@@ -64,7 +64,7 @@ export function nextWeekdayInTz(dayOfWeek, timeStr, tz) {
   const [hour, minute] = timeStr.split(':').map(Number);
   const now = new Date();
 
-  // Figure out what "today" is in the target zone — don't use the admin's
+  // Figure out what "today" is in the target zone. don't use the admin's
   // local calendar, or the weekday math is wrong for users on the other
   // side of midnight from the class.
   const dtf = new Intl.DateTimeFormat('en-US', {

@@ -18,7 +18,7 @@ export const confirmDialogBus = {
  */
 export function confirmDialog(opts) {
   if (typeof confirmDialogBus.open !== 'function') {
-    // Component isn't mounted yet (first-paint race) — fall back to native
+    // Component isn't mounted yet (first-paint race). fall back to native
     // confirm so we don't silently lose the decision.
     // eslint-disable-next-line no-alert
     return Promise.resolve(window.confirm(opts.message));

@@ -3,7 +3,7 @@ import { logger } from '../utils/logger.js';
 import { t, getLang } from '../utils/i18n.js';
 
 /**
- * Global error handler — catches all unhandled errors
+ * Global error handler. catches all unhandled errors
  * In production: returns generic error message
  * In development: includes error details
  */

@@ -4,7 +4,7 @@ import { t, getLang } from '../utils/i18n.js';
 import { logger } from '../utils/logger.js';
 
 /**
- * Authentication middleware — verifies JWT access token from cookie
+ * Authentication middleware. verifies JWT access token from cookie
  * Attaches req.user with { id, role, tokenVersion }
  */
 export function authenticate(req, res, next) {

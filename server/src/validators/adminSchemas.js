@@ -139,7 +139,7 @@ export const classLogSchema = z.object({
 });
 
 // Payment amounts are stored in minor units (piastres / cents). Cap at
-// 10,000,000 = 100,000 major units per row — well above realistic tuition so
+// 10,000,000 = 100,000 major units per row. well above realistic tuition so
 // a fat-finger can't create a nine-figure entry.
 // paidAt must be on or before now so "future" payments can't land in the
 // ledger from a typo on the date picker.
@@ -156,7 +156,7 @@ export const paymentSchema = z.object({
 
 export const paymentUpdateSchema = paymentSchema.partial();
 
-// Only admin-facing profile fields go through this route. All optional —
+// Only admin-facing profile fields go through this route. All optional.
 // sending only one key updates only that one.
 export const studentProfileSchema = z
   .object({

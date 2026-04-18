@@ -230,6 +230,6 @@ export async function getStudentCount() {
     return cached.count;
   }
 
-  // Cache miss — compute and store
+  // Cache miss. compute and store
   return updateStudentCountCache();
 }

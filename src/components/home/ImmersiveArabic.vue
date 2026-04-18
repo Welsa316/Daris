@@ -1,5 +1,5 @@
 <template>
-  <!-- ARABIC — Ornate title + paper pane + translucent verse card.
+  <!-- ARABIC. Ornate title + paper pane + translucent verse card.
        The editorial, light-on-cream counterpart to the photo-immersive Quran & Fiqh sections.
        Luxury Islamic aesthetic: layered gold details, sacred geometry, reverent depth. -->
   <section class="relative flex flex-col justify-center py-24 px-6 md:px-24 overflow-visible">
@@ -59,13 +59,13 @@
               {{ $t('home.splitArabicEyebrow') }}
             </p>
 
-            <!-- Ornate title — Cinzel Decorative (English) / Noto Sans Arabic fallback -->
+            <!-- Ornate title. Cinzel Decorative (English) / Noto Sans Arabic fallback -->
             <h2 class="font-ornate text-3xl sm:text-5xl md:text-6xl lg:text-7xl !leading-[1.15] tracking-tighter mb-8 pt-2 overflow-visible uppercase">
               <span class="text-primary-950 block pb-1">{{ $t('home.splitArabicHeadline1') }}</span>
               <span class="text-reveal block font-black pb-8">{{ $t('home.splitArabicHeadline2') }}</span>
             </h2>
 
-            <!-- Quran verse — inline beside the headline, in a reverent gilded style -->
+            <!-- Quran verse. inline beside the headline, in a reverent gilded style -->
             <figure class="relative mb-14 max-w-2xl">
               <div class="flex items-center gap-3 mb-4" aria-hidden="true">
                 <div class="h-px w-10 bg-gradient-to-r from-transparent via-gold/60 to-gold/60"></div>
@@ -85,7 +85,7 @@
               </div>
             </figure>
 
-            <!-- Tha'alibi quote — ornate border with diamond flourish -->
+            <!-- Tha'alibi quote. ornate border with diamond flourish -->
             <div class="relative ltr:pl-8 rtl:pr-8 mb-12">
               <!-- Ornate quote border: gold line with diamond midpoint -->
               <div class="absolute ltr:left-0 rtl:right-0 top-0 bottom-0 w-px" aria-hidden="true">
@@ -107,7 +107,7 @@
               </p>
             </div>
 
-            <!-- CTA — rounded pill to match Quran/Fiqh sections -->
+            <!-- CTA. rounded pill to match Quran/Fiqh sections -->
             <a
               :href="whatsAppHref"
               target="_blank"
@@ -143,7 +143,7 @@ const { whatsAppHref } = useWhatsApp();
   background-clip: text;
 }
 
-/* Paper pane — warm editorial feel with gold accents */
+/* Paper pane. warm editorial feel with gold accents */
 .paper-pane {
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.03),
@@ -153,7 +153,7 @@ const { whatsAppHref } = useWhatsApp();
   border: 1px solid rgba(212, 175, 55, 0.2);
 }
 
-/* CTA — gold glow on hover */
+/* CTA. gold glow on hover */
 .cta-btn {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
