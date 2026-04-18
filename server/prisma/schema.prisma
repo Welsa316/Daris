@@ -58,6 +58,7 @@ model User {
   classLogsAuthored ClassLog[]     @relation("ClassLogAuthor")
   payments          Payment[]      @relation("PaymentStudent")
   paymentsAuthored  Payment[]      @relation("PaymentAuthor")
+  googleCalendarConnection GoogleCalendarConnection?
 
   @@index([role])
   @@index([createdAt])
@@ -110,10 +111,21 @@ model ClassSession {
   // new subjects (e.g. "seerah", "tafseer") without a migration.
   // Null for classes scheduled before this field existed.
   subject         String?
+  // Mixed-subject sessions (e.g. "Quran for the first hour, Fiqh for the
+  // second"). When subjectSecondary is set, subjectSwitchMin must be set
+  // too. Validated in Zod at the API layer. See the Google Calendar
+  // integration plan for the full constraint set.
+  subjectSecondary String?  @map("subject_secondary")
+  subjectSwitchMin Int?     @map("subject_switch_min")
   startTime       DateTime @map("start_time")
   endTime         DateTime @map("end_time")
   timezone        String   @default("UTC")
   meetingLink     String?  @map("meeting_link")
+  // Google Calendar sync — populated once the Calendar API has created the
+  // event. Null before sync, or while disconnected / migrating. The
+  // `meetingLink` above is updated to the Meet URL when this is set.
+  googleEventId       String?   @map("google_event_id")
+  googleEventSyncedAt DateTime? @map("google_event_synced_at")
   recurrence      String?  // "weekly" | "biweekly" | "custom" | null (one-off)
   recurrenceEnd   DateTime? @map("recurrence_end")
   cancelled       Boolean  @default(false)
@@ -135,12 +147,72 @@ model ClassSession {
   createdByAdmin  User?    @relation("AdminClasses", fields: [createdByAdminId], references: [id], onDelete: SetNull)
   assignments     ClassAssignment[]
   classLogs       ClassLog[]
+  googleSyncOps   GoogleCalendarSyncOp[]
 
   @@index([startTime])
   @@index([cancelled])
   @@index([createdByAdminId])
   @@index([seriesId])
   @@map("class_sessions")
+}
+
+// A per-admin OAuth connection to Google Calendar. Created when the admin
+// clicks "Connect Google Calendar" in the Scheduling tab, swapped for a
+// refresh token + initial access token via the Authorization Code flow.
+// Tokens are encrypted at rest with AES-256-GCM using TOKEN_ENCRYPTION_KEY.
+// If the connection is disconnected the tokens are wiped and the row is
+// kept with status='disconnected' for audit; reconnecting updates in place.
+model GoogleCalendarConnection {
+  id                      String    @id @default(uuid()) @db.Uuid
+  userId                  String    @unique @map("user_id") @db.Uuid
+  googleAccountEmail      String    @map("google_account_email")
+  googleCalendarId        String    @default("primary") @map("google_calendar_id")
+  encryptedRefreshToken   String?   @map("encrypted_refresh_token") @db.Text
+  encryptedAccessToken    String?   @map("encrypted_access_token") @db.Text
+  accessTokenExpiresAt    DateTime? @map("access_token_expires_at")
+  // "active" | "needs_reconnect" | "disconnected"
+  status                  String    @default("active")
+  // Space-separated list of scopes granted by the user. Used on reconnect
+  // to detect scope changes and re-prompt if needed.
+  scopes                  String    @default("")
+  // Reserved for a future opt-in feature: adding students as attendees on
+  // the Google Calendar event. Out of scope for the initial integration.
+  inviteStudents          Boolean   @default(false) @map("invite_students")
+  connectedAt             DateTime  @default(now()) @map("connected_at")
+  lastSyncedAt            DateTime? @map("last_synced_at")
+  lastErrorAt             DateTime? @map("last_error_at")
+  lastErrorMessage        String?   @map("last_error_message") @db.Text
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("google_calendar_connections")
+}
+
+// Queued sync operation for a class session. A row is created whenever a
+// class is scheduled / rescheduled / cancelled via the admin UI, and the
+// background job drains pending rows against the Google Calendar API with
+// exponential-backoff retries. See the integration plan for the full retry
+// semantics. Uses atomic claim on update to survive rolling deploys.
+model GoogleCalendarSyncOp {
+  id             String       @id @default(uuid()) @db.Uuid
+  classSessionId String       @map("class_session_id") @db.Uuid
+  // "create" | "update" | "cancel"
+  op             String
+  attemptCount   Int          @default(0) @map("attempt_count")
+  lastAttemptAt  DateTime?    @map("last_attempt_at")
+  nextAttemptAt  DateTime     @default(now()) @map("next_attempt_at")
+  errorMessage   String?      @map("error_message") @db.Text
+  resolved       Boolean      @default(false)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  classSession   ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+
+  @@index([resolved, nextAttemptAt])
+  @@index([classSessionId])
+  @@map("google_calendar_sync_ops")
 }
 
 model ClassAssignment {
