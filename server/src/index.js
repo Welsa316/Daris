@@ -61,13 +61,20 @@ app.use('/api', publicRoutes);
 // --- Serve Vue frontend in production ---
 const frontendDist = path.resolve(__dirname, '../../dist');
 
-// Hashed assets (Vite emits /assets/<name>-<hash>.<ext>) are content-addressed
-//. cache them for a year. index.html changes on every deploy, so it must
+// Hashed assets (Vite emits /assets/<name>-<hash>.<ext>) are content-addressed,
+// so cache them for a year. index.html changes on every deploy, so it must
 // never be cached, otherwise a browser holding an old copy asks the server
 // for asset filenames that no longer exist and the SPA fallback serves HTML
 // in their place (MIME-type errors in the console).
+//
+// `index: false` is important: without it, express.static auto-serves
+// dist/index.html for any directory-like request (including GET /), which
+// would intercept `/` before our locale-aware 301 redirect below ever
+// runs. With index disabled, `/` falls through to the BARE_MARKETING_PATHS
+// handler, while asset files are still served as normal.
 app.use(
   express.static(frontendDist, {
+    index: false,
     setHeaders: (res, filePath) => {
       if (filePath.endsWith('index.html')) {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -106,10 +113,17 @@ try {
   // dist may not exist in dev. that's fine, fallback will 404
 }
 
+// Marker in dist/index.html that wraps the SSR-able meta tags. The SPA
+// fallback below swaps this whole block out for route-specific meta on
+// marketing routes so there are never duplicate <title>/OG tags in the
+// response. Must exactly match the comments in public/../index.html.
+const SSR_META_MARKER = /<!--\s*SSR-META-START[\s\S]*?SSR-META-END\s*-->/;
+
 // SPA fallback with server-side SEO meta injection.
-// For marketing routes (/, /about, /programs, /contact), inject route-specific
-// <title>, <meta>, and JSON-LD into the HTML so crawlers see full SEO content
-// without needing JavaScript execution.
+// For marketing routes (/en/*, /ar/*), replace the SSR-META marker block
+// with route-specific <title>, <meta>, canonical, hreflang alternates,
+// OG/Twitter, and JSON-LD so crawlers see full SEO content without
+// needing JavaScript execution and without duplicate tags.
 app.get(/^\/(?!api).*/, (req, res, next) => {
   // Always fresh. never let the browser or a CDN cache this response.
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -123,11 +137,15 @@ app.get(/^\/(?!api).*/, (req, res, next) => {
   const metaHtml = buildMetaHtml(req.path);
 
   if (metaHtml) {
-    // Inject route-specific meta right before </head>
-    const injected = indexHtml.replace('</head>', `${metaHtml}\n  </head>`);
+    // Marketing route: replace the marker block with route-specific meta.
+    // The regex is indentation-agnostic; `metaHtml.trim()` avoids doubling
+    // the leading whitespace that buildMetaHtml already includes.
+    const injected = indexHtml.replace(SSR_META_MARKER, metaHtml.trim());
     res.type('html').send(injected);
   } else {
-    // Non-marketing routes (auth, dashboard). serve default HTML
+    // Non-marketing route (auth, dashboard). Keep the minimal static
+    // fallback from index.html. These paths are disallow'd in robots.txt
+    // so they don't need per-route meta anyway.
     res.type('html').send(indexHtml);
   }
 });
