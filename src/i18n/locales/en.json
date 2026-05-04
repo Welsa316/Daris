@@ -683,6 +683,45 @@
       "scheduleAnyway": "Schedule anyway (student will be double-booked)",
       "skip": "Skip these sessions",
       "confirm": "Confirm and schedule"
+    },
+    "teachers": {
+      "title": "Teachers",
+      "subtitle": "Promote enrolled students to teachers and assign them students to teach.",
+      "tab": "Teachers",
+      "addTeacher": "Add teacher",
+      "cancel": "Cancel",
+      "promoteHint": "Enter the email of an enrolled student. They'll get teacher access on their next sign-in.",
+      "promotePlaceholder": "student@example.com",
+      "promote": "Promote",
+      "promoteNotFound": "No enrolled student found with that email.",
+      "promoteFailed": "Could not promote. Try again.",
+      "promoted": "Teacher promoted.",
+      "empty": "No teachers yet.",
+      "emptyHint": "Promote an enrolled student above to add the first teacher.",
+      "joinedOn": "Joined {date}",
+      "lastLogin": "last login {date}",
+      "studentCount": {
+        "zero": "No students assigned",
+        "one": "1 student assigned",
+        "many": "{count} students assigned"
+      },
+      "assign": "Assign students",
+      "demote": "Demote",
+      "demoted": "Teacher demoted.",
+      "demoteTitle": "Demote teacher",
+      "demoteConfirm": "Demote {name} back to enrolled student? Their {count} student assignments will be removed. Their authored classes stay on the schedule.",
+      "assignTitle": "Assign students to {name}",
+      "assignSubtitle": "Pick the students this teacher will manage. Saving replaces the current set.",
+      "selectedCount": {
+        "zero": "No students selected",
+        "one": "1 student selected",
+        "many": "{count} students selected"
+      },
+      "selectAll": "Select all visible",
+      "clearAll": "Clear all",
+      "noMatchingStudents": "No students match your search.",
+      "saveAssignments": "Save assignments",
+      "assignmentsSaved": "Assignments saved."
     }
   }
 }

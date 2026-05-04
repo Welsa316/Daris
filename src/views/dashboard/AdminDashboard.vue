@@ -448,6 +448,13 @@
         </div>
       </div>
 
+      <!-- Teachers (sheikh-only) -->
+      <TeachersTab
+        v-if="activeTab === 'teachers' && isAdmin"
+        @toast="(err, action) => showToast(err, action)"
+        @role-changed="onTeacherRoleChanged"
+      />
+
       <!-- Student Detail Modal -->
       <div v-if="selectedStudent" role="dialog" aria-modal="true" aria-labelledby="studentDetailTitle" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="selectedStudent = null">
         <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
@@ -977,12 +984,13 @@ import { useAuth } from '@/composables/useAuth.js';
 import { api } from '@/config/api.js';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 import BalancePill from '@/components/dashboard/BalancePill.vue';
+import TeachersTab from '@/components/dashboard/TeachersTab.vue';
 import { confirmDialog, promptDialog } from '@/composables/useConfirmDialog.js';
 import { queueUndoable } from '@/composables/useUndoToast.js';
 import { nextWeekdayInTz, TZ_OPTIONS, formatInTz } from '@/composables/useTimezone.js';
 
 const { locale, t } = useI18n();
-const { logout } = useAuth();
+const { logout, isAdmin } = useAuth();
 
 // Admin locale is controlled by the LanguageSwitcher in the header. We used
 // to force Arabic on mount, but that fought with the toggle the sheikh now
@@ -1367,12 +1375,21 @@ const showFirstRunChecklist = computed(() => {
   return firstRunSteps.value.some((s) => !s.done);
 });
 
-const tabs = [
-  { key: 'enrollments', label: 'admin.enrollments' },
-  { key: 'students', label: 'admin.students' },
-  { key: 'scheduling', label: 'admin.scheduling' },
-  { key: 'activity', label: 'admin.activity' },
-];
+// Tabs are role-aware. The sheikh sees the Teachers management tab; teachers
+// don't (they get a read-only directory in Phase E). Computed so it reacts
+// when `useAuth` rehydrates after login.
+const tabs = computed(() => {
+  const base = [
+    { key: 'enrollments', label: 'admin.enrollments' },
+    { key: 'students', label: 'admin.students' },
+    { key: 'scheduling', label: 'admin.scheduling' },
+    { key: 'activity', label: 'admin.activity' },
+  ];
+  if (isAdmin.value) {
+    base.push({ key: 'teachers', label: 'admin.teachers.tab' });
+  }
+  return base;
+});
 
 // `action` is a key under `admin.actionFailed.*`. When provided, the toast
 // is prefixed with that label so the sheikh knows *which* action blew up,
@@ -1423,6 +1440,14 @@ async function loadClasses() {
     const data = await api.get('/api/admin/classes?limit=200');
     classes.value = data.classes;
   } catch (e) { showToast(e, 'loadClasses'); }
+}
+
+// Promoting/demoting a teacher changes who appears in the enrolled-student
+// list (a promoted student leaves the list; a demoted teacher rejoins it).
+// Refresh the relevant slices so the rest of the dashboard reflects the new
+// reality without a full page reload.
+async function onTeacherRoleChanged() {
+  await Promise.all([loadStudents(), loadStats()]);
 }
 
 async function loadSettings() {
