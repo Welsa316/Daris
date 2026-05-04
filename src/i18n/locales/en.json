@@ -691,7 +691,7 @@
       "addTeacher": "Add teacher",
       "cancel": "Cancel",
       "promoteHint": "Enter the email of an enrolled student. They'll get teacher access on their next sign-in.",
-      "promotePlaceholder": "student@example.com",
+      "promotePlaceholder": "student{'@'}example.com",
       "promote": "Promote",
       "promoteNotFound": "No enrolled student found with that email.",
       "promoteFailed": "Could not promote. Try again.",

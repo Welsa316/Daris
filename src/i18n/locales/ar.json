@@ -691,7 +691,7 @@
       "addTeacher": "إضافة معلم",
       "cancel": "إلغاء",
       "promoteHint": "أدخل البريد الإلكتروني لطالب ملتحق. سيحصل على صلاحية المعلم عند تسجيل الدخول التالي.",
-      "promotePlaceholder": "student@example.com",
+      "promotePlaceholder": "student{'@'}example.com",
       "promote": "ترقية",
       "promoteNotFound": "لم يتم العثور على طالب ملتحق بهذا البريد الإلكتروني.",
       "promoteFailed": "تعذرت الترقية. حاول مرة أخرى.",
