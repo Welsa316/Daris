@@ -448,11 +448,12 @@
         </div>
       </div>
 
-      <!-- Teachers (sheikh-only) -->
+      <!-- Teachers (sheikh-only, read-only). Promotion and assignment are
+           managed by the site owner via DB / CLI scripts; the dashboard
+           just shows the current state. -->
       <TeachersTab
         v-if="activeTab === 'teachers' && isAdmin"
         @toast="(err, action) => showToast(err, action)"
-        @role-changed="onTeacherRoleChanged"
       />
 
       <!-- Student Detail Modal -->
@@ -1440,14 +1441,6 @@ async function loadClasses() {
     const data = await api.get('/api/admin/classes?limit=200');
     classes.value = data.classes;
   } catch (e) { showToast(e, 'loadClasses'); }
-}
-
-// Promoting/demoting a teacher changes who appears in the enrolled-student
-// list (a promoted student leaves the list; a demoted teacher rejoins it).
-// Refresh the relevant slices so the rest of the dashboard reflects the new
-// reality without a full page reload.
-async function onTeacherRoleChanged() {
-  await Promise.all([loadStudents(), loadStats()]);
 }
 
 async function loadSettings() {

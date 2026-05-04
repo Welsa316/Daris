@@ -1,33 +1,30 @@
 /**
- * Multi-teacher management routes.
+ * Multi-teacher read endpoints.
  *
- * Two access tiers are exposed here:
+ * Two access tiers are exposed here, both READ-ONLY:
  *
- *   - Sheikh-only ("/teachers", "/teachers/:id/...") for managing teachers,
- *     assigning students, and changing roles. Mounted with `requireAdmin`.
+ *   - Sheikh-only ("/teachers") full list with management metadata
+ *     (emails, last-login, student rosters). Used by the Teachers tab.
  *
- *   - Admin-or-teacher ("/teachers/directory") read-only listing visible
- *     to teachers too so they can see who else is on the team. Mounted
- *     with the same global `requireAdminOrTeacher` middleware as the
- *     rest of the admin surface.
+ *   - Admin-or-teacher ("/teachers/directory") read-only directory so
+ *     teachers know who else is on the team.
  *
- * Phase C scope: this file ships the backend half. The Sheikh's UI for
- * promoting + assigning lives in the AdminDashboard (Phase C frontend).
- * Teacher's own dashboard surfaces (My Classes, scoped Students tab,
- * teachers directory rendering) are Phase E.
+ * Promotion, demotion, and student-to-teacher assignment are intentionally
+ * NOT exposed as HTTP routes. The site owner manages them out-of-band:
+ *
+ *   - Roles via `node server/scripts/set-user-role.js <email> <role>`
+ *   - Assignments via `node server/scripts/assign-students-to-teacher.js`
+ *   - Or directly via Prisma Studio / SQL
+ *
+ * The sheikh (admin role) can VIEW teachers and rosters but cannot mutate
+ * either from the dashboard. This is a deliberate product choice: the
+ * owner wants single-source control over who teaches and who they teach.
  */
 
 import { Router } from 'express';
 import { authenticate, verifyTokenVersion } from '../middleware/auth.js';
 import { requireAdmin, requireAdminOrTeacher } from '../middleware/rbac.js';
-import { validate } from '../middleware/validate.js';
 import { prisma } from '../config/database.js';
-import { auditLog } from '../utils/logger.js';
-import { t, getLang } from '../utils/i18n.js';
-import {
-  teacherStudentsSchema,
-  roleChangeSchema,
-} from '../validators/adminSchemas.js';
 
 const router = Router();
 
@@ -76,10 +73,10 @@ router.get('/directory', async (req, res, next) => {
   }
 });
 
-// --- Sheikh-only management ---
+// --- Sheikh-only read ---
 
 // Full teacher list with management metadata: emails, last-login, full
-// student roster preview. Used by the Teachers tab.
+// student roster preview. Used by the (read-only) Teachers tab.
 router.get('/', requireAdmin, async (req, res, next) => {
   try {
     const teachers = await prisma.user.findMany({
@@ -115,199 +112,5 @@ router.get('/', requireAdmin, async (req, res, next) => {
     next(error);
   }
 });
-
-// Replace-semantics: the body's studentIds list becomes the teacher's
-// full assigned-students set. Diffs against the existing set and applies
-// adds + removes atomically.
-router.put(
-  '/:id/students',
-  requireAdmin,
-  validate(teacherStudentsSchema),
-  async (req, res, next) => {
-    try {
-      const lang = getLang(req);
-      const teacherId = req.params.id;
-      const { studentIds } = req.body;
-
-      // Sanity: target must be a real teacher (not the sheikh, not a
-      // suspended user). Prevents accidentally assigning students to the
-      // wrong account via a misclick or stale dashboard state.
-      const teacher = await prisma.user.findFirst({
-        where: { id: teacherId, role: 'teacher', deletedAt: null },
-        select: { id: true },
-      });
-      if (!teacher) {
-        return res.status(404).json({ error: t('error.notFound', lang) });
-      }
-
-      // Verify every studentId actually exists and is enrolled. Refuses
-      // to silently drop bogus ids on the floor.
-      const existingStudents = await prisma.user.findMany({
-        where: {
-          id: { in: studentIds },
-          role: 'enrolled_student',
-          deletedAt: null,
-        },
-        select: { id: true },
-      });
-      if (existingStudents.length !== studentIds.length) {
-        return res.status(400).json({
-          error: 'One or more studentIds do not refer to an enrolled student',
-        });
-      }
-
-      // Diff in a transaction so the assignments table never reflects a
-      // half-applied state if a concurrent request changes things mid-flight.
-      const desired = new Set(studentIds);
-      const result = await prisma.$transaction(async (tx) => {
-        const current = await tx.teacherStudent.findMany({
-          where: { teacherId },
-          select: { studentId: true },
-        });
-        const currentSet = new Set(current.map((r) => r.studentId));
-
-        const toAdd = [...desired].filter((sid) => !currentSet.has(sid));
-        const toRemove = [...currentSet].filter((sid) => !desired.has(sid));
-
-        if (toRemove.length) {
-          await tx.teacherStudent.deleteMany({
-            where: { teacherId, studentId: { in: toRemove } },
-          });
-        }
-        if (toAdd.length) {
-          await tx.teacherStudent.createMany({
-            data: toAdd.map((studentId) => ({
-              teacherId,
-              studentId,
-              assignedByAdminId: req.user.id,
-            })),
-          });
-        }
-
-        return { added: toAdd.length, removed: toRemove.length, total: desired.size };
-      });
-
-      auditLog('TEACHER_STUDENTS_UPDATED', {
-        teacherId,
-        adminId: req.user.id,
-        ...result,
-      });
-
-      res.json(result);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-// Change a user's role. Used to promote (enrolled_student → teacher,
-// teacher → admin) or demote (teacher → enrolled_student, etc.).
-//
-// Mirrors the logic in scripts/set-user-role.js with two additions:
-//   - When demoting away from teacher, we cascade-delete their
-//     TeacherStudent rows so orphaned assignments don't accumulate.
-//   - The sheikh cannot demote themselves to a non-admin role (avoids
-//     a single-admin lockout).
-router.post(
-  '/:id/role',
-  requireAdmin,
-  validate(roleChangeSchema),
-  async (req, res, next) => {
-    try {
-      const lang = getLang(req);
-      const targetId = req.params.id;
-      const { role } = req.body;
-
-      const target = await prisma.user.findFirst({
-        where: { id: targetId, deletedAt: null },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          emailVerified: true,
-          enrolledAt: true,
-        },
-      });
-
-      if (!target) {
-        return res.status(404).json({ error: t('error.notFound', lang) });
-      }
-
-      if (target.role === role) {
-        return res.json({
-          message: 'No change',
-          user: { id: target.id, role: target.role },
-        });
-      }
-
-      // Lockout guard: refuse to demote the last remaining sheikh.
-      if (target.role === 'admin' && role !== 'admin') {
-        const otherAdmins = await prisma.user.count({
-          where: {
-            role: 'admin',
-            deletedAt: null,
-            id: { not: target.id },
-          },
-        });
-        if (otherAdmins === 0) {
-          return res.status(400).json({
-            error: 'Cannot demote the only remaining admin. Promote another user to admin first.',
-          });
-        }
-      }
-
-      // Self-demotion guard: if the requester is the same person AND
-      // they're moving themselves out of admin, refuse.
-      if (target.id === req.user.id && role !== 'admin') {
-        return res.status(400).json({
-          error: 'You cannot change your own role away from admin. Have another admin do it.',
-        });
-      }
-
-      // Promotion target requires verified email.
-      if ((role === 'admin' || role === 'teacher') && !target.emailVerified) {
-        return res.status(400).json({
-          error: 'Cannot promote a user whose email has not been verified.',
-        });
-      }
-
-      const wasTeacher = target.role === 'teacher';
-
-      // Apply the role change in a transaction. If demoting away from
-      // teacher, drop their TeacherStudent rows in the same transaction
-      // so a stale teacherId can't be left dangling on student records.
-      const updated = await prisma.$transaction(async (tx) => {
-        if (wasTeacher && role !== 'teacher') {
-          await tx.teacherStudent.deleteMany({ where: { teacherId: target.id } });
-        }
-        return tx.user.update({
-          where: { id: target.id },
-          data: {
-            role,
-            tokenVersion: { increment: 1 },
-            ...(role !== 'suspended' && !target.enrolledAt
-              ? { enrolledAt: new Date() }
-              : {}),
-          },
-          select: { id: true, email: true, role: true, tokenVersion: true },
-        });
-      });
-
-      auditLog(`ROLE_CHANGED:${target.role}_to_${role}`, {
-        targetUserId: target.id,
-        adminId: req.user.id,
-      });
-
-      res.json({
-        message: 'Role updated',
-        user: updated,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
 
 export default router;

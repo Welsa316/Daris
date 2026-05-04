@@ -196,18 +196,8 @@ export const availabilityOverrideSchema = z.object({
   reason: z.string().max(200).optional().nullable(),
 });
 
-// --- Multi-teacher (Phase C) ---
-
-// Replace-semantics: the body's studentIds list becomes the teacher's full
-// student set. The route diffs against the current set and applies adds +
-// removes atomically. Idempotent: re-submitting the same list is a no-op.
-export const teacherStudentsSchema = z.object({
-  studentIds: z.array(z.string().uuid()).max(500),
-});
-
-// Allowed targets for the role-change endpoint. Other UserRole values
-// (pending, pending_review, rejected) flow through the normal enrollment
-// process and are intentionally NOT changeable from the Teachers tab.
-export const roleChangeSchema = z.object({
-  role: z.enum(['admin', 'teacher', 'enrolled_student', 'suspended']),
-});
+// Multi-teacher promote/demote and student-to-teacher assignment are
+// intentionally NOT exposed as HTTP routes (the sheikh's view of the
+// Teachers tab is read-only). Roles are managed via
+// `server/scripts/set-user-role.js` and assignments via
+// `server/scripts/assign-students-to-teacher.js`.
