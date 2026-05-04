@@ -223,6 +223,16 @@
 
       <!-- Scheduling -->
       <div v-if="activeTab === 'scheduling'" class="space-y-4">
+        <!-- Google Calendar connection card. Sheikh-only. Once
+             connected, every new class will create a Google Calendar
+             event with its own Meet link (Phase C). The global meeting
+             link below is the fallback for unsynced classes. -->
+        <GoogleCalendarCard
+          v-if="isAdmin"
+          ref="gcalCardRef"
+          @toast="(err, action) => showToast(err, action)"
+        />
+
         <!-- Global Meeting Link. Sheikh-only: it's a site-wide setting,
              not a per-teacher knob. Teachers see no settings here. -->
         <div v-if="isAdmin" class="bg-white rounded-2xl shadow-card p-4">
@@ -1049,6 +1059,7 @@ import BalancePill from '@/components/dashboard/BalancePill.vue';
 import TeachersTab from '@/components/dashboard/TeachersTab.vue';
 import MyClassesTab from '@/components/dashboard/MyClassesTab.vue';
 import ClassDetailDrawer from '@/components/dashboard/ClassDetailDrawer.vue';
+import GoogleCalendarCard from '@/components/dashboard/GoogleCalendarCard.vue';
 import { confirmDialog, promptDialog } from '@/composables/useConfirmDialog.js';
 import { queueUndoable } from '@/composables/useUndoToast.js';
 import { nextWeekdayInTz, TZ_OPTIONS, formatInTz } from '@/composables/useTimezone.js';
@@ -2330,6 +2341,34 @@ function handleGlobalKeydown(e) {
   if (calendarFullscreen.value) { calendarFullscreen.value = false; return; }
 }
 
+// Ref handle on the Google Calendar card so we can refresh its status
+// after the OAuth callback redirects back here with ?calendar=connected.
+const gcalCardRef = ref(null);
+
+// Surface OAuth callback outcomes via toast + refresh the card. Google
+// redirects the browser to /admin?calendar=connected on success or
+// /admin?calendar=error&reason=... on failure. We strip the query
+// params after handling so a refresh doesn't replay the toast.
+function handleGCalCallbackParams() {
+  const params = new URLSearchParams(window.location.search);
+  const flag = params.get('calendar');
+  if (!flag) return;
+  if (flag === 'connected') {
+    showToast(t('admin.gcal.connectedToast'));
+    activeTab.value = 'scheduling';
+    // The card's onMounted may have already loaded "not_connected" state
+    // before the redirect. Force a refresh so it flips to active.
+    setTimeout(() => gcalCardRef.value?.refresh?.(), 100);
+  } else if (flag === 'error') {
+    const reason = params.get('reason') || 'unknown';
+    showToast(t('admin.gcal.connectError', { reason }));
+    activeTab.value = 'scheduling';
+  }
+  // Strip the query string from the URL so a reload doesn't re-fire.
+  const cleanUrl = window.location.pathname + window.location.hash;
+  window.history.replaceState({}, '', cleanUrl);
+}
+
 onMounted(() => {
   loadStats();
   // Pending enrollments are sheikh-only; teachers don't have permission
@@ -2344,6 +2383,10 @@ onMounted(() => {
   // in the upcoming-classes widget. The PUT remains sheikh-only.
   loadSettings();
   window.addEventListener('keydown', handleGlobalKeydown);
+
+  // OAuth post-redirect handling. Sheikh-only path; teachers never
+  // see the card so the params do nothing for them.
+  if (isAdmin.value) handleGCalCallbackParams();
 });
 
 // Used by MyClassesTab's "Schedule" CTA to flip the active tab over to

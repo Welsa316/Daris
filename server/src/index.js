@@ -20,6 +20,7 @@ import studentRoutes from './routes/student.js';
 import meetingRoutes from './routes/meeting.js';
 import publicRoutes from './routes/public.js';
 import teachersRoutes from './routes/teachers.js';
+import googleCalendarRoutes from './routes/googleCalendar.js';
 import { buildMetaHtml, pickLocaleFromHeader } from './seoMeta.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -55,6 +56,7 @@ app.use('/api', generalLimiter);
 // --- Routes ---
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/teachers', teachersRoutes);
+app.use('/api/admin/google-calendar', googleCalendarRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/meeting', meetingRoutes);
