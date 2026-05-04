@@ -52,10 +52,18 @@ export const isGoogleCalendarConfigured = Boolean(
 );
 
 if (isProd && !isGoogleCalendarConfigured) {
+  // Spell out exactly which var(s) are missing so we don't have to play
+  // "guess which one Railway didn't pick up". Each entry is the var name
+  // if it's empty/unset, false otherwise; the filter strips the falsies.
+  const missing = [
+    !env.GOOGLE_OAUTH_CLIENT_ID && 'GOOGLE_OAUTH_CLIENT_ID',
+    !env.GOOGLE_OAUTH_CLIENT_SECRET && 'GOOGLE_OAUTH_CLIENT_SECRET',
+    !env.GOOGLE_OAUTH_REDIRECT_URI && 'GOOGLE_OAUTH_REDIRECT_URI',
+    !env.TOKEN_ENCRYPTION_KEY && 'TOKEN_ENCRYPTION_KEY',
+  ].filter(Boolean);
   console.warn(
-    '[env] Google Calendar integration is NOT configured. Set ' +
-    'GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, ' +
-    'GOOGLE_OAUTH_REDIRECT_URI, and TOKEN_ENCRYPTION_KEY to enable. ' +
-    'Classes will continue to use the global meeting link.'
+    `[env] Google Calendar integration is NOT configured. ` +
+    `Missing or empty env vars: ${missing.join(', ')}. ` +
+    `Classes will continue to use the global meeting link.`
   );
 }
