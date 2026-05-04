@@ -1011,7 +1011,11 @@ router.delete('/classes', requireAdmin, async (req, res, next) => {
 
 // --- Settings (sheikh-only) ---
 
-router.get('/settings', requireAdmin, async (req, res, next) => {
+// Site settings READ is admin-or-teacher: teachers need the global
+// meeting link to join classes too. The link isn't a secret — it goes
+// out in every reminder email — so widening this read doesn't leak
+// anything new. The PUT below stays sheikh-only.
+router.get('/settings', async (req, res, next) => {
   try {
     const settings = await prisma.siteSetting.findMany();
     const result = {};

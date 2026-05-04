@@ -688,7 +688,8 @@
     },
     "teachers": {
       "title": "Teachers",
-      "subtitle": "View teachers and the students assigned to them. Teachers and assignments are managed by the site owner.",
+      "subtitle": "View teachers and the students assigned to them. Teachers are added by the site owner; you can route students between them from the schedule form.",
+      "subtitleTeacher": "Other teachers on the team. You can see names and student counts; rosters are private.",
       "tab": "Teachers",
       "empty": "No teachers yet.",
       "emptyHint": "Teachers are added by the site owner.",

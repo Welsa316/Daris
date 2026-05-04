@@ -674,7 +674,11 @@
                 </div>
               </template>
             </div>
-            <div class="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-3">
+            <!-- Destructive footer actions are sheikh-only. The
+                 endpoints behind both are guarded with requireAdmin so a
+                 teacher hitting them directly would 403; hide the
+                 buttons too so the teacher's UI stays clean. -->
+            <div v-if="isAdmin" class="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-3">
               <button
                 @click="clearUpcomingClasses(selectedStudent.id)"
                 :disabled="clearingUpcoming"
@@ -769,18 +773,21 @@
             </div>
           </div>
 
-          <!-- Export tab -->
+          <!-- Export tab. Per-student export works for both roles
+               (server scopes to the student's data); the global "all
+               payments / all class logs" CSVs are sheikh-only because
+               they cross every teacher's scope. -->
           <div v-else-if="studentDetailTab === 'export'" class="mt-4 space-y-3">
             <p class="text-sm text-slate-500">{{ $t('admin.export.desc') }}</p>
             <button @click="downloadStudentCsv(selectedStudent.id)"
               class="w-full bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition-colors">
               {{ $t('admin.export.student') }}
             </button>
-            <button @click="downloadAllPaymentsCsv"
+            <button v-if="isAdmin" @click="downloadAllPaymentsCsv"
               class="w-full bg-slate-100 text-slate-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-200 transition-colors">
               {{ $t('admin.export.allPayments') }}
             </button>
-            <button @click="downloadAllClassLogsCsv"
+            <button v-if="isAdmin" @click="downloadAllClassLogsCsv"
               class="w-full bg-slate-100 text-slate-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-200 transition-colors">
               {{ $t('admin.export.allClassLogs') }}
             </button>
@@ -2270,7 +2277,7 @@ watch(activeTab, (tab) => {
   if (tab === 'students') loadStudents();
   if (tab === 'scheduling') {
     loadClasses();
-    if (isAdmin.value) loadSettings();
+    loadSettings();
   }
   if (tab === 'myClasses') loadClasses();
 });
@@ -2323,8 +2330,9 @@ onMounted(() => {
   // can distinguish "no students assigned yet" from "no classes booked
   // yet". Sheikh's view loads it lazily when opening the students tab.
   if (isTeacher.value) loadStudents();
-  // Settings (global meeting link) is sheikh-only.
-  if (isAdmin.value) loadSettings();
+  // Both roles need the global meeting link to render the join button
+  // in the upcoming-classes widget. The PUT remains sheikh-only.
+  loadSettings();
   window.addEventListener('keydown', handleGlobalKeydown);
 });
 
