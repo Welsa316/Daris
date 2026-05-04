@@ -312,6 +312,11 @@ router.get('/me', authenticate, verifyTokenVersion, async (req, res, next) => {
         whatsapp: true,
         telegram: true,
         role: true,
+        // Teacher capability flag. Independent of role, so the frontend
+        // can route a senior enrolled_student (role=enrolled_student
+        // + isTeacher=true) into the staff dashboard while preserving
+        // their student-side data.
+        isTeacher: true,
         emailVerified: true,
         enrolledAt: true,
         createdAt: true,

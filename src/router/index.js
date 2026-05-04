@@ -130,11 +130,13 @@ const routes = [
     path: '/admin',
     name: 'admin',
     component: () => import('../views/dashboard/AdminDashboard.vue'),
-    // Both the sheikh ('admin') and a scoped 'teacher' use the same
+    // The sheikh + anyone with the isTeacher capability use the same
     // dashboard surface; the server scopes their data and the UI hides
-    // sheikh-only sections via `isAdmin` checks. The route guard accepts
-    // either role; mismatches are redirected home.
-    meta: { auth: true, roles: ['admin', 'teacher'] },
+    // sheikh-only sections via `isAdmin` checks. Senior students who
+    // also teach (isTeacher=true with role=enrolled_student) reach
+    // /admin from here and can also navigate to /dashboard for their
+    // student-side view.
+    meta: { auth: true, staff: true },
   },
 
   // Catch-all. redirect unknown paths to the current-locale home.
@@ -187,13 +189,15 @@ router.beforeEach(async (to) => {
     return '/login';
   }
 
-  // Role-required routes. Single-role gates use `meta.role`; multi-role
-  // gates use `meta.roles` (array). Mismatches go to the locale home.
+  // Role-required routes:
+  //   meta.role        single-role gate (legacy /dashboard pattern)
+  //   meta.staff:true  any staff: admin OR isTeacher capability
+  // Mismatches go to the locale home.
   const role = user.value?.role;
   if (to.meta.role && role !== to.meta.role) {
     return `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}`;
   }
-  if (to.meta.roles && !to.meta.roles.includes(role)) {
+  if (to.meta.staff === true && !isStaff.value) {
     return `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}`;
   }
 });

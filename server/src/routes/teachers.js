@@ -1,47 +1,56 @@
 /**
- * Multi-teacher read endpoints.
+ * Multi-teacher endpoints.
  *
+ * Read tiers:
  *   - Sheikh-only ("/teachers") full list with management metadata
  *     (emails, last-login, student rosters). Used by the Teachers tab
  *     and as the source list for the schedule form's teacher picker.
  *   - Admin-or-teacher ("/teachers/directory") read-only directory so
  *     teachers know who else is on the team.
  *
- * Writes live elsewhere:
- *   - Sheikh assigns existing teachers to a student from the schedule
- *     form via `PUT /api/admin/students/:id/teachers` (in admin.js,
- *     near the rest of the student-centric endpoints).
- *   - Promote / demote a user is owner-only via the CLI scripts.
- *   - Bulk-assign by teacher email is owner-only via the CLI scripts.
+ * Write tiers (sheikh-only):
+ *   - POST /teachers/promote — flip isTeacher=true on one or more
+ *     enrolled students.
+ *   - POST /teachers/demote — flip isTeacher=false and cascade-delete
+ *     this user's TeacherStudent rows so orphan assignments don't
+ *     accumulate. The user keeps their student-side data (classes
+ *     they attend); they just lose teacher capability.
+ *   - PUT /students/:id/teachers — (in admin.js) replace the student's
+ *     full taught-by set. Same idempotent diff semantics.
  *
- * Why this split: who BECOMES a teacher is an owner decision (who is on
- * the staff). Once teachers exist, routing students to them is a sheikh
- * decision (day-to-day operations). Both writes go through the same
- * TeacherStudent table, just with different ergonomics and call sites.
+ * Owner CLI scripts still work as a backup but the dashboard is now
+ * the primary surface.
  */
 
 import { Router } from 'express';
+import { z } from 'zod';
 import { authenticate, verifyTokenVersion } from '../middleware/auth.js';
 import { requireAdmin, requireAdminOrTeacher } from '../middleware/rbac.js';
+import { validate } from '../middleware/validate.js';
 import { prisma } from '../config/database.js';
+import { auditLog } from '../utils/logger.js';
+import { t, getLang } from '../utils/i18n.js';
 
 const router = Router();
 
-// All routes here require auth + at least teacher role. Sheikh-only routes
-// add `requireAdmin` per-route.
+// All routes here require auth + at least teacher capability (or sheikh).
+// Sheikh-only routes add `requireAdmin` per-route.
 router.use(authenticate, verifyTokenVersion, requireAdminOrTeacher);
 
 // --- Read-only directory (admin or teacher) ---
 //
-// Returns every active teacher + every active sheikh-admin so the
-// teachers directory in the dashboard has something to render. No PII
-// beyond name + role + counts. Teachers don't get to see other
+// Returns every active teacher (isTeacher=true) + every active sheikh
+// so the teachers directory in the dashboard has something to render.
+// No PII beyond name + role + counts. Teachers don't get to see other
 // teachers' students or schedules through this surface.
 router.get('/directory', async (req, res, next) => {
   try {
     const users = await prisma.user.findMany({
       where: {
-        role: { in: ['admin', 'teacher'] },
+        OR: [
+          { role: 'admin' },
+          { isTeacher: true },
+        ],
         deletedAt: null,
       },
       select: {
@@ -49,6 +58,7 @@ router.get('/directory', async (req, res, next) => {
         firstName: true,
         lastName: true,
         role: true,
+        isTeacher: true,
         createdAt: true,
         // Count assigned students. Admins generally don't have rows here;
         // they're scoped globally. Teachers may have many.
@@ -61,7 +71,11 @@ router.get('/directory', async (req, res, next) => {
       id: u.id,
       firstName: u.firstName,
       lastName: u.lastName,
-      role: u.role,
+      // The frontend renders sheikh as "admin" and everyone else as
+      // "teacher" regardless of their backing UserRole. Roles like
+      // enrolled_student + isTeacher=true are still teachers in the
+      // directory's eyes.
+      role: u.role === 'admin' ? 'admin' : 'teacher',
       joinedAt: u.createdAt,
       studentCount: u._count.taughtStudents,
     }));
@@ -75,17 +89,18 @@ router.get('/directory', async (req, res, next) => {
 // --- Sheikh-only read ---
 
 // Full teacher list with management metadata: emails, last-login, full
-// student roster preview. Used by the (read-only) Teachers tab AND by
-// the schedule form's teacher picker.
+// student roster preview. Used by the (sheikh-managed) Teachers tab.
 router.get('/', requireAdmin, async (req, res, next) => {
   try {
     const teachers = await prisma.user.findMany({
-      where: { role: 'teacher', deletedAt: null },
+      where: { isTeacher: true, deletedAt: null },
       select: {
         id: true,
         firstName: true,
         lastName: true,
         email: true,
+        role: true,
+        isTeacher: true,
         createdAt: true,
         lastLoginAt: true,
         taughtStudents: {
@@ -112,5 +127,135 @@ router.get('/', requireAdmin, async (req, res, next) => {
     next(error);
   }
 });
+
+// --- Sheikh-only writes: promote / demote ---
+
+// Body validators. Both endpoints take the same shape: a list of user
+// ids to flip. Cap at 100 per call so a runaway selection in the UI
+// doesn't fan out into a huge transaction.
+const userIdsSchema = z.object({
+  userIds: z.array(z.string().uuid()).min(1).max(100),
+});
+
+// Promote: set isTeacher=true on the listed users. Refuses unverified
+// emails (consistent with the legacy CLI's check) and bumps tokenVersion
+// so existing JWTs are invalidated; the next request from each user
+// re-reads role + isTeacher from the DB and reflects the new capability.
+router.post(
+  '/promote',
+  requireAdmin,
+  validate(userIdsSchema),
+  async (req, res, next) => {
+    try {
+      const lang = getLang(req);
+      const { userIds } = req.body;
+
+      // Resolve the users we'll touch. Skip ones that are already
+      // teachers (idempotent) and refuse unverified emails so the
+      // sheikh can't accidentally promote someone who hasn't proven
+      // ownership of their account.
+      const targets = await prisma.user.findMany({
+        where: {
+          id: { in: userIds },
+          deletedAt: null,
+          role: { in: ['enrolled_student', 'admin'] },
+        },
+        select: { id: true, email: true, role: true, isTeacher: true, emailVerified: true },
+      });
+
+      const unverified = targets.filter((u) => !u.emailVerified);
+      if (unverified.length > 0) {
+        return res.status(400).json({
+          error: 'Refusing to promote: one or more users have unverified emails',
+          unverifiedIds: unverified.map((u) => u.id),
+        });
+      }
+
+      const toUpdate = targets
+        .filter((u) => !u.isTeacher && u.role !== 'admin')
+        .map((u) => u.id);
+
+      if (toUpdate.length === 0) {
+        return res.json({ updated: 0 });
+      }
+
+      await prisma.user.updateMany({
+        where: { id: { in: toUpdate } },
+        data: { isTeacher: true, tokenVersion: { increment: 1 } },
+      });
+
+      auditLog('TEACHERS_PROMOTED', {
+        adminId: req.user.id,
+        userIds: toUpdate,
+        count: toUpdate.length,
+      });
+
+      res.json({ updated: toUpdate.length });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Demote: set isTeacher=false on the listed users. Cascade-deletes
+// their TeacherStudent rows in the same transaction so a stale
+// teacherId can't be left dangling on student records. Authored
+// classes are preserved (createdByAdminId stays).
+router.post(
+  '/demote',
+  requireAdmin,
+  validate(userIdsSchema),
+  async (req, res, next) => {
+    try {
+      const lang = getLang(req);
+      const { userIds } = req.body;
+
+      // Refuse to demote any sheikh from the same call (would never
+      // happen via the UI but defense in depth against a hand-crafted
+      // payload). A real "remove admin" goes through a different path
+      // that has the lockout guard.
+      const targets = await prisma.user.findMany({
+        where: { id: { in: userIds }, deletedAt: null },
+        select: { id: true, role: true, isTeacher: true },
+      });
+
+      const sheikhs = targets.filter((u) => u.role === 'admin');
+      if (sheikhs.length > 0) {
+        return res.status(400).json({
+          error: 'Cannot demote a sheikh via this endpoint. Use set-user-role.js for role changes.',
+        });
+      }
+
+      const toUpdate = targets.filter((u) => u.isTeacher).map((u) => u.id);
+
+      if (toUpdate.length === 0) {
+        return res.json({ updated: 0 });
+      }
+
+      // Cascade in a transaction so the assignments table can never
+      // briefly reference a user who no longer has teacher capability.
+      const result = await prisma.$transaction(async (tx) => {
+        const removedAssignments = await tx.teacherStudent.deleteMany({
+          where: { teacherId: { in: toUpdate } },
+        });
+        await tx.user.updateMany({
+          where: { id: { in: toUpdate } },
+          data: { isTeacher: false, tokenVersion: { increment: 1 } },
+        });
+        return { updated: toUpdate.length, removedAssignments: removedAssignments.count };
+      });
+
+      auditLog('TEACHERS_DEMOTED', {
+        adminId: req.user.id,
+        userIds: toUpdate,
+        ...result,
+      });
+
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export default router;

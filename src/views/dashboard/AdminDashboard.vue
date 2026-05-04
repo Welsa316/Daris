@@ -440,13 +440,14 @@
         @schedule="goToScheduling"
       />
 
-      <!-- Teachers (read-only for both roles). The sheikh sees the full
-           team with rosters; teachers see the same shape, just for context
-           ("who else is on the team"). Promotion and assignment are
-           managed by the site owner via DB / CLI scripts. -->
+      <!-- Teachers tab. Sheikh sees a management surface with inline
+           Promote students button + Remove teacher role on each card;
+           teachers see a read-only directory. The component routes by
+           isAdmin internally. -->
       <TeachersTab
         v-if="activeTab === 'teachers'"
         @toast="(err, action) => showToast(err, action)"
+        @changed="onTeachersChanged"
       />
 
       <!-- Single drawer drives both calendar-block and list-row clicks.
@@ -1557,6 +1558,15 @@ async function loadClasses() {
     const data = await api.get('/api/admin/classes?limit=200');
     classes.value = data.classes;
   } catch (e) { showToast(e, 'loadClasses'); }
+}
+
+// Sheikh-only: invalidate the schedule form's teacher cache + reload
+// the students list whenever the Teachers tab promotes/demotes someone
+// so the rest of the dashboard reflects the new state without a hard
+// reload.
+async function onTeachersChanged() {
+  teachersListLoaded.value = false;
+  await Promise.all([loadStudents(), loadStats()]);
 }
 
 async function loadSettings() {

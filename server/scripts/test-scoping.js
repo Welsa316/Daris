@@ -40,14 +40,31 @@ function assertContains(label, obj, key) {
 
 // --- Sheikh: filters must be empty objects so they contribute nothing
 //     to the surrounding `where`. Anything else is a leak. ---
-const sheikh = { id: 'sheikh-id', role: 'admin' };
+const sheikh = { id: 'sheikh-id', role: 'admin', isTeacher: false };
 assertEqual('sheikh studentFilter is empty', scopedStudentFilter(sheikh), {});
 assertEqual('sheikh classFilter is empty', scopedClassFilter(sheikh), {});
 
-// --- Teacher: studentFilter must require a TeacherStudent link to
+// --- Sheikh-with-isTeacher (defensive case if anyone ever sets it):
+//     should still bypass the scope. Admin role wins. ---
+const sheikhTeacher = { id: 'sheikh-id', role: 'admin', isTeacher: true };
+assertEqual('admin+isTeacher studentFilter is empty', scopedStudentFilter(sheikhTeacher), {});
+assertEqual('admin+isTeacher classFilter is empty', scopedClassFilter(sheikhTeacher), {});
+
+// --- Pure teacher (legacy shape, role=teacher pre-migration):
+//     should now FAIL the capability check and return deny-all,
+//     because role='teacher' is deprecated and isTeacher must be the
+//     source of truth. Defense against forgotten migrations. ---
+const legacyTeacher = { id: 'legacy-id', role: 'teacher', isTeacher: false };
+const legStu = scopedStudentFilter(legacyTeacher);
+const legCls = scopedClassFilter(legacyTeacher);
+assertContains('legacy role=teacher (no flag) studentFilter is deny-all', legStu, 'id');
+assertContains('legacy role=teacher (no flag) classFilter is deny-all', legCls, 'id');
+
+// --- Capability teacher: enrolled_student + isTeacher=true (the new
+//     model). studentFilter must require a TeacherStudent link to
 //     this teacher; classFilter must OR own creations with assigned-
 //     student attendance. ---
-const teacher = { id: 'teacher-id', role: 'teacher' };
+const teacher = { id: 'teacher-id', role: 'enrolled_student', isTeacher: true };
 
 const ts = scopedStudentFilter(teacher);
 assertContains('teacher studentFilter has `teachers`', ts, 'teachers');
@@ -84,21 +101,12 @@ if (Array.isArray(tc.OR) && tc.OR.length === 2) {
   failures.push(`  FAIL: teacher classFilter OR is malformed: ${JSON.stringify(tc)}`);
 }
 
-// --- Unknown roles get the most-restrictive filter possible.
-//     A `role: 'enrolled_student'` reaching this code is a defensive
-//     case (admin-only endpoints already block them via middleware)
-//     but the helper should still return a deny-all where clause
-//     rather than `{}` (which would be a sheikh-grade open filter). ---
-const student = { id: 'student-id', role: 'enrolled_student' };
-
-const ss = scopedStudentFilter(student);
-const sc = scopedClassFilter(student);
-// scopingService treats anyone non-admin as scoped to their own
-// teacher links. An enrolled_student has no `teachers` link to
-// themselves, so the filter is effectively deny-all (no rows match).
-// This is the right behaviour: defense in depth.
-assertContains('non-admin studentFilter is restrictive', ss, 'teachers');
-assertContains('non-admin classFilter is restrictive', sc, 'OR');
+// --- Pure enrolled_student (no teacher capability): deny-all on both
+//     filters. They shouldn't reach admin routes anyway, but defense
+//     in depth in case middleware regresses. ---
+const student = { id: 'student-id', role: 'enrolled_student', isTeacher: false };
+assertContains('student studentFilter is deny-all', scopedStudentFilter(student), 'id');
+assertContains('student classFilter is deny-all', scopedClassFilter(student), 'id');
 
 // --- Output ---
 const total = pass + fail;

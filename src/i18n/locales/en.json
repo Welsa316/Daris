@@ -688,18 +688,39 @@
     },
     "teachers": {
       "title": "Teachers",
-      "subtitle": "View teachers and the students assigned to them. Teachers are added by the site owner; you can route students between them from the schedule form.",
+      "subtitle": "Promote enrolled students to teachers and view their assigned-student rosters. A teacher can also be a student — senior students who help teach keep both capabilities.",
       "subtitleTeacher": "Other teachers on the team. You can see names and student counts; rosters are private.",
       "tab": "Teachers",
       "empty": "No teachers yet.",
       "emptyHint": "Teachers are added by the site owner.",
+      "emptyHintSheikh": "Promote an enrolled student using the button above to add the first teacher.",
       "joinedOn": "Joined {date}",
       "lastLogin": "last login {date}",
       "studentCount": {
         "zero": "No students assigned",
         "one": "1 student assigned",
         "many": "{count} students assigned"
-      }
+      },
+      "promoteCta": "Promote students",
+      "promoteTitle": "Promote students to teachers",
+      "promoteSubtitle": "Pick the enrolled students who should also be able to teach. They keep all their student-side data.",
+      "promoteSave": "Promote selected",
+      "promoted": "Promoted to teacher.",
+      "noPromoteCandidates": "No eligible students. Either everyone is already a teacher, or no students are enrolled yet.",
+      "selectAll": "Select all visible",
+      "clearAll": "Clear all",
+      "selectedCount": {
+        "zero": "No students selected",
+        "one": "1 student selected",
+        "many": "{count} students selected"
+      },
+      "emailUnverified": "Unverified",
+      "demote": "Remove teacher role",
+      "demoted": "Teacher role removed.",
+      "demoteTitle": "Remove teacher role",
+      "demoteConfirm": "Remove the teacher role from {name}? Their {count} student assignments will be removed. They keep their own classes as a student.",
+      "dualRoleBadge": "Also a student",
+      "dualRoleTooltip": "This teacher is also an enrolled student and attends classes themselves."
     },
     "classDrawer": {
       "when": "When",

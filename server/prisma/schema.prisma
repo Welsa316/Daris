@@ -13,10 +13,11 @@ enum UserRole {
   enrolled_student
   rejected
   suspended
-  // Scoped admin. can see/schedule for assigned students only via the
-  // TeacherStudent join. Cannot manage other teachers, settings, or
-  // pending enrollments. The sheikh stays as `admin`, which keeps
-  // global super-admin access (admins bypass the scope filter).
+  // Deprecated: vestigial enum value kept so historical role-change
+  // audit log entries continue to resolve. New users are never created
+  // with this role; teacher CAPABILITY is now controlled by the
+  // `isTeacher` boolean on User, which can co-exist with any role
+  // (so a senior student can attend classes AND teach others).
   teacher
   admin
 }
@@ -39,6 +40,11 @@ model User {
   expectedMonthlyAmount   Int?    @map("expected_monthly_amount")
   expectedMonthlyCurrency String? @map("expected_monthly_currency")
   role              UserRole  @default(pending)
+  // Teacher capability flag. Independent of `role` so a senior
+  // enrolled_student can also teach. Anyone with isTeacher=true (or
+  // role=admin) gains scoped access to /admin and the assigned-students
+  // surfaces. Sheikh-toggled from the dashboard; defaults to false.
+  isTeacher         Boolean   @default(false) @map("is_teacher")
   emailVerified     Boolean   @default(false) @map("email_verified")
   tokenVersion      Int       @default(0) @map("token_version")
   failedLoginAttempts Int     @default(0) @map("failed_login_attempts")
@@ -72,6 +78,7 @@ model User {
   assignedTeacherLinks TeacherStudent[] @relation("TeacherStudentAssigner")
 
   @@index([role])
+  @@index([isTeacher])
   @@index([createdAt])
   @@index([deletedAt])
   @@map("users")

@@ -1,27 +1,37 @@
 /**
  * Scoping helpers for the multi-teacher data model.
  *
- * The sheikh (User.role='admin') sees everything. A teacher
- * (User.role='teacher') sees only:
+ * The sheikh (User.role='admin') sees everything. A user with the
+ * teacher capability (User.isTeacher=true) sees only:
  *   - the students assigned to them via the TeacherStudent join, and
  *   - the class sessions either created by them OR attended by any of
  *     their assigned students.
+ *
+ * isTeacher is independent of role: a senior enrolled_student with
+ * isTeacher=true is BOTH a student (their own ClassAssignment rows
+ * stay theirs) and a teacher (assigned-student data is also theirs).
  *
  * Every admin list / detail endpoint that returns user-scoped data must
  * compose its `where` clause with the relevant filter from this module.
  * Action endpoints (reschedule, cancel, edit, etc.) call `requireClassAccess`
  * before mutating to defend against direct-ID guessing.
- *
- * Phase A: this module exists but is not yet wired into any routes.
- * Phase B: every relevant route in admin.js gets one of these filters.
  */
+
+/**
+ * True when the user has teacher capability (the isTeacher flag) and
+ * is NOT a sheikh. Sheikh-grade access is checked separately so they
+ * bypass the scope filter entirely.
+ */
+function hasTeacherCapability(user) {
+  return !!user && user.role !== 'admin' && user.isTeacher === true;
+}
 
 /**
  * Where-clause for queries on the User model that should return only
  * the students a given admin/teacher is allowed to see.
  *
  * Sheikh: empty filter, returns all students.
- * Teacher: returns only students linked via TeacherStudent.
+ * Teacher (isTeacher=true): returns only students linked via TeacherStudent.
  *
  * Compose into existing filters with object-spread:
  *   prisma.user.findMany({
@@ -38,9 +48,15 @@ export function scopedStudentFilter(user) {
     return { id: '00000000-0000-0000-0000-000000000000' };
   }
   if (user.role === 'admin') return {};
-  return {
-    teachers: { some: { teacherId: user.id } },
-  };
+  if (hasTeacherCapability(user)) {
+    return {
+      teachers: { some: { teacherId: user.id } },
+    };
+  }
+  // Anyone reaching here without admin or teacher capability shouldn't
+  // be on an admin route in the first place. Return deny-all as belt-
+  // and-braces against a future middleware regression.
+  return { id: '00000000-0000-0000-0000-000000000000' };
 }
 
 /**
@@ -48,28 +64,31 @@ export function scopedStudentFilter(user) {
  * only the classes a given admin/teacher is allowed to see.
  *
  * Sheikh: empty filter, returns all classes.
- * Teacher: returns classes created by them OR with at least one
- * assignment to a student linked to them.
+ * Teacher (isTeacher=true): returns classes created by them OR with at
+ * least one assignment to a student linked to them.
  */
 export function scopedClassFilter(user) {
   if (!user || !user.role) {
     return { id: '00000000-0000-0000-0000-000000000000' };
   }
   if (user.role === 'admin') return {};
-  return {
-    OR: [
-      { createdByAdminId: user.id },
-      {
-        assignments: {
-          some: {
-            student: {
-              teachers: { some: { teacherId: user.id } },
+  if (hasTeacherCapability(user)) {
+    return {
+      OR: [
+        { createdByAdminId: user.id },
+        {
+          assignments: {
+            some: {
+              student: {
+                teachers: { some: { teacherId: user.id } },
+              },
             },
           },
         },
-      },
-    ],
-  };
+      ],
+    };
+  }
+  return { id: '00000000-0000-0000-0000-000000000000' };
 }
 
 /**
@@ -89,7 +108,7 @@ export async function requireClassAccess(user, classId, prisma) {
     throw err;
   }
   if (user.role === 'admin') return; // sheikh bypass
-  if (user.role !== 'teacher') {
+  if (!hasTeacherCapability(user)) {
     const err = new Error('Forbidden');
     err.status = 403;
     throw err;
@@ -122,7 +141,7 @@ export async function requireStudentAccess(user, studentId, prisma) {
     throw err;
   }
   if (user.role === 'admin') return;
-  if (user.role !== 'teacher') {
+  if (!hasTeacherCapability(user)) {
     const err = new Error('Forbidden');
     err.status = 403;
     throw err;

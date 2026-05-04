@@ -73,14 +73,18 @@ const { PrismaClient } = await import('@prisma/client');
 const prisma = new PrismaClient();
 
 try {
-  // 1. Resolve the teacher. Must be an active user with role=teacher.
+  // 1. Resolve the teacher. Must be an active user with the
+  //    isTeacher capability flag set (the role itself can be
+  //    enrolled_student or admin). Pure role='teacher' users from the
+  //    legacy schema were migrated to isTeacher=true so this still
+  //    matches them.
   const teacher = await prisma.user.findFirst({
-    where: { email: teacherEmail, role: 'teacher', deletedAt: null },
+    where: { email: teacherEmail, isTeacher: true, deletedAt: null },
     select: { id: true, email: true, firstName: true, lastName: true },
   });
   if (!teacher) {
     console.error(`No active teacher found with email "${teacherEmail}".`);
-    console.error('If they exist as a different role, promote them first:');
+    console.error('If they exist but lack teacher capability, promote them first:');
     console.error(`  node server/scripts/set-user-role.js ${teacherEmail} teacher`);
     process.exit(1);
   }

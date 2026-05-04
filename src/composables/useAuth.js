@@ -11,12 +11,15 @@ export function useAuth() {
   // The sheikh: full super-admin. Bypasses all scope filters; sees every
   // student and every class. Synonymous with `isSheikh` semantically.
   const isAdmin = computed(() => user.value?.role === 'admin');
-  // A scoped teacher: admin-like access to the dashboard but only for
-  // their own assigned students (TeacherStudent table) and classes they
-  // created. Cannot manage settings, enrollments, or other teachers.
-  const isTeacher = computed(() => user.value?.role === 'teacher');
+  // Teacher CAPABILITY. Driven by the User.isTeacher boolean (not by
+  // a role enum value), so a senior enrolled_student who also helps
+  // teach has isTeacher=true AND role=enrolled_student. They get the
+  // staff dashboard for the teaching side AND keep their student-side
+  // dashboard reachable at /dashboard.
+  const isTeacher = computed(() => user.value?.isTeacher === true);
   // Either tier of admin-side access. Use this to gate "anyone running
-  // the back office" features (the calendar, scheduling, etc).
+  // the back office" features (the calendar, scheduling, etc) and the
+  // login redirect into /admin.
   const isStaff = computed(() => isAdmin.value || isTeacher.value);
   const isEnrolled = computed(() => user.value?.role === 'enrolled_student');
   const isPending = computed(() =>

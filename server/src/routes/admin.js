@@ -200,6 +200,11 @@ router.get('/students', validate(paginationSchema, 'query'), async (req, res, ne
           enrolledAt: true,
           lastLoginAt: true,
           createdAt: true,
+          emailVerified: true,
+          // Teacher capability flag drives the "is on staff" badge in
+          // the students table and lets the promote-teachers modal
+          // filter out existing teachers from the candidate list.
+          isTeacher: true,
           expectedMonthlyAmount: true,
           expectedMonthlyCurrency: true,
         },

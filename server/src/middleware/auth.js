@@ -5,7 +5,10 @@ import { logger } from '../utils/logger.js';
 
 /**
  * Authentication middleware. verifies JWT access token from cookie
- * Attaches req.user with { id, role, tokenVersion }
+ * Attaches req.user with { id, role, tokenVersion }. The isTeacher
+ * capability is loaded fresh from the DB by `verifyTokenVersion` so
+ * a sheikh-driven promote/demote takes effect on the user's next
+ * request without forcing a re-login.
  */
 export function authenticate(req, res, next) {
   const token = req.cookies?.accessToken;
@@ -21,6 +24,9 @@ export function authenticate(req, res, next) {
       id: decoded.sub,
       role: decoded.role,
       tokenVersion: decoded.tokenVersion,
+      // Default until verifyTokenVersion fills the real value from DB.
+      // Anything before that middleware runs should NOT trust isTeacher.
+      isTeacher: false,
     };
     next();
   } catch (error) {
@@ -33,7 +39,9 @@ export function authenticate(req, res, next) {
 
 /**
  * Verify that the user's token version matches current DB version
- * (catches invalidated sessions from password change / force logout)
+ * (catches invalidated sessions from password change / force logout).
+ * Also refreshes role + isTeacher from the DB so the sheikh's
+ * promote/demote actions apply on the very next request.
  */
 export async function verifyTokenVersion(req, res, next) {
   const lang = getLang(req);
@@ -41,7 +49,7 @@ export async function verifyTokenVersion(req, res, next) {
   try {
     const user = await prisma.user.findFirst({
       where: { id: req.user.id },
-      select: { tokenVersion: true, deletedAt: true, role: true },
+      select: { tokenVersion: true, deletedAt: true, role: true, isTeacher: true },
     });
 
     if (!user || user.deletedAt) {
@@ -52,8 +60,11 @@ export async function verifyTokenVersion(req, res, next) {
       return res.status(401).json({ error: t('auth.tokenExpired', lang), code: 'TOKEN_EXPIRED' });
     }
 
-    // Update role from DB (in case it changed)
+    // Refresh role + isTeacher from DB. A user toggled to isTeacher=true
+    // mid-session gets teacher capabilities on their next call without
+    // having to log out and back in.
     req.user.role = user.role;
+    req.user.isTeacher = user.isTeacher;
     next();
   } catch (error) {
     logger.error('Token version check failed', { error: error.message });
