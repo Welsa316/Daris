@@ -333,10 +333,15 @@
                 <!-- Day body: min-height only applies at sm+ so empty days
                      don't leave giant gaps in the mobile stack. -->
                 <div :class="calendarFullscreen ? 'sm:min-h-[260px]' : 'sm:min-h-[180px]'">
-                  <div v-for="cls in classesByDay[localDateKey(day)] || []" :key="cls.id"
+                  <button
+                    v-for="cls in classesByDay[localDateKey(day)] || []"
+                    :key="cls.id"
+                    type="button"
                     @click="selectedClass = cls"
-                    class="mb-2 rounded-lg p-2.5 text-sm cursor-pointer hover:ring-2 hover:ring-primary/30 transition-colors"
-                    :class="calendarBlockClass(cls)">
+                    class="block w-full text-start mb-2 rounded-lg p-2.5 text-sm cursor-pointer hover:ring-2 hover:ring-primary/30 motion-safe:transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    :class="calendarBlockClass(cls)"
+                    :aria-label="classBlockAriaLabel(cls)"
+                  >
                     <p class="font-semibold truncate text-balance">{{ classDisplayName(cls) }}</p>
                     <p class="text-xs opacity-75 mt-1 flex items-center gap-1.5 tabular-nums">
                       <span v-if="subjectStyle(cls.subject)"
@@ -346,53 +351,15 @@
                       <span v-if="subjectStyle(cls.subject)" class="opacity-60">·</span>
                       {{ formatClassTimeShort(cls.startTime) }}
                     </p>
-                  </div>
+                  </button>
                   <div v-if="!(classesByDay[localDateKey(day)] || []).length"
                     class="text-xs text-slate-300 text-center py-2 sm:py-0 sm:pt-6">, </div>
                 </div>
               </div>
             </div>
-
-            <!-- Selected class detail -->
-            <div v-if="selectedClass" class="mt-4 border border-slate-200 rounded-xl p-4 bg-slate-50/50">
-              <div class="flex items-start justify-between">
-                <div>
-                  <h3 class="font-semibold text-primary flex items-center gap-2 flex-wrap">
-                    <span>{{ classDisplayName(selectedClass) }}</span>
-                    <span v-if="subjectStyle(selectedClass.subject)"
-                      class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full"
-                      :class="`${subjectStyle(selectedClass.subject).bg} ${subjectStyle(selectedClass.subject).text}`">
-                      {{ $t('admin.subject_' + selectedClass.subject) }}
-                    </span>
-                    <span v-if="selectedClass.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span>
-                    <span v-if="selectedClass.rescheduled" class="text-amber-600 text-xs">({{ $t('admin.rescheduled') }})</span>
-                  </h3>
-                  <p class="text-sm text-slate-500 mt-1">
-                    {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: viewerTz, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(selectedClass.startTime)) }}
-                    –
-                    {{ formatClassTimeShort(selectedClass.endTime) }}
-                  </p>
-                  <p v-if="viewerTzDiffersFrom(selectedClass)" class="text-xs text-slate-400">
-                    {{ formatClassTimeShort(selectedClass.startTime, selectedClass.timezone) }}
-                    –
-                    {{ formatClassTimeShort(selectedClass.endTime, selectedClass.timezone) }}
-                    ({{ selectedClass.timezone }})
-                  </p>
-                  <p class="text-xs text-slate-400 mt-1">{{ selectedClass.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
-                  <div v-if="selectedClass.assignments?.length" class="mt-2 flex flex-wrap gap-1">
-                    <span v-for="a in selectedClass.assignments" :key="a.student.id" class="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded-full">
-                      {{ a.student.firstName }} {{ a.student.lastName }}
-                    </span>
-                  </div>
-                </div>
-                <div class="flex items-center gap-2 shrink-0">
-                  <button v-if="!selectedClass.cancelled" @click="openReschedule(selectedClass)" class="text-amber-600 hover:text-amber-700 text-xs font-medium">{{ $t('admin.reschedule') }}</button>
-                  <button v-if="!selectedClass.cancelled" @click="cancelClass(selectedClass.id); selectedClass = null" class="text-red-500 hover:text-red-700 text-xs font-medium">{{ $t('admin.cancelOnlyThis') }}</button>
-                  <button v-if="!selectedClass.cancelled && selectedClass.seriesId" @click="cancelSeriesFromHere(selectedClass); selectedClass = null" class="text-red-500 hover:text-red-700 text-xs font-medium">{{ $t('admin.cancelSeries') }}</button>
-                  <button @click="selectedClass = null" :aria-label="$t('admin.close')" class="text-slate-400 hover:text-slate-600">&times;</button>
-                </div>
-              </div>
-            </div>
+            <!-- Selected-class detail is rendered as a slide-in drawer at
+                 the page level (see ClassDetailDrawer below) so the same
+                 surface drives both calendar and list interactions. -->
           </div>
 
           <!-- List View (original) -->
@@ -405,29 +372,34 @@
               </button>
             </div>
             <div v-else class="space-y-3">
-              <div v-for="cls in classes" :key="cls.id" class="border border-slate-100 rounded-xl p-4" :class="cls.cancelled ? 'opacity-50' : ''">
-                <div class="flex items-start justify-between">
-                  <div>
-                    <h3 class="font-semibold text-primary">{{ classDisplayName(cls) }} <span v-if="cls.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span><span v-if="cls.rescheduled" class="text-amber-600 text-xs"> ({{ $t('admin.rescheduled') }})</span></h3>
-                    <p class="text-sm text-slate-500">
+              <button
+                v-for="cls in classes"
+                :key="cls.id"
+                type="button"
+                @click="selectedClass = cls"
+                class="w-full text-start border border-slate-100 rounded-xl p-4 hover:border-primary/30 hover:bg-cream-50/40 motion-safe:transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
+                :class="cls.cancelled ? 'opacity-50' : ''"
+                :aria-label="classBlockAriaLabel(cls)"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <h3 class="font-semibold text-primary text-balance">{{ classDisplayName(cls) }} <span v-if="cls.cancelled" class="text-red-500 text-xs">({{ $t('admin.cancelled') }})</span><span v-if="cls.rescheduled" class="text-amber-600 text-xs"> ({{ $t('admin.rescheduled') }})</span></h3>
+                    <p class="text-sm text-slate-500 tabular-nums">
                       {{ new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-GB', { timeZone: viewerTz, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(cls.startTime)) }}
-                      -
+                      –
                       {{ formatClassTimeShort(cls.endTime) }}
                     </p>
-                    <p v-if="viewerTzDiffersFrom(cls)" class="text-xs text-slate-400">
+                    <p v-if="viewerTzDiffersFrom(cls)" class="text-xs text-slate-400 tabular-nums">
                       {{ formatClassTimeShort(cls.startTime, cls.timezone) }}
                       –
                       {{ formatClassTimeShort(cls.endTime, cls.timezone) }}
                       ({{ cls.timezone }})
                     </p>
-                    <p class="text-xs text-slate-400 mt-1">{{ cls.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
+                    <p class="text-xs text-slate-400 mt-1 tabular-nums">{{ cls.assignments?.length || 0 }} {{ $t('admin.studentsAssigned') }}</p>
                   </div>
-                  <div v-if="!cls.cancelled" class="flex gap-2">
-                    <button @click="openReschedule(cls)" class="text-amber-600 hover:text-amber-700 text-xs font-medium">{{ $t('admin.reschedule') }}</button>
-                    <button @click="cancelClass(cls.id)" class="text-red-500 hover:text-red-700 text-xs font-medium">{{ $t('admin.cancel') }}</button>
-                  </div>
+                  <span class="text-xs text-slate-400 shrink-0 self-center">{{ $t('admin.classDrawer.openHint') }}</span>
                 </div>
-              </div>
+              </button>
             </div>
           </div>
         </div>
@@ -454,6 +426,23 @@
       <TeachersTab
         v-if="activeTab === 'teachers' && isAdmin"
         @toast="(err, action) => showToast(err, action)"
+      />
+
+      <!-- Single drawer drives both calendar-block and list-row clicks.
+           Owns the slide-in animation and bottom-sheet variant. The
+           parent here just toggles `selectedClass` and forwards events
+           to the existing reschedule/cancel/cancelSeries handlers so
+           the underlying logic doesn't change. -->
+      <ClassDetailDrawer
+        :class-info="selectedClass"
+        :viewer-tz="viewerTz"
+        :is-ar="isAr"
+        :can-manage="isAdmin"
+        @close="selectedClass = null"
+        @reschedule="(cls) => openReschedule(cls)"
+        @cancel="onDrawerCancel"
+        @cancel-series="onDrawerCancelSeries"
+        @view-student="onDrawerViewStudent"
       />
 
       <!-- Student Detail Modal -->
@@ -986,6 +975,7 @@ import { api } from '@/config/api.js';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 import BalancePill from '@/components/dashboard/BalancePill.vue';
 import TeachersTab from '@/components/dashboard/TeachersTab.vue';
+import ClassDetailDrawer from '@/components/dashboard/ClassDetailDrawer.vue';
 import { confirmDialog, promptDialog } from '@/composables/useConfirmDialog.js';
 import { queueUndoable } from '@/composables/useUndoToast.js';
 import { nextWeekdayInTz, TZ_OPTIONS, formatInTz } from '@/composables/useTimezone.js';
@@ -1830,6 +1820,38 @@ function classDisplayName(cls) {
     .filter(Boolean);
   if (names.length === 0) return isAr.value && cls.titleAr ? cls.titleAr : (cls.title || ', ');
   return names.join(' + ');
+}
+
+// Screen-reader label for a clickable calendar block / list row. Without
+// this the only audible content was "<student names>" with no context
+// for where the click goes. Includes time + status + open-affordance.
+function classBlockAriaLabel(cls) {
+  const parts = [classDisplayName(cls), formatClassTimeShort(cls.startTime)];
+  if (cls.cancelled) parts.push(t('admin.cancelled'));
+  else if (cls.rescheduled) parts.push(t('admin.rescheduled'));
+  parts.push(t('admin.classDrawer.openHint'));
+  return parts.join(' · ');
+}
+
+// --- Drawer event handlers ---
+//
+// The drawer fires plain events; this layer keeps the drawer self-
+// contained while the existing cancel/reschedule logic stays where it
+// already is. Each handler also closes the drawer when the action
+// initiates so the user gets immediate feedback.
+function onDrawerCancel(id) {
+  cancelClass(id);
+  selectedClass.value = null;
+}
+function onDrawerCancelSeries(cls) {
+  cancelSeriesFromHere(cls);
+  selectedClass.value = null;
+}
+function onDrawerViewStudent(studentId) {
+  // Pivot to the student detail modal so the user can edit lesson
+  // reports for that student. Drawer dismisses to avoid stacked modals.
+  selectedClass.value = null;
+  viewStudent(studentId);
 }
 
 // Used by the conflict modal to show a "Fri 1:00 PM · Fri 1:00 PM · +3 more"

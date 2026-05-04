@@ -697,6 +697,15 @@
         "one": "1 student assigned",
         "many": "{count} students assigned"
       }
+    },
+    "classDrawer": {
+      "when": "When",
+      "attendees": "Attendees ({count})",
+      "attendeesHint": "Tap a name to open their profile and edit lesson reports.",
+      "attendeesNone": "No attendees",
+      "attendeesNoneHint": "This class has no students assigned. Add students from the schedule form.",
+      "openHint": "Open",
+      "cancelledHint": "This class is cancelled. Past records stay visible for history."
     }
   }
 }
