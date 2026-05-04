@@ -11,12 +11,16 @@ CREATE INDEX "users_is_student_idx" ON "users"("is_student");
 -- them as attendees), so we can detect them by that absence and
 -- correctly mark them as is_student=false. Dual-role senior students
 -- DO have ClassAssignment rows and stay is_student=true.
-UPDATE "users" u
+--
+-- No table aliases below — keeps the SQL portable across psql / Prisma's
+-- migration runner without ambiguity around `UPDATE table_name alias`.
+UPDATE "users"
 SET "is_student" = false
-WHERE u."is_teacher" = true
-  AND u."deleted_at" IS NULL
-  AND u."role" = 'enrolled_student'
+WHERE "is_teacher" = true
+  AND "deleted_at" IS NULL
+  AND "role" = 'enrolled_student'
   AND NOT EXISTS (
-    SELECT 1 FROM "class_assignments" ca
-    WHERE ca."student_id" = u."id"
+    SELECT 1
+    FROM "class_assignments"
+    WHERE "class_assignments"."student_id" = "users"."id"
   );
