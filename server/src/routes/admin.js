@@ -1,13 +1,19 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import { authenticate, verifyTokenVersion } from '../middleware/auth.js';
-import { requireAdmin } from '../middleware/rbac.js';
+import { requireAdmin, requireAdminOrTeacher } from '../middleware/rbac.js';
 import { validate } from '../middleware/validate.js';
 import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, rescheduleClassSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema, batchClassSchema, meetingLinkSchema, checkConflictsSchema, classLogSchema, paymentSchema, paymentUpdateSchema, studentProfileSchema } from '../validators/adminSchemas.js';
 import { getPendingEnrollments, approveEnrollment, rejectEnrollment, getRejectedApplicants, suspendStudent, removeStudent } from '../services/enrollmentService.js';
 import { prisma } from '../config/database.js';
 import { sendClassCancelledEmail, sendClassRescheduledEmail, sendFutureAssignmentsClearedEmail } from '../services/emailService.js';
 import { findConflicts } from '../services/classConflictService.js';
+import {
+  scopedStudentFilter,
+  scopedClassFilter,
+  requireClassAccess,
+  requireStudentAccess,
+} from '../services/scopingService.js';
 import { toCsv, sendCsv } from '../utils/csv.js';
 import { t, getLang } from '../utils/i18n.js';
 import { auditLog, logger } from '../utils/logger.js';
@@ -16,43 +22,60 @@ import { env } from '../config/env.js';
 
 const router = Router();
 
-// All admin routes require authentication + admin role
-router.use(authenticate, verifyTokenVersion, requireAdmin);
+// All admin routes require authentication. Default access tier is
+// admin-or-teacher; sheikh-only routes add `requireAdmin` per-route so
+// teachers get a 403 rather than a scoped-empty response. Data visibility
+// inside admin-or-teacher routes is constrained by scopedStudentFilter
+// and scopedClassFilter at the query level (sheikh's filter is empty;
+// teachers see only their own assigned students + own creations).
+router.use(authenticate, verifyTokenVersion, requireAdminOrTeacher);
 
 // --- Dashboard Stats ---
 router.get('/stats', async (req, res, next) => {
   try {
-    const adminId = req.user.id;
+    const isSheikh = req.user.role === 'admin';
+    const studentScope = scopedStudentFilter(req.user);
+    const classScope = scopedClassFilter(req.user);
+
     const [totalEnrolled, totalPending, upcomingClasses, recentActivity] = await Promise.all([
+      // Sheikh: all enrolled students. Teacher: only their assigned students.
       prisma.user.count({
         where: {
           role: 'enrolled_student',
           deletedAt: null,
-          classAssignments: { some: { classSession: { createdByAdminId: adminId } } },
+          ...studentScope,
         },
       }),
-      prisma.user.count({ where: { role: 'pending_review', deletedAt: null } }),
+      // Pending enrollment count is a sheikh-only signal. Teachers don't
+      // approve enrollments, so we don't show the number to them.
+      isSheikh
+        ? prisma.user.count({ where: { role: 'pending_review', deletedAt: null } })
+        : Promise.resolve(0),
       prisma.classSession.count({
         where: {
-          createdByAdminId: adminId,
           startTime: {
             gte: new Date(),
             lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           },
           cancelled: false,
+          ...classScope,
         },
       }),
-      prisma.auditLog.findMany({
-        take: 20,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          action: true,
-          details: true,
-          createdAt: true,
-          user: { select: { id: true, firstName: true, lastName: true } },
-        },
-      }),
+      // Audit log is sheikh-only. Teachers don't see what other teachers
+      // (or the sheikh) have done.
+      isSheikh
+        ? prisma.auditLog.findMany({
+            take: 20,
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              action: true,
+              details: true,
+              createdAt: true,
+              user: { select: { id: true, firstName: true, lastName: true } },
+            },
+          })
+        : Promise.resolve([]),
     ]);
 
     res.json({
@@ -68,7 +91,9 @@ router.get('/stats', async (req, res, next) => {
 
 // --- Enrollment Management ---
 
-router.get('/enrollments/pending', validate(paginationSchema, 'query'), async (req, res, next) => {
+// Enrollment management is sheikh-only. Teachers don't approve who
+// joins the school; they only work with already-enrolled students.
+router.get('/enrollments/pending', requireAdmin, validate(paginationSchema, 'query'), async (req, res, next) => {
   try {
     const result = await getPendingEnrollments(req.query);
     res.json(result);
@@ -77,7 +102,7 @@ router.get('/enrollments/pending', validate(paginationSchema, 'query'), async (r
   }
 });
 
-router.get('/enrollments/rejected', validate(paginationSchema, 'query'), async (req, res, next) => {
+router.get('/enrollments/rejected', requireAdmin, validate(paginationSchema, 'query'), async (req, res, next) => {
   try {
     const result = await getRejectedApplicants(req.query);
     res.json(result);
@@ -86,7 +111,7 @@ router.get('/enrollments/rejected', validate(paginationSchema, 'query'), async (
   }
 });
 
-router.post('/enrollments/:id/approve', validate(enrollmentDecisionSchema), async (req, res, next) => {
+router.post('/enrollments/:id/approve', requireAdmin, validate(enrollmentDecisionSchema), async (req, res, next) => {
   try {
     const lang = getLang(req);
     const result = await approveEnrollment(req.params.id, {
@@ -105,7 +130,7 @@ router.post('/enrollments/:id/approve', validate(enrollmentDecisionSchema), asyn
   }
 });
 
-router.post('/enrollments/:id/reject', validate(enrollmentDecisionSchema), async (req, res, next) => {
+router.post('/enrollments/:id/reject', requireAdmin, validate(enrollmentDecisionSchema), async (req, res, next) => {
   try {
     const lang = getLang(req);
     const result = await rejectEnrollment(req.params.id, {
@@ -131,9 +156,13 @@ router.get('/students', validate(paginationSchema, 'query'), async (req, res, ne
     const { page, limit, search, sort, order } = req.query;
     const skip = (page - 1) * limit;
 
+    // Scope the list: sheikh sees all enrolled students, teacher sees
+    // only those they're linked to via TeacherStudent. Sheikh's filter
+    // contributes nothing to the where clause.
     const where = {
       role: 'enrolled_student',
       deletedAt: null,
+      ...scopedStudentFilter(req.user),
     };
 
     if (search) {
@@ -217,8 +246,11 @@ router.get('/students', validate(paginationSchema, 'query'), async (req, res, ne
 router.get('/students/:id', async (req, res, next) => {
   try {
     const lang = getLang(req);
+    // Compose the scope filter into the lookup so a teacher who knows the
+    // id of an unassigned student gets a 404 (effectively, "doesn't exist
+    // to you") rather than the student data.
     const student = await prisma.user.findFirst({
-      where: { id: req.params.id },
+      where: { id: req.params.id, ...scopedStudentFilter(req.user) },
       select: {
         id: true,
         firstName: true,
@@ -279,7 +311,9 @@ router.get('/students/:id', async (req, res, next) => {
   }
 });
 
-router.post('/students/:id/suspend', async (req, res, next) => {
+// Suspending is a heavy global action (locks the student out entirely,
+// not just from one teacher's classes). Sheikh-only.
+router.post('/students/:id/suspend', requireAdmin, async (req, res, next) => {
   try {
     const lang = getLang(req);
     const result = await suspendStudent(req.params.id, req.user.id);
@@ -302,6 +336,11 @@ router.put(
   validate(studentProfileSchema),
   async (req, res, next) => {
     try {
+      // Teachers can only edit profile fields for their assigned students.
+      // Sheikh edits anyone. requireStudentAccess throws 403 if the teacher
+      // is touching a student outside their scope.
+      await requireStudentAccess(req.user, req.params.id, prisma);
+
       const { preferredLanguage, expectedMonthlyAmount, expectedMonthlyCurrency } = req.body;
       const data = {};
       if (preferredLanguage !== undefined) data.preferredLanguage = preferredLanguage;
@@ -335,7 +374,8 @@ router.put(
   }
 );
 
-router.delete('/students/:id', async (req, res, next) => {
+// Soft-deleting a student is a global account-level action. Sheikh-only.
+router.delete('/students/:id', requireAdmin, async (req, res, next) => {
   try {
     const lang = getLang(req);
     const result = await removeStudent(req.params.id, req.user.id);
@@ -352,8 +392,10 @@ router.delete('/students/:id', async (req, res, next) => {
 
 // Drop the student from every upcoming class without suspending their account.
 // Used when a student changes their schedule permanently. Other students in
-// co-taught classes keep their bookings.
-router.delete('/students/:id/future-assignments', async (req, res, next) => {
+// co-taught classes keep their bookings. Sheikh-only because it nukes
+// classes across all teachers; a single teacher who wants to "stop teaching"
+// a student should unassign them in the Teachers tab instead.
+router.delete('/students/:id/future-assignments', requireAdmin, async (req, res, next) => {
   try {
     const lang = getLang(req);
     const studentId = req.params.id;
@@ -428,6 +470,7 @@ router.delete('/students/:id/future-assignments', async (req, res, next) => {
 
 router.get('/students/:id/notes', async (req, res, next) => {
   try {
+    await requireStudentAccess(req.user, req.params.id, prisma);
     const notes = await prisma.adminNote.findMany({
       where: { studentId: req.params.id },
       orderBy: { createdAt: 'desc' },
@@ -448,6 +491,7 @@ router.get('/students/:id/notes', async (req, res, next) => {
 router.post('/students/:id/notes', validate(adminNoteSchema), async (req, res, next) => {
   try {
     const lang = getLang(req);
+    await requireStudentAccess(req.user, req.params.id, prisma);
 
     const student = await prisma.user.findFirst({ where: { id: req.params.id } });
     if (!student) {
@@ -473,6 +517,16 @@ router.post('/students/:id/notes', validate(adminNoteSchema), async (req, res, n
 
 router.put('/notes/:id', validate(adminNoteSchema), async (req, res, next) => {
   try {
+    // Look up the note's studentId before update so we can verify the
+    // current user can act on that student. Teachers editing notes for
+    // students outside their scope get a 403.
+    const existing = await prisma.adminNote.findUnique({
+      where: { id: req.params.id },
+      select: { studentId: true },
+    });
+    if (!existing) return res.status(404).json({ error: t('error.notFound', getLang(req)) });
+    await requireStudentAccess(req.user, existing.studentId, prisma);
+
     const note = await prisma.adminNote.update({
       where: { id: req.params.id },
       data: { content: req.body.content },
@@ -487,6 +541,13 @@ router.put('/notes/:id', validate(adminNoteSchema), async (req, res, next) => {
 
 router.delete('/notes/:id', async (req, res, next) => {
   try {
+    const existing = await prisma.adminNote.findUnique({
+      where: { id: req.params.id },
+      select: { studentId: true },
+    });
+    if (!existing) return res.status(404).json({ error: t('error.notFound', getLang(req)) });
+    await requireStudentAccess(req.user, existing.studentId, prisma);
+
     await prisma.adminNote.delete({ where: { id: req.params.id } });
     res.json({ success: true });
   } catch (error) {
@@ -501,13 +562,14 @@ router.get('/classes', validate(paginationSchema, 'query'), async (req, res, nex
     const { page, limit } = req.query;
     const skip = (page - 1) * limit;
 
-    // Hide classes with zero live students. they're orphans left behind
-    // when a student was removed. The class row is preserved in the DB for
-    // audit purposes, but there's no reason the sheikh should see it in
-    // the scheduling list or calendar.
+    // Hide classes with zero live students (orphans left behind when a
+    // student was removed; rows are preserved for audit but shouldn't
+    // clutter the calendar). Then layer the role-based scope on top:
+    // sheikh sees everything, teacher sees own creations + assigned
+    // students' classes.
     const classWhere = {
-      createdByAdminId: req.user.id,
       assignments: { some: { student: { deletedAt: null } } },
+      ...scopedClassFilter(req.user),
     };
 
     const [classes, total] = await Promise.all([
@@ -543,6 +605,14 @@ router.post('/classes', validate(classSessionSchema), async (req, res, next) => 
     const lang = getLang(req);
     const { studentIds, ...classData } = req.body;
 
+    // For teachers, every studentId in the body must be one of their
+    // assigned students. Sheikh bypasses the check.
+    if (Array.isArray(studentIds) && studentIds.length > 0) {
+      for (const sid of studentIds) {
+        await requireStudentAccess(req.user, sid, prisma);
+      }
+    }
+
     const classSession = await prisma.classSession.create({
       data: {
         ...classData,
@@ -553,12 +623,16 @@ router.post('/classes', validate(classSessionSchema), async (req, res, next) => 
       },
     });
 
-    // Assign students
+    // Assign students. Default-to-all means "all enrolled students" for
+    // the sheikh, but only "all students assigned to me" for a teacher.
     let assigneeIds = studentIds;
     if (!assigneeIds || assigneeIds.length === 0) {
-      // Assign to all enrolled students
       const enrolled = await prisma.user.findMany({
-        where: { role: 'enrolled_student', deletedAt: null },
+        where: {
+          role: 'enrolled_student',
+          deletedAt: null,
+          ...scopedStudentFilter(req.user),
+        },
         select: { id: true },
       });
       assigneeIds = enrolled.map((s) => s.id);
@@ -586,12 +660,21 @@ router.put('/classes/:id', validate(classSessionUpdateSchema), async (req, res, 
     const lang = getLang(req);
     const { studentIds, ...updateData } = req.body;
 
-    // Prevent admin A from editing admin B's classes.
+    // Scope check: sheikh can edit any class. Teachers can only edit
+    // classes they created or whose attendees are their students.
     const owned = await prisma.classSession.findFirst({
-      where: { id: req.params.id, createdByAdminId: req.user.id },
+      where: { id: req.params.id, ...scopedClassFilter(req.user) },
       select: { id: true },
     });
     if (!owned) return res.status(404).json({ error: t('schedule.classNotFound', lang) });
+
+    // If the editor is a teacher, they may only assign students within
+    // their own scope. Sheikh can attach anyone.
+    if (Array.isArray(studentIds)) {
+      for (const sid of studentIds) {
+        await requireStudentAccess(req.user, sid, prisma);
+      }
+    }
 
     if (updateData.startTime) updateData.startTime = new Date(updateData.startTime);
     if (updateData.endTime) updateData.endTime = new Date(updateData.endTime);
@@ -628,9 +711,9 @@ router.post('/classes/:id/cancel', async (req, res, next) => {
   try {
     const lang = getLang(req);
 
-    // Prevent admin A from cancelling admin B's classes.
+    // Scope check: sheikh can cancel any class; teachers only their own.
     const owned = await prisma.classSession.findFirst({
-      where: { id: req.params.id, createdByAdminId: req.user.id },
+      where: { id: req.params.id, ...scopedClassFilter(req.user) },
       select: { id: true },
     });
     if (!owned) return res.status(404).json({ error: t('schedule.classNotFound', lang) });
@@ -674,8 +757,10 @@ router.post('/classes/:id/cancel-series', async (req, res, next) => {
   try {
     const lang = getLang(req);
 
-    const anchor = await prisma.classSession.findUnique({
-      where: { id: req.params.id },
+    // Scope check on the anchor class itself. Teachers can't anchor
+    // a series cancel on a class they can't see.
+    const anchor = await prisma.classSession.findFirst({
+      where: { id: req.params.id, ...scopedClassFilter(req.user) },
       select: { id: true, seriesId: true, startTime: true, createdByAdminId: true },
     });
     if (!anchor) return res.status(404).json({ error: t('schedule.classNotFound', lang) });
@@ -684,13 +769,17 @@ router.post('/classes/:id/cancel-series', async (req, res, next) => {
     }
 
     // Find every not-already-cancelled session in the same series at or
-    // after this anchor. we cancel all of them.
+    // after this anchor that the user can also act on. The createdByAdminId
+    // filter on `anchor.createdByAdminId` keeps the original "cancel only
+    // sessions in this series owned by the same person" semantics, which
+    // happens to align with the scope filter for teachers anyway.
     const targets = await prisma.classSession.findMany({
       where: {
         seriesId: anchor.seriesId,
         cancelled: false,
         startTime: { gte: anchor.startTime },
         createdByAdminId: anchor.createdByAdminId,
+        ...scopedClassFilter(req.user),
       },
       include: {
         assignments: {
@@ -739,9 +828,10 @@ router.post('/classes/:id/reschedule', validate(rescheduleClassSchema), async (r
     const lang = getLang(req);
     const { startTime, endTime } = req.body;
 
-    // Fetch current class to preserve original times AND assert ownership.
+    // Fetch current class to preserve original times AND assert access.
+    // Sheikh: any class. Teacher: own creations + assigned-student classes.
     const existing = await prisma.classSession.findFirst({
-      where: { id: req.params.id, createdByAdminId: req.user.id },
+      where: { id: req.params.id, ...scopedClassFilter(req.user) },
     });
     if (!existing) return res.status(404).json({ error: t('schedule.classNotFound', lang) });
 
@@ -801,10 +891,10 @@ router.post('/classes/:id/reschedule', validate(rescheduleClassSchema), async (r
 router.delete('/classes/:id', async (req, res, next) => {
   try {
     const lang = getLang(req);
-    // Scope the delete to classes this admin owns. a stranger can't nuke
-    // another admin's class by guessing the ID.
+    // Scope the delete: sheikh deletes any class, teacher only what they
+    // can see. Stranger ids return 404 the same as before.
     const result = await prisma.classSession.deleteMany({
-      where: { id: req.params.id, createdByAdminId: req.user.id },
+      where: { id: req.params.id, ...scopedClassFilter(req.user) },
     });
     if (result.count === 0) return res.status(404).json({ error: t('schedule.classNotFound', lang) });
     auditLog('CLASS_DELETED', { classId: req.params.id, adminId: req.user.id });
@@ -814,16 +904,17 @@ router.delete('/classes/:id', async (req, res, next) => {
   }
 });
 
-// Delete all classes (bulk wipe)
-router.delete('/classes', async (req, res, next) => {
+// Delete all classes (bulk wipe). Sheikh-only because nuking a teacher's
+// schedule globally is too destructive an operation to expose to teachers.
+router.delete('/classes', requireAdmin, async (req, res, next) => {
   try {
     const lang = getLang(req);
     const now = new Date();
     await prisma.classAssignment.deleteMany({
-      where: { classSession: { createdByAdminId: req.user.id, startTime: { gte: now } } },
+      where: { classSession: { startTime: { gte: now } } },
     });
     const result = await prisma.classSession.deleteMany({
-      where: { createdByAdminId: req.user.id, startTime: { gte: now } },
+      where: { startTime: { gte: now } },
     });
     auditLog('ALL_CLASSES_DELETED', { count: result.count, adminId: req.user.id });
     res.json({ message: t('schedule.deleted', lang), count: result.count });
@@ -832,9 +923,9 @@ router.delete('/classes', async (req, res, next) => {
   }
 });
 
-// --- Settings ---
+// --- Settings (sheikh-only) ---
 
-router.get('/settings', async (req, res, next) => {
+router.get('/settings', requireAdmin, async (req, res, next) => {
   try {
     const settings = await prisma.siteSetting.findMany();
     const result = {};
@@ -845,7 +936,7 @@ router.get('/settings', async (req, res, next) => {
   }
 });
 
-router.put('/settings/meeting-link', validate(meetingLinkSchema), async (req, res, next) => {
+router.put('/settings/meeting-link', requireAdmin, validate(meetingLinkSchema), async (req, res, next) => {
   try {
     const lang = getLang(req);
     await prisma.siteSetting.upsert({
@@ -866,6 +957,10 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
   try {
     const lang = getLang(req);
     const { studentId, title, titleAr, subject, timezone, sessions, resolutions = {} } = req.body;
+
+    // Teacher can only schedule for students assigned to them. Sheikh
+    // bypasses this check and can schedule for any enrolled student.
+    await requireStudentAccess(req.user, studentId, prisma);
 
     // Guard against the batch itself containing overlapping sessions. The
     // frontend hits /check-conflicts against existing DB rows, but an admin
@@ -917,7 +1012,12 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
 
         if (resolution === 'merge') {
           // Find an existing class at the exact same slot and attach the
-          // student to it instead of creating a parallel session.
+          // student to it instead of creating a parallel session. We
+          // intentionally constrain merge candidates to the user's own
+          // creations (teacher merges into teacher's existing class;
+          // sheikh merges into any class he created) rather than the
+          // broader scope filter, so teachers don't silently merge a new
+          // student into another teacher's class.
           const existing = await tx.classSession.findFirst({
             where: {
               createdByAdminId: req.user.id,
@@ -998,16 +1098,21 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
 router.post('/classes/check-conflicts', validate(checkConflictsSchema), async (req, res, next) => {
   try {
     const { studentId, sessions } = req.body;
-    const conflicts = await findConflicts(sessions, studentId, req.user.id);
+    // Refuse if the teacher isn't allowed to schedule for this student;
+    // sheikh bypasses.
+    await requireStudentAccess(req.user, studentId, prisma);
+    const conflicts = await findConflicts(sessions, studentId, req.user);
     res.json({ conflicts });
   } catch (error) {
     next(error);
   }
 });
 
-// --- Announcements ---
+// --- Announcements (sheikh-only) ---
+// Site-wide announcements are sheikh-controlled. Teachers don't decide
+// what every student sees on their dashboard.
 
-router.get('/announcements', async (req, res, next) => {
+router.get('/announcements', requireAdmin, async (req, res, next) => {
   try {
     const announcements = await prisma.announcement.findMany({
       orderBy: { createdAt: 'desc' },
@@ -1018,7 +1123,7 @@ router.get('/announcements', async (req, res, next) => {
   }
 });
 
-router.post('/announcements', validate(announcementSchema), async (req, res, next) => {
+router.post('/announcements', requireAdmin, validate(announcementSchema), async (req, res, next) => {
   try {
     const announcement = await prisma.announcement.create({ data: req.body });
     auditLog('ANNOUNCEMENT_CREATED', { announcementId: announcement.id, adminId: req.user.id });
@@ -1028,7 +1133,7 @@ router.post('/announcements', validate(announcementSchema), async (req, res, nex
   }
 });
 
-router.put('/announcements/:id', validate(announcementSchema), async (req, res, next) => {
+router.put('/announcements/:id', requireAdmin, validate(announcementSchema), async (req, res, next) => {
   try {
     const announcement = await prisma.announcement.update({
       where: { id: req.params.id },
@@ -1040,7 +1145,7 @@ router.put('/announcements/:id', validate(announcementSchema), async (req, res, 
   }
 });
 
-router.delete('/announcements/:id', async (req, res, next) => {
+router.delete('/announcements/:id', requireAdmin, async (req, res, next) => {
   try {
     await prisma.announcement.delete({ where: { id: req.params.id } });
     res.json({ success: true });
@@ -1053,6 +1158,8 @@ router.delete('/announcements/:id', async (req, res, next) => {
 router.post('/students/:id/message', validate(messageStudentSchema), async (req, res, next) => {
   try {
     const lang = getLang(req);
+    // Teachers can email their own assigned students; sheikh anyone.
+    await requireStudentAccess(req.user, req.params.id, prisma);
     const student = await prisma.user.findFirst({
       where: { id: req.params.id },
       select: { email: true, firstName: true },
@@ -1084,9 +1191,13 @@ router.post('/students/:id/message', validate(messageStudentSchema), async (req,
   }
 });
 
-// --- Availability Management ---
+// --- Availability Management (sheikh-only edits; read accessible to teachers) ---
+// The slots table is currently a single shared schedule (sheikh's). Until we
+// model per-teacher availability separately, only the sheikh edits these.
+// Teachers can READ the schedule via /availability/open-slots so their
+// scheduling form knows when slots are free.
 
-router.get('/availability', async (req, res, next) => {
+router.get('/availability', requireAdmin, async (req, res, next) => {
   try {
     const [slots, overrides] = await Promise.all([
       prisma.availabilitySlot.findMany({ orderBy: [{ dayOfWeek: 'asc' }, { startHour: 'asc' }, { startMin: 'asc' }] }),
@@ -1098,8 +1209,8 @@ router.get('/availability', async (req, res, next) => {
   }
 });
 
-// Replace all availability slots (full save)
-router.put('/availability/slots', validate(availabilitySlotsSchema), async (req, res, next) => {
+// Replace all availability slots (full save). Sheikh-only.
+router.put('/availability/slots', requireAdmin, validate(availabilitySlotsSchema), async (req, res, next) => {
   try {
     const { slots } = req.body;
 
@@ -1127,7 +1238,7 @@ router.put('/availability/slots', validate(availabilitySlotsSchema), async (req,
   }
 });
 
-router.post('/availability/overrides', validate(availabilityOverrideSchema), async (req, res, next) => {
+router.post('/availability/overrides', requireAdmin, validate(availabilityOverrideSchema), async (req, res, next) => {
   try {
     const { date, available, startHour, startMin, endHour, endMin, reason } = req.body;
 
@@ -1145,7 +1256,7 @@ router.post('/availability/overrides', validate(availabilityOverrideSchema), asy
   }
 });
 
-router.delete('/availability/overrides/:id', async (req, res, next) => {
+router.delete('/availability/overrides/:id', requireAdmin, async (req, res, next) => {
   try {
     await prisma.availabilityOverride.delete({ where: { id: req.params.id } });
     res.json({ success: true });
@@ -1242,8 +1353,8 @@ function getMonday(d) {
   return date;
 }
 
-// --- Admin List ---
-router.get('/admins', async (req, res, next) => {
+// --- Admin List (sheikh-only) ---
+router.get('/admins', requireAdmin, async (req, res, next) => {
   try {
     const admins = await prisma.user.findMany({
       where: { role: 'admin', deletedAt: null },
@@ -1263,8 +1374,8 @@ router.get('/admins', async (req, res, next) => {
   }
 });
 
-// --- Audit Logs ---
-router.get('/audit-logs', validate(paginationSchema, 'query'), async (req, res, next) => {
+// --- Audit Logs (sheikh-only) ---
+router.get('/audit-logs', requireAdmin, validate(paginationSchema, 'query'), async (req, res, next) => {
   try {
     const { page, limit } = req.query;
     const skip = (page - 1) * limit;
@@ -1292,6 +1403,7 @@ router.get('/audit-logs', validate(paginationSchema, 'query'), async (req, res, 
 // List all class logs for a student, joined with the class they refer to.
 router.get('/students/:id/class-logs', async (req, res, next) => {
   try {
+    await requireStudentAccess(req.user, req.params.id, prisma);
     const logs = await prisma.classLog.findMany({
       where: { studentId: req.params.id },
       include: {
@@ -1315,6 +1427,11 @@ router.put(
     try {
       const { classSessionId, studentId } = req.params;
       const { summary, homework, nextSteps, adminNotes, visibility } = req.body;
+
+      // The teacher writing this log must actually have access to both
+      // the class AND the student. Sheikh bypasses both checks.
+      await requireClassAccess(req.user, classSessionId, prisma);
+      await requireStudentAccess(req.user, studentId, prisma);
 
       // Sanity: the class and the student must actually be linked.
       const assignment = await prisma.classAssignment.findUnique({
@@ -1364,6 +1481,7 @@ router.put(
 
 router.get('/students/:id/payments', async (req, res, next) => {
   try {
+    await requireStudentAccess(req.user, req.params.id, prisma);
     const payments = await prisma.payment.findMany({
       where: { studentId: req.params.id },
       orderBy: { paidAt: 'desc' },
@@ -1381,6 +1499,7 @@ router.get('/students/:id/payments', async (req, res, next) => {
 
 router.post('/students/:id/payments', validate(paymentSchema), async (req, res, next) => {
   try {
+    await requireStudentAccess(req.user, req.params.id, prisma);
     const { amount, currency, period, paidAt, notes } = req.body;
 
     // Make sure the student actually exists (avoids orphan payments).
@@ -1420,6 +1539,14 @@ router.post('/students/:id/payments', validate(paymentSchema), async (req, res, 
 
 router.put('/payments/:id', validate(paymentUpdateSchema), async (req, res, next) => {
   try {
+    // Look up the payment's studentId so we can scope-check before update.
+    const existing = await prisma.payment.findUnique({
+      where: { id: req.params.id },
+      select: { studentId: true },
+    });
+    if (!existing) return res.status(404).json({ error: t('payment.notFound', getLang(req)) });
+    await requireStudentAccess(req.user, existing.studentId, prisma);
+
     const updates = { ...req.body };
     if (updates.paidAt) updates.paidAt = new Date(updates.paidAt);
 
@@ -1445,6 +1572,13 @@ router.put('/payments/:id', validate(paymentUpdateSchema), async (req, res, next
 
 router.delete('/payments/:id', async (req, res, next) => {
   try {
+    const existing = await prisma.payment.findUnique({
+      where: { id: req.params.id },
+      select: { studentId: true },
+    });
+    if (!existing) return res.status(404).json({ error: t('payment.notFound', getLang(req)) });
+    await requireStudentAccess(req.user, existing.studentId, prisma);
+
     const payment = await prisma.payment.delete({ where: { id: req.params.id } });
     auditLog('PAYMENT_DELETED', {
       paymentId: req.params.id,
@@ -1469,6 +1603,7 @@ function formatMoney(minorUnits) {
 // Per-student bundle. one CSV with two sections (class logs + payments).
 router.get('/students/:id/export.csv', async (req, res, next) => {
   try {
+    await requireStudentAccess(req.user, req.params.id, prisma);
     const student = await prisma.user.findUnique({
       where: { id: req.params.id },
       select: { id: true, firstName: true, lastName: true, email: true },
@@ -1518,8 +1653,9 @@ router.get('/students/:id/export.csv', async (req, res, next) => {
   }
 });
 
-// All payments across all students. for tax/reconciliation.
-router.get('/export/payments.csv', async (req, res, next) => {
+// All payments across all students. for tax/reconciliation. Sheikh-only;
+// teachers don't see other teachers' students' payments.
+router.get('/export/payments.csv', requireAdmin, async (req, res, next) => {
   try {
     const payments = await prisma.payment.findMany({
       include: {
@@ -1542,8 +1678,8 @@ router.get('/export/payments.csv', async (req, res, next) => {
   }
 });
 
-// All class logs across all students.
-router.get('/export/class-logs.csv', async (req, res, next) => {
+// All class logs across all students. Sheikh-only.
+router.get('/export/class-logs.csv', requireAdmin, async (req, res, next) => {
   try {
     const logs = await prisma.classLog.findMany({
       include: {

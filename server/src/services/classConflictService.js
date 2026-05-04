@@ -1,48 +1,61 @@
 import { prisma } from '../config/database.js';
+import { scopedClassFilter } from './scopingService.js';
 
 /**
  * Detect scheduling conflicts for a proposed set of class sessions.
  *
- * For each proposed session we distinguish two conflict shapes:
+ * Two conflict shapes are returned:
  *
  *   - 'same_student':  The target student already has ANOTHER class whose
  *                      time overlaps. The admin almost never wants this; the
  *                      UI confirms with "are you sure?" before forcing.
  *
- *   - 'existing_slot': A class already exists at the EXACT same start/end
- *                      (owned by this admin) but the target student is not
- *                      on it. This is usually the case where the admin wants
+ *                      Computed against ALL classes the current admin/teacher
+ *                      can see (their scope). For the sheikh, that's every
+ *                      class. For a teacher, it's their own creations + every
+ *                      class their assigned students attend, which is exactly
+ *                      what they need to know about for that student.
+ *
+ *   - 'existing_slot': A class already exists at the EXACT same start/end,
+ *                      created by the current user, and the target student
+ *                      is not on it. This is the case where the admin wants
  *                      to add the student to an already-running co-taught
  *                      class rather than creating a parallel duplicate.
+ *                      Restricted to the current user's own creations on
+ *                      purpose so a teacher doesn't merge into another
+ *                      teacher's class.
  *
  * @param {{ startTime: string|Date, endTime: string|Date }[]} sessions
  * @param {string} studentId
- * @param {string} adminId
+ * @param {{ id: string, role: string }} user  the authenticated admin/teacher
  * @returns {Promise<Array>}
  */
-export async function findConflicts(sessions, studentId, adminId) {
+export async function findConflicts(sessions, studentId, user) {
   if (!sessions?.length) return [];
 
   // Widen the search window to the full span of proposed sessions so we only
-  // hit the DB once instead of per-session.
+  // hit the DB once per query instead of per-session.
   const starts = sessions.map((s) => new Date(s.startTime));
   const ends = sessions.map((s) => new Date(s.endTime));
   const windowStart = new Date(Math.min(...starts.map((d) => d.getTime())));
   const windowEnd = new Date(Math.max(...ends.map((d) => d.getTime())));
 
+  // Scope-aware "what's in this window" query. Sheikh sees everything;
+  // teacher sees own creations + assigned students' classes.
   const existing = await prisma.classSession.findMany({
     where: {
-      createdByAdminId: adminId,
       cancelled: false,
       // overlap: existing.startTime < windowEnd AND existing.endTime > windowStart
       startTime: { lt: windowEnd },
       endTime: { gt: windowStart },
+      ...scopedClassFilter(user),
     },
     select: {
       id: true,
       title: true,
       startTime: true,
       endTime: true,
+      createdByAdminId: true,
       assignments: {
         where: { student: { deletedAt: null } },
         select: {
@@ -59,7 +72,7 @@ export async function findConflicts(sessions, studentId, adminId) {
     const pStart = new Date(proposed.startTime);
     const pEnd = new Date(proposed.endTime);
 
-    // 1) same-student overlap (any class, not just exact slot)
+    // 1) same-student overlap (any class in scope, not just exact slot)
     const overlapping = existing.filter(
       (c) => c.startTime < pEnd && c.endTime > pStart
     );
@@ -78,9 +91,12 @@ export async function findConflicts(sessions, studentId, adminId) {
       continue;
     }
 
-    // 2) existing-slot match: same start+end, different students
+    // 2) existing-slot match: same start+end created by THIS user, different
+    //    students. Merge candidates are intentionally scoped to own creations
+    //    so teachers don't merge into another teacher's class.
     const exactSlot = overlapping.find(
       (c) =>
+        c.createdByAdminId === user?.id &&
         c.startTime.getTime() === pStart.getTime() &&
         c.endTime.getTime() === pEnd.getTime()
     );
