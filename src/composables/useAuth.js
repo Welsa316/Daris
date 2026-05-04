@@ -21,6 +21,11 @@ export function useAuth() {
   // the back office" features (the calendar, scheduling, etc) and the
   // login redirect into /admin.
   const isStaff = computed(() => isAdmin.value || isTeacher.value);
+  // Student capability flag. Drives whether /dashboard is a meaningful
+  // destination for this user. Pure teachers (isStudent=false +
+  // isTeacher=true) get redirected away from /dashboard since they
+  // have no classes to attend.
+  const isStudent = computed(() => user.value?.isStudent === true);
   const isEnrolled = computed(() => user.value?.role === 'enrolled_student');
   const isPending = computed(() =>
     user.value?.role === 'pending' || user.value?.role === 'pending_review'
@@ -116,6 +121,7 @@ export function useAuth() {
     isAdmin,
     isTeacher,
     isStaff,
+    isStudent,
     isEnrolled,
     isPending,
     userRole,

@@ -317,6 +317,10 @@ router.get('/me', authenticate, verifyTokenVersion, async (req, res, next) => {
         // + isTeacher=true) into the staff dashboard while preserving
         // their student-side data.
         isTeacher: true,
+        // Student capability flag. False only for pure teachers; the
+        // frontend uses this to decide whether to render the
+        // /dashboard student view as a useful destination.
+        isStudent: true,
         emailVerified: true,
         enrolledAt: true,
         createdAt: true,

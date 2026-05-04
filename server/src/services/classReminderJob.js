@@ -6,9 +6,9 @@ import {
   sendClassReminderAdmin,
 } from './emailService.js';
 
-// How generous we are about "30 minutes before". if the tick runs every
-// 5 min, a 5-min window means every class gets exactly one reminder even if
-// one tick misses.
+// Match window for "24 hours before". The job tick runs every 5 min so a
+// 5-min window means every class gets exactly one reminder even if a
+// single tick is missed (e.g. during a Railway rolling deploy).
 const WINDOW_MIN = 5;
 
 // Max concurrent email sends. Resend's docs suggest ~10 RPS on the free
@@ -16,23 +16,22 @@ const WINDOW_MIN = 5;
 const EMAIL_CONCURRENCY = 5;
 
 /**
- * Run one reminder pass. Safe to call from a setInterval loop; uses per-class
- * timestamp columns on class_sessions to guarantee each class gets at most
- * one reminder per window even across concurrent server instances.
+ * Run one reminder pass. Safe to call from a setInterval loop; uses
+ * per-class timestamp columns on class_sessions to guarantee each class
+ * gets at most one reminder even across concurrent server instances.
+ *
+ * Only the 24-hour reminder fires now. The 30-min reminder used to also
+ * go out but the sheikh asked to drop it (back-to-back notifications
+ * felt nagging). reminder30SentAt is preserved on the schema so old
+ * records keep resolving; the column is just no longer written.
  */
 export async function runClassReminderTick() {
   try {
     await sendWindow({
-      label: '30min',
-      offsetMin: 30,
-      sentField: 'reminder30SentAt',
-      sendToAdmin: true,
-    });
-    await sendWindow({
       label: '24hr',
       offsetMin: 24 * 60,
       sentField: 'reminder24SentAt',
-      sendToAdmin: false,
+      sendToAdmin: true,
     });
   } catch (err) {
     logger.error('classReminderJob: tick failed', { error: err.message });

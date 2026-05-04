@@ -24,9 +24,10 @@ export function authenticate(req, res, next) {
       id: decoded.sub,
       role: decoded.role,
       tokenVersion: decoded.tokenVersion,
-      // Default until verifyTokenVersion fills the real value from DB.
-      // Anything before that middleware runs should NOT trust isTeacher.
+      // Defaults until verifyTokenVersion fills the real values from DB.
+      // Anything before that middleware runs should NOT trust these flags.
       isTeacher: false,
+      isStudent: true,
     };
     next();
   } catch (error) {
@@ -49,7 +50,7 @@ export async function verifyTokenVersion(req, res, next) {
   try {
     const user = await prisma.user.findFirst({
       where: { id: req.user.id },
-      select: { tokenVersion: true, deletedAt: true, role: true, isTeacher: true },
+      select: { tokenVersion: true, deletedAt: true, role: true, isTeacher: true, isStudent: true },
     });
 
     if (!user || user.deletedAt) {
@@ -60,11 +61,13 @@ export async function verifyTokenVersion(req, res, next) {
       return res.status(401).json({ error: t('auth.tokenExpired', lang), code: 'TOKEN_EXPIRED' });
     }
 
-    // Refresh role + isTeacher from DB. A user toggled to isTeacher=true
-    // mid-session gets teacher capabilities on their next call without
-    // having to log out and back in.
+    // Refresh role + isTeacher + isStudent from DB. A user toggled to
+    // isTeacher=true mid-session gets teacher capabilities on their
+    // next call without having to log out and back in. Same for
+    // isStudent flips (e.g. when a pure teacher is created).
     req.user.role = user.role;
     req.user.isTeacher = user.isTeacher;
+    req.user.isStudent = user.isStudent;
     next();
   } catch (error) {
     logger.error('Token version check failed', { error: error.message });

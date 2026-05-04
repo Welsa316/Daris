@@ -101,6 +101,7 @@ router.get('/', requireAdmin, async (req, res, next) => {
         email: true,
         role: true,
         isTeacher: true,
+        isStudent: true,
         createdAt: true,
         lastLoginAt: true,
         taughtStudents: {
@@ -130,9 +131,15 @@ router.get('/', requireAdmin, async (req, res, next) => {
 
 // --- Sheikh-only writes: promote / demote ---
 
-// Body validators. Both endpoints take the same shape: a list of user
-// ids to flip. Cap at 100 per call so a runaway selection in the UI
-// doesn't fan out into a huge transaction.
+// Body validators. Both endpoints take a list of user ids to flip,
+// capped at 100 per call so a runaway selection in the UI doesn't
+// fan out into a huge transaction. The promote endpoint also accepts
+// `pureTeacher: true` to make the user invisible to the students list
+// (typical for hired teachers who don't take classes themselves).
+const promoteSchema = z.object({
+  userIds: z.array(z.string().uuid()).min(1).max(100),
+  pureTeacher: z.boolean().optional().default(false),
+});
 const userIdsSchema = z.object({
   userIds: z.array(z.string().uuid()).min(1).max(100),
 });
@@ -144,11 +151,10 @@ const userIdsSchema = z.object({
 router.post(
   '/promote',
   requireAdmin,
-  validate(userIdsSchema),
+  validate(promoteSchema),
   async (req, res, next) => {
     try {
-      const lang = getLang(req);
-      const { userIds } = req.body;
+      const { userIds, pureTeacher } = req.body;
 
       // Resolve the users we'll touch. Skip ones that are already
       // teachers (idempotent) and refuse unverified emails so the
@@ -160,7 +166,14 @@ router.post(
           deletedAt: null,
           role: { in: ['enrolled_student', 'admin'] },
         },
-        select: { id: true, email: true, role: true, isTeacher: true, emailVerified: true },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          isTeacher: true,
+          isStudent: true,
+          emailVerified: true,
+        },
       });
 
       const unverified = targets.filter((u) => !u.emailVerified);
@@ -179,18 +192,28 @@ router.post(
         return res.json({ updated: 0 });
       }
 
+      // pureTeacher flag flips isStudent=false in the same write so the
+      // user disappears from the students list. They keep ClassAssignment
+      // rows if any exist (we don't yank them out from under historical
+      // class records); the sheikh can later restore is_student=true via
+      // the demote flow if needed.
       await prisma.user.updateMany({
         where: { id: { in: toUpdate } },
-        data: { isTeacher: true, tokenVersion: { increment: 1 } },
+        data: {
+          isTeacher: true,
+          ...(pureTeacher ? { isStudent: false } : {}),
+          tokenVersion: { increment: 1 },
+        },
       });
 
       auditLog('TEACHERS_PROMOTED', {
         adminId: req.user.id,
         userIds: toUpdate,
         count: toUpdate.length,
+        pureTeacher: !!pureTeacher,
       });
 
-      res.json({ updated: toUpdate.length });
+      res.json({ updated: toUpdate.length, pureTeacher: !!pureTeacher });
     } catch (error) {
       next(error);
     }
@@ -216,7 +239,7 @@ router.post(
       // that has the lockout guard.
       const targets = await prisma.user.findMany({
         where: { id: { in: userIds }, deletedAt: null },
-        select: { id: true, role: true, isTeacher: true },
+        select: { id: true, role: true, isTeacher: true, isStudent: true },
       });
 
       const sheikhs = targets.filter((u) => u.role === 'admin');
@@ -226,23 +249,43 @@ router.post(
         });
       }
 
-      const toUpdate = targets.filter((u) => u.isTeacher).map((u) => u.id);
+      const toUpdate = targets.filter((u) => u.isTeacher);
+      const toUpdateIds = toUpdate.map((u) => u.id);
 
-      if (toUpdate.length === 0) {
+      if (toUpdateIds.length === 0) {
         return res.json({ updated: 0 });
       }
+
+      // A pure teacher (isStudent=false + isTeacher=true) being demoted
+      // would otherwise become invisible: not in students list, not in
+      // teachers list, no way to find them again from the dashboard.
+      // Auto-restore isStudent=true on demote so they're at least
+      // findable. The sheikh can suspend them separately if needed.
+      const restoreStudentIds = toUpdate
+        .filter((u) => !u.isStudent)
+        .map((u) => u.id);
 
       // Cascade in a transaction so the assignments table can never
       // briefly reference a user who no longer has teacher capability.
       const result = await prisma.$transaction(async (tx) => {
         const removedAssignments = await tx.teacherStudent.deleteMany({
-          where: { teacherId: { in: toUpdate } },
+          where: { teacherId: { in: toUpdateIds } },
         });
         await tx.user.updateMany({
-          where: { id: { in: toUpdate } },
+          where: { id: { in: toUpdateIds } },
           data: { isTeacher: false, tokenVersion: { increment: 1 } },
         });
-        return { updated: toUpdate.length, removedAssignments: removedAssignments.count };
+        if (restoreStudentIds.length > 0) {
+          await tx.user.updateMany({
+            where: { id: { in: restoreStudentIds } },
+            data: { isStudent: true },
+          });
+        }
+        return {
+          updated: toUpdateIds.length,
+          removedAssignments: removedAssignments.count,
+          restoredAsStudents: restoreStudentIds.length,
+        };
       });
 
       auditLog('TEACHERS_DEMOTED', {

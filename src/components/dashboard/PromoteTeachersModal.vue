@@ -15,7 +15,7 @@
               {{ $t('admin.teachers.promoteTitle') }}
             </h2>
             <p class="text-xs text-slate-500 mt-1">
-              {{ $t('admin.teachers.promoteSubtitle') }}
+              {{ pureTeacher ? $t('admin.teachers.promoteSubtitlePure') : $t('admin.teachers.promoteSubtitle') }}
             </p>
           </div>
           <button
@@ -26,6 +26,27 @@
             &times;
           </button>
         </header>
+
+        <!-- Pure-teacher mode toggle. When checked, the chosen users
+             ALSO have isStudent=false flipped, hiding them from the
+             students list and the schedule form's student picker. -->
+        <div class="px-5 py-3 border-b border-slate-100 bg-cream-50">
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="pureTeacher"
+              class="h-4 w-4 mt-0.5 rounded border-slate-300 text-primary focus:ring-primary"
+            />
+            <div class="min-w-0">
+              <span class="text-sm font-medium text-primary">
+                {{ $t('admin.teachers.pureTeacherLabel') }}
+              </span>
+              <span class="block text-xs text-slate-500 mt-0.5">
+                {{ $t('admin.teachers.pureTeacherHint') }}
+              </span>
+            </div>
+          </label>
+        </div>
 
         <div class="px-5 py-3 border-b border-slate-100">
           <input
@@ -135,6 +156,10 @@ const candidates = ref([]);
 const loading = ref(true);
 const saving = ref(false);
 const selected = ref(new Set());
+// When checked, the chosen users get isStudent=false flipped on top
+// of isTeacher=true so they disappear from the students list. Defaults
+// to false: most promotions are dual-role (senior students who teach).
+const pureTeacher = ref(false);
 
 // Pull the full list of enrolled students who are NOT already teachers.
 // Server-scoped naturally because the call is sheikh-only on the route
@@ -191,6 +216,7 @@ async function save() {
   try {
     await api.post('/api/admin/teachers/promote', {
       userIds: [...selected.value],
+      pureTeacher: pureTeacher.value,
     });
     emit('saved');
   } catch (err) {

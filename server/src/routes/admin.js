@@ -38,10 +38,13 @@ router.get('/stats', async (req, res, next) => {
     const classScope = scopedClassFilter(req.user);
 
     const [totalEnrolled, totalPending, upcomingClasses, recentActivity] = await Promise.all([
-      // Sheikh: all enrolled students. Teacher: only their assigned students.
+      // Sheikh: all active students. Teacher: only their assigned students.
+      // isStudent=true keeps pure teachers out of the count so the stats
+      // card matches the students-list view.
       prisma.user.count({
         where: {
           role: 'enrolled_student',
+          isStudent: true,
           deletedAt: null,
           ...studentScope,
         },
@@ -156,11 +159,17 @@ router.get('/students', validate(paginationSchema, 'query'), async (req, res, ne
     const { page, limit, search, sort, order } = req.query;
     const skip = (page - 1) * limit;
 
-    // Scope the list: sheikh sees all enrolled students, teacher sees
+    // Scope the list: sheikh sees all active students, teacher sees
     // only those they're linked to via TeacherStudent. Sheikh's filter
     // contributes nothing to the where clause.
+    //
+    // isStudent=true keeps "pure teachers" (isStudent=false) out of
+    // the students list. They still exist as users and can teach;
+    // they just don't clutter the sheikh's enrolled-students view or
+    // the schedule form's student picker.
     const where = {
       role: 'enrolled_student',
+      isStudent: true,
       deletedAt: null,
       ...scopedStudentFilter(req.user),
     };
@@ -536,7 +545,7 @@ router.put(
       const { teacherIds } = req.body;
 
       const student = await prisma.user.findFirst({
-        where: { id: studentId, role: 'enrolled_student', deletedAt: null },
+        where: { id: studentId, role: 'enrolled_student', isStudent: true, deletedAt: null },
         select: { id: true },
       });
       if (!student) {
@@ -714,13 +723,15 @@ router.post('/classes', validate(classSessionSchema), async (req, res, next) => 
       },
     });
 
-    // Assign students. Default-to-all means "all enrolled students" for
+    // Assign students. Default-to-all means "all active students" for
     // the sheikh, but only "all students assigned to me" for a teacher.
+    // isStudent=true keeps pure teachers out of the auto-attendance set.
     let assigneeIds = studentIds;
     if (!assigneeIds || assigneeIds.length === 0) {
       const enrolled = await prisma.user.findMany({
         where: {
           role: 'enrolled_student',
+          isStudent: true,
           deletedAt: null,
           ...scopedStudentFilter(req.user),
         },
@@ -942,9 +953,11 @@ router.post('/classes/:id/reschedule', validate(rescheduleClassSchema), async (r
         // Clear cancelled status if it was cancelled
         cancelled: false,
         cancelledAt: null,
-        // Reset reminder timestamps so the reminder job re-fires for the
-        // new time. Without this, a rescheduled class silently skips both
-        // its 30-min and 24-hr reminders forever.
+        // Reset reminder timestamp so the reminder job re-fires for the
+        // new time. Without this, a rescheduled class silently skips
+        // its 24-hr reminder forever. (reminder30SentAt is also cleared
+        // for legacy compat, though the 30-min reminder is no longer
+        // sent.)
         reminder30SentAt: null,
         reminder24SentAt: null,
       },

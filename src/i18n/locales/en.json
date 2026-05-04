@@ -704,6 +704,7 @@
       "promoteCta": "Promote students",
       "promoteTitle": "Promote students to teachers",
       "promoteSubtitle": "Pick the enrolled students who should also be able to teach. They keep all their student-side data.",
+      "promoteSubtitlePure": "These users will become teachers only — they won't appear in the students list and can't be assigned to attend classes.",
       "promoteSave": "Promote selected",
       "promoted": "Promoted to teacher.",
       "noPromoteCandidates": "No eligible students. Either everyone is already a teacher, or no students are enrolled yet.",
@@ -715,12 +716,16 @@
         "many": "{count} students selected"
       },
       "emailUnverified": "Unverified",
+      "pureTeacherLabel": "Promote as pure teacher",
+      "pureTeacherHint": "Removes them from the students list and the schedule form's student picker. Use for hired teachers who don't take classes themselves. Demoting them later restores their student status automatically.",
       "demote": "Remove teacher role",
       "demoted": "Teacher role removed.",
       "demoteTitle": "Remove teacher role",
       "demoteConfirm": "Remove the teacher role from {name}? Their {count} student assignments will be removed. They keep their own classes as a student.",
       "dualRoleBadge": "Also a student",
-      "dualRoleTooltip": "This teacher is also an enrolled student and attends classes themselves."
+      "dualRoleTooltip": "This teacher is also an enrolled student and attends classes themselves.",
+      "pureTeacherBadge": "Teacher only",
+      "pureTeacherTooltip": "This is a pure teacher and doesn't attend classes themselves."
     },
     "classDrawer": {
       "when": "When",

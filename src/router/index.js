@@ -124,7 +124,10 @@ const routes = [
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('../views/dashboard/StudentDashboard.vue'),
-    meta: { auth: true, role: 'enrolled_student' },
+    // Student-side dashboard. Requires the isStudent capability — pure
+    // teachers (isStudent=false + isTeacher=true) get redirected to
+    // /admin since /dashboard would just be empty for them.
+    meta: { auth: true, role: 'enrolled_student', requiresStudent: true },
   },
   {
     path: '/admin',
@@ -165,7 +168,7 @@ router.beforeEach(async (to) => {
 
   // Lazy import to avoid circular dependency (useAuth imports router)
   const { useAuth } = await import('@/composables/useAuth.js');
-  const { user, initialized, isAdmin, isStaff } = useAuth();
+  const { user, initialized, isAdmin, isStaff, isStudent } = useAuth();
 
   // Wait for initial auth check to complete
   if (!initialized.value) {
@@ -190,14 +193,20 @@ router.beforeEach(async (to) => {
   }
 
   // Role-required routes:
-  //   meta.role        single-role gate (legacy /dashboard pattern)
-  //   meta.staff:true  any staff: admin OR isTeacher capability
-  // Mismatches go to the locale home.
+  //   meta.role               single-role gate (legacy /dashboard pattern)
+  //   meta.staff:true         any staff: admin OR isTeacher capability
+  //   meta.requiresStudent    isStudent must be true (pure teachers
+  //                           with no classes-as-student get bounced)
+  // Mismatches go to the locale home — except a pure teacher hitting
+  // /dashboard, who we send to /admin since that IS their home.
   const role = user.value?.role;
   if (to.meta.role && role !== to.meta.role) {
     return `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}`;
   }
   if (to.meta.staff === true && !isStaff.value) {
     return `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}`;
+  }
+  if (to.meta.requiresStudent && !isStudent.value) {
+    return isStaff.value ? '/admin' : `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}`;
   }
 });

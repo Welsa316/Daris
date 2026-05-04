@@ -40,6 +40,13 @@ model User {
   expectedMonthlyAmount   Int?    @map("expected_monthly_amount")
   expectedMonthlyCurrency String? @map("expected_monthly_currency")
   role              UserRole  @default(pending)
+  // Student capability flag. True for anyone who attends classes as a
+  // student. Defaults to true on signup (the normal enrollment path
+  // creates an enrolled student). The sheikh can toggle it off when
+  // promoting a "pure teacher" who shouldn't appear in the students
+  // list. Demoting a pure teacher auto-restores it so they can never
+  // become orphaned (no isTeacher, no isStudent, invisible).
+  isStudent         Boolean   @default(true) @map("is_student")
   // Teacher capability flag. Independent of `role` so a senior
   // enrolled_student can also teach. Anyone with isTeacher=true (or
   // role=admin) gains scoped access to /admin and the assigned-students
@@ -79,6 +86,7 @@ model User {
 
   @@index([role])
   @@index([isTeacher])
+  @@index([isStudent])
   @@index([createdAt])
   @@index([deletedAt])
   @@map("users")

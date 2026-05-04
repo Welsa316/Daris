@@ -399,7 +399,7 @@ export async function sendClassReminderStudent(student, classSession, label) {
 }
 
 /**
- * Class reminder to the admin 30 minutes before the class starts.
+ * Class reminder to the admin 24 hours before the class starts.
  * Admin always gets Arabic (sheikh's preference).
  */
 export async function sendClassReminderAdmin(classSession, studentNames) {
@@ -426,7 +426,7 @@ export async function sendClassReminderAdmin(classSession, studentNames) {
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl;">
-      <h2 style="color: #1F4D3A;">تذكير: حصتك تبدأ خلال ٣٠ دقيقة</h2>
+      <h2 style="color: #1F4D3A;">تذكير: حصتك غداً</h2>
       <p style="background: #f5f1e8; padding: 12px 16px; border-radius: 6px; border-left: 3px solid #C8A951;">
         <strong>${escapeHtml(title)}</strong><br/>
         ${escapeHtml(when)}<br/>
@@ -438,7 +438,7 @@ export async function sendClassReminderAdmin(classSession, studentNames) {
 
   await sendEmail({
     to: env.ADMIN_EMAIL,
-    subject: `دارس. تذكير: حصة مع ${students} بعد ٣٠ دقيقة`,
+    subject: `دارس. تذكير: حصة مع ${students} غداً`,
     html,
   });
 }

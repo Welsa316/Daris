@@ -40,14 +40,24 @@
               <h3 class="font-semibold text-primary">
                 {{ t.firstName }} {{ t.lastName }}
               </h3>
-              <!-- Dual-role badge: this teacher is also an enrolled
-                   student, so they take classes too. -->
+              <!-- Capability badges. A teacher who's ALSO a student
+                   (isStudent=true) gets the "Also a student" pill;
+                   a pure teacher (isStudent=false) gets the
+                   "Teacher only" pill so the sheikh sees at a glance
+                   that they don't appear in the students list. -->
               <span
                 v-if="isDualRole(t)"
                 class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-50 text-blue-700"
                 :title="$t('admin.teachers.dualRoleTooltip')"
               >
                 {{ $t('admin.teachers.dualRoleBadge') }}
+              </span>
+              <span
+                v-else-if="isPureTeacher(t)"
+                class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-600"
+                :title="$t('admin.teachers.pureTeacherTooltip')"
+              >
+                {{ $t('admin.teachers.pureTeacherBadge') }}
               </span>
             </div>
             <!-- Email + last-login are sheikh-only; the directory endpoint
@@ -140,11 +150,23 @@ async function loadTeachers() {
   }
 }
 
-// A user is dual-role when they have isTeacher=true AND a non-admin
-// role (typically enrolled_student). Only the full-list endpoint
-// returns these fields, so the directory view never shows the badge.
+// A user is dual-role when they have isTeacher=true AND isStudent=true
+// AND a non-admin role. They take classes AND teach. Only the full-list
+// endpoint returns these fields, so the directory view never shows the
+// badge.
 function isDualRole(t) {
-  return t.isTeacher === true && t.role !== 'admin' && t.role !== undefined;
+  return (
+    t.isTeacher === true &&
+    t.isStudent === true &&
+    t.role !== 'admin' &&
+    t.role !== undefined
+  );
+}
+
+// A pure teacher has isTeacher=true + isStudent=false. They never appear
+// in the students list and can't be assigned to attend classes.
+function isPureTeacher(t) {
+  return t.isTeacher === true && t.isStudent === false;
 }
 
 // The directory shape uses `joinedAt`; the full-list shape uses
