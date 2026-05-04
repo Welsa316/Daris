@@ -30,9 +30,21 @@ export function requireRole(...allowedRoles) {
 }
 
 /**
- * Convenience middleware for admin-only routes
+ * Convenience middleware for admin-only routes (sheikh-level access).
+ * Use this for endpoints only the sheikh should reach: managing teachers,
+ * approving enrollments, settings, audit log, role changes.
  */
 export const requireAdmin = requireRole('admin');
+
+/**
+ * Admin or scoped teacher. Use this for endpoints that BOTH the sheikh
+ * and individual teachers should reach (students list, scheduling,
+ * calendar). The actual data scoping happens inside the route handler
+ * via `scopingService.scopedStudentFilter` and `scopedClassFilter`.
+ * Sheikh's filter is empty (sees everything); teachers' filter narrows
+ * to their assigned students + own creations.
+ */
+export const requireAdminOrTeacher = requireRole('admin', 'teacher');
 
 /**
  * Convenience middleware for enrolled students
@@ -42,7 +54,7 @@ export const requireEnrolled = requireRole('enrolled_student');
 /**
  * Convenience middleware for admin or enrolled students
  */
-export const requireAuthenticated = requireRole('admin', 'enrolled_student', 'pending', 'pending_review');
+export const requireAuthenticated = requireRole('admin', 'teacher', 'enrolled_student', 'pending', 'pending_review');
 
 /**
  * IDOR protection: ensure the user can only access their own resources

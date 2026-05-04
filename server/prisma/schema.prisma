@@ -13,6 +13,11 @@ enum UserRole {
   enrolled_student
   rejected
   suspended
+  // Scoped admin. can see/schedule for assigned students only via the
+  // TeacherStudent join. Cannot manage other teachers, settings, or
+  // pending enrollments. The sheikh stays as `admin`, which keeps
+  // global super-admin access (admins bypass the scope filter).
+  teacher
   admin
 }
 
@@ -59,6 +64,12 @@ model User {
   payments          Payment[]      @relation("PaymentStudent")
   paymentsAuthored  Payment[]      @relation("PaymentAuthor")
   googleCalendarConnection GoogleCalendarConnection?
+  // Multi-teacher: which students this user (as a teacher) is assigned to.
+  taughtStudents       TeacherStudent[] @relation("TeacherToStudents")
+  // Multi-teacher: which teachers this user (as a student) reports to.
+  teachers             TeacherStudent[] @relation("StudentToTeachers")
+  // Multi-teacher: TeacherStudent rows this user (as an admin) assigned.
+  assignedTeacherLinks TeacherStudent[] @relation("TeacherStudentAssigner")
 
   @@index([role])
   @@index([createdAt])
@@ -227,6 +238,33 @@ model ClassAssignment {
   @@unique([classSessionId, studentId])
   @@index([studentId])
   @@map("class_assignments")
+}
+
+// Many-to-many between teacher users (User.role='teacher') and student users
+// (User.role='enrolled_student'). Drives the scope filter: teachers see only
+// classes whose attendees include any of THEIR linked students, plus any
+// class they personally created. The sheikh (role='admin') bypasses this
+// table entirely. A student can be linked to multiple teachers (Quran with
+// one, Arabic with another). `assignedByAdminId` records which admin
+// assigned the relationship for audit purposes.
+model TeacherStudent {
+  id                String   @id @default(uuid()) @db.Uuid
+  teacherId         String   @map("teacher_id") @db.Uuid
+  studentId         String   @map("student_id") @db.Uuid
+  assignedByAdminId String?  @map("assigned_by_admin_id") @db.Uuid
+  notes             String?  @db.Text
+  assignedAt        DateTime @default(now()) @map("assigned_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  teacher           User     @relation("TeacherToStudents", fields: [teacherId], references: [id], onDelete: Cascade)
+  student           User     @relation("StudentToTeachers", fields: [studentId], references: [id], onDelete: Cascade)
+  assignedByAdmin   User?    @relation("TeacherStudentAssigner", fields: [assignedByAdminId], references: [id], onDelete: SetNull)
+
+  @@unique([teacherId, studentId])
+  @@index([teacherId])
+  @@index([studentId])
+  @@map("teacher_students")
 }
 
 model AdminNote {
