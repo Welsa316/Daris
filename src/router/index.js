@@ -130,7 +130,11 @@ const routes = [
     path: '/admin',
     name: 'admin',
     component: () => import('../views/dashboard/AdminDashboard.vue'),
-    meta: { auth: true, role: 'admin' },
+    // Both the sheikh ('admin') and a scoped 'teacher' use the same
+    // dashboard surface; the server scopes their data and the UI hides
+    // sheikh-only sections via `isAdmin` checks. The route guard accepts
+    // either role; mismatches are redirected home.
+    meta: { auth: true, roles: ['admin', 'teacher'] },
   },
 
   // Catch-all. redirect unknown paths to the current-locale home.
@@ -159,7 +163,7 @@ router.beforeEach(async (to) => {
 
   // Lazy import to avoid circular dependency (useAuth imports router)
   const { useAuth } = await import('@/composables/useAuth.js');
-  const { user, initialized, isAdmin } = useAuth();
+  const { user, initialized, isAdmin, isStaff } = useAuth();
 
   // Wait for initial auth check to complete
   if (!initialized.value) {
@@ -172,9 +176,10 @@ router.beforeEach(async (to) => {
 
   const isAuthenticated = !!user.value;
 
-  // Guest-only routes (login, register). redirect if already logged in
+  // Guest-only routes (login, register). redirect if already logged in.
+  // Sheikh + teachers both land on /admin; everyone else on /dashboard.
   if (to.meta.guest && isAuthenticated) {
-    return isAdmin.value ? '/admin' : '/dashboard';
+    return isStaff.value ? '/admin' : '/dashboard';
   }
 
   // Auth-required routes. redirect to login if not authenticated
@@ -182,8 +187,13 @@ router.beforeEach(async (to) => {
     return '/login';
   }
 
-  // Role-required routes. redirect home if wrong role
-  if (to.meta.role && user.value?.role !== to.meta.role) {
+  // Role-required routes. Single-role gates use `meta.role`; multi-role
+  // gates use `meta.roles` (array). Mismatches go to the locale home.
+  const role = user.value?.role;
+  if (to.meta.role && role !== to.meta.role) {
+    return `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}`;
+  }
+  if (to.meta.roles && !to.meta.roles.includes(role)) {
     return `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}`;
   }
 });

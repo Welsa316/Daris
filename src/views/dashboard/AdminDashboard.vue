@@ -10,7 +10,8 @@
         </div>
       </div>
 
-      <!-- Stats -->
+      <!-- Stats. Teachers see a 3-card variant (no Pending) since they
+           don't manage enrollments; the grid simply auto-fills. -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div class="bg-white rounded-2xl shadow-card p-5 text-center">
           <template v-if="statsError">
@@ -21,9 +22,9 @@
           <template v-else>
             <p class="text-3xl font-bold text-primary tabular-nums">{{ stats?.totalEnrolled ?? '-' }}</p>
           </template>
-          <p class="text-sm text-slate-500 mt-1">{{ $t('admin.totalEnrolled') }}</p>
+          <p class="text-sm text-slate-500 mt-1">{{ isAdmin ? $t('admin.totalEnrolled') : $t('admin.myStudents') }}</p>
         </div>
-        <div class="bg-white rounded-2xl shadow-card p-5 text-center">
+        <div v-if="isAdmin" class="bg-white rounded-2xl shadow-card p-5 text-center">
           <template v-if="statsError">
             <button @click="loadStats" class="text-xs text-red-600 hover:text-red-700 underline">
               {{ $t('admin.statsFailed') }}
@@ -98,8 +99,11 @@
 
       <!-- First-run checklist. Shown when the dashboard is effectively empty
            so the sheikh isn't staring at blank tabs on day one. Dismisses
-           itself once all three steps are done. -->
-      <div v-if="showFirstRunChecklist" class="bg-primary/5 border border-primary/10 rounded-2xl p-6 mb-8">
+           itself once all three steps are done. Sheikh-only: every step is
+           a sheikh-only action (review enrollments, set the global meeting
+           link, schedule the first class), so a teacher would see a useless
+           grey-out otherwise. -->
+      <div v-if="showFirstRunChecklist && isAdmin" class="bg-primary/5 border border-primary/10 rounded-2xl p-6 mb-8">
         <h2 class="text-lg font-bold text-primary mb-1">{{ $t('admin.firstRun.title') }}</h2>
         <p class="text-sm text-slate-500 mb-5">{{ $t('admin.firstRun.subtitle') }}</p>
         <ol class="space-y-3">
@@ -141,8 +145,9 @@
         </button>
       </div>
 
-      <!-- Pending Enrollments -->
-      <div v-if="activeTab === 'enrollments'" class="bg-white rounded-2xl shadow-card p-6">
+      <!-- Pending Enrollments. Sheikh-only: teachers don't review or
+           approve enrollments, that's strictly site-owner territory. -->
+      <div v-if="activeTab === 'enrollments' && isAdmin" class="bg-white rounded-2xl shadow-card p-6">
         <h2 class="text-lg font-bold text-primary mb-4">{{ $t('admin.pendingEnrollments') }}</h2>
         <div v-if="!enrollments.length" class="text-center py-10">
           <p class="text-slate-400 text-sm">{{ $t('admin.noPending') }}</p>
@@ -218,8 +223,9 @@
 
       <!-- Scheduling -->
       <div v-if="activeTab === 'scheduling'" class="space-y-4">
-        <!-- Global Meeting Link -->
-        <div class="bg-white rounded-2xl shadow-card p-4">
+        <!-- Global Meeting Link. Sheikh-only: it's a site-wide setting,
+             not a per-teacher knob. Teachers see no settings here. -->
+        <div v-if="isAdmin" class="bg-white rounded-2xl shadow-card p-4">
           <div class="flex flex-col sm:flex-row sm:items-center gap-3">
             <label class="text-sm font-medium text-primary whitespace-nowrap">{{ $t('admin.globalMeetingLink') }}</label>
             <input v-model="globalMeetingLink" type="url" :placeholder="$t('admin.meetingLinkPlaceholder')"
@@ -263,7 +269,7 @@
               <button @click="showScheduleForm = true" class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 transition-colors">
                 {{ $t('admin.scheduleStudent') }}
               </button>
-              <button v-if="classes.length" @click="deleteAllClasses" class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-200 transition-colors">
+              <button v-if="classes.length && isAdmin" @click="deleteAllClasses" class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-200 transition-colors">
                 {{ $t('admin.deleteAll') }}
               </button>
             </div>
@@ -420,11 +426,26 @@
         </div>
       </div>
 
-      <!-- Teachers (sheikh-only, read-only). Promotion and assignment are
-           managed by the site owner via DB / CLI scripts; the dashboard
-           just shows the current state. -->
+      <!-- My Classes (teacher-only). Vertical card list of the next two
+           weeks of upcoming classes for the assigned-students set. The
+           teacher's primary surface, especially on mobile. Tapping any
+           card opens the same ClassDetailDrawer used everywhere else. -->
+      <MyClassesTab
+        v-if="activeTab === 'myClasses' && isTeacher"
+        :classes="classes"
+        :viewer-tz="viewerTz"
+        :is-ar="isAr"
+        :has-students="(students.length || 0) > 0"
+        @select="(cls) => (selectedClass = cls)"
+        @schedule="goToScheduling"
+      />
+
+      <!-- Teachers (read-only for both roles). The sheikh sees the full
+           team with rosters; teachers see the same shape, just for context
+           ("who else is on the team"). Promotion and assignment are
+           managed by the site owner via DB / CLI scripts. -->
       <TeachersTab
-        v-if="activeTab === 'teachers' && isAdmin"
+        v-if="activeTab === 'teachers'"
         @toast="(err, action) => showToast(err, action)"
       />
 
@@ -433,11 +454,16 @@
            parent here just toggles `selectedClass` and forwards events
            to the existing reschedule/cancel/cancelSeries handlers so
            the underlying logic doesn't change. -->
+      <!-- canManage stays true for both roles. Backend scoping already
+           guarantees a teacher can only see classes they can act on, so
+           hiding the buttons would just create confusion ("why can't I
+           reschedule MY class?"). 403s on edge cases bubble through the
+           normal toast system. -->
       <ClassDetailDrawer
         :class-info="selectedClass"
         :viewer-tz="viewerTz"
         :is-ar="isAr"
-        :can-manage="isAdmin"
+        :can-manage="true"
         @close="selectedClass = null"
         @reschedule="(cls) => openReschedule(cls)"
         @cancel="onDrawerCancel"
@@ -767,13 +793,19 @@
         <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
           <h2 id="scheduleFormTitle" class="text-lg font-bold text-primary mb-4">{{ $t('admin.scheduleStudent') }}</h2>
           <form @submit.prevent="scheduleStudent" class="space-y-4">
-            <!-- Student -->
+            <!-- Student. The list is server-scoped: a teacher only ever
+                 sees their assigned students, while the sheikh sees all
+                 enrolled students. The hint below makes that explicit so
+                 a teacher who can't find a student knows why. -->
             <div>
               <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.selectStudent') }}</label>
               <select v-model="scheduleForm.studentId" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary outline-none bg-white text-sm">
                 <option value="" disabled>{{ $t('admin.selectStudent') }}</option>
                 <option v-for="s in students" :key="s.id" :value="s.id">{{ s.firstName }} {{ s.lastName }}</option>
               </select>
+              <p v-if="isTeacher" class="text-xs text-slate-400 mt-1">
+                {{ $t('admin.scheduleScopedToTeacher') }}
+              </p>
             </div>
 
             <!-- Subject. drives the calendar block colour + legend -->
@@ -975,13 +1007,14 @@ import { api } from '@/config/api.js';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 import BalancePill from '@/components/dashboard/BalancePill.vue';
 import TeachersTab from '@/components/dashboard/TeachersTab.vue';
+import MyClassesTab from '@/components/dashboard/MyClassesTab.vue';
 import ClassDetailDrawer from '@/components/dashboard/ClassDetailDrawer.vue';
 import { confirmDialog, promptDialog } from '@/composables/useConfirmDialog.js';
 import { queueUndoable } from '@/composables/useUndoToast.js';
 import { nextWeekdayInTz, TZ_OPTIONS, formatInTz } from '@/composables/useTimezone.js';
 
 const { locale, t } = useI18n();
-const { logout, isAdmin } = useAuth();
+const { logout, isAdmin, isTeacher } = useAuth();
 
 // Admin locale is controlled by the LanguageSwitcher in the header. We used
 // to force Arabic on mount, but that fought with the toggle the sheikh now
@@ -1366,21 +1399,48 @@ const showFirstRunChecklist = computed(() => {
   return firstRunSteps.value.some((s) => !s.done);
 });
 
-// Tabs are role-aware. The sheikh sees the Teachers management tab; teachers
-// don't (they get a read-only directory in Phase E). Computed so it reacts
-// when `useAuth` rehydrates after login.
+// Tabs are role-aware. The sheikh sees enrollments (review pending) +
+// every other surface globally. A teacher's first stop is "My classes"
+// (their own week ahead) and they never see the enrollments review.
+// Both see the Teachers tab, but only the sheikh sees a manage-style
+// view there (the component itself is read-only either way).
+//
+// Computed so it reacts when `useAuth` rehydrates after login.
 const tabs = computed(() => {
-  const base = [
-    { key: 'enrollments', label: 'admin.enrollments' },
-    { key: 'students', label: 'admin.students' },
-    { key: 'scheduling', label: 'admin.scheduling' },
-    { key: 'activity', label: 'admin.activity' },
-  ];
   if (isAdmin.value) {
-    base.push({ key: 'teachers', label: 'admin.teachers.tab' });
+    return [
+      { key: 'enrollments', label: 'admin.enrollments' },
+      { key: 'students',    label: 'admin.students' },
+      { key: 'scheduling',  label: 'admin.scheduling' },
+      { key: 'activity',    label: 'admin.activity' },
+      { key: 'teachers',    label: 'admin.teachers.tab' },
+    ];
   }
-  return base;
+  // Teacher view. "My classes" first since it's their primary surface
+  // (especially on a phone). Activity is scoped server-side; the same
+  // tab works for both roles.
+  return [
+    { key: 'myClasses',  label: 'admin.myClasses.tab' },
+    { key: 'students',   label: 'admin.students' },
+    { key: 'scheduling', label: 'admin.scheduling' },
+    { key: 'activity',   label: 'admin.activity' },
+    { key: 'teachers',   label: 'admin.teachers.tab' },
+  ];
 });
+
+// Snap the active tab back to the role's default if the persisted choice
+// (e.g. 'enrollments' for a teacher) isn't in their tab set. Keeps the
+// dashboard from showing a blank panel after a role change.
+watch(
+  tabs,
+  (val) => {
+    const validKeys = val.map((t) => t.key);
+    if (!validKeys.includes(activeTab.value)) {
+      activeTab.value = val[0].key;
+    }
+  },
+  { immediate: true }
+);
 
 // `action` is a key under `admin.actionFailed.*`. When provided, the toast
 // is prefixed with that label so the sheikh knows *which* action blew up,
@@ -2114,9 +2174,16 @@ function downloadAllClassLogsCsv() {
 }
 
 watch(activeTab, (tab) => {
-  if (tab === 'enrollments') loadEnrollments();
+  // Per-tab refresh: re-fetch the relevant slice on each switch so the
+  // dashboard reflects changes the user made elsewhere (or another tab
+  // / device made). Sheikh-only loaders are gated to avoid 403 chatter.
+  if (tab === 'enrollments' && isAdmin.value) loadEnrollments();
   if (tab === 'students') loadStudents();
-  if (tab === 'scheduling') { loadClasses(); loadSettings(); }
+  if (tab === 'scheduling') {
+    loadClasses();
+    if (isAdmin.value) loadSettings();
+  }
+  if (tab === 'myClasses') loadClasses();
 });
 
 watch(studentSearch, () => { loadStudents(); });
@@ -2136,11 +2203,25 @@ function handleGlobalKeydown(e) {
 
 onMounted(() => {
   loadStats();
-  loadEnrollments();
+  // Pending enrollments are sheikh-only; teachers don't have permission
+  // for the endpoint and we don't render the tab for them either.
+  if (isAdmin.value) loadEnrollments();
   loadClasses();
-  loadSettings();
+  // Preload the (scoped) student list so MyClassesTab's empty state
+  // can distinguish "no students assigned yet" from "no classes booked
+  // yet". Sheikh's view loads it lazily when opening the students tab.
+  if (isTeacher.value) loadStudents();
+  // Settings (global meeting link) is sheikh-only.
+  if (isAdmin.value) loadSettings();
   window.addEventListener('keydown', handleGlobalKeydown);
 });
+
+// Used by MyClassesTab's "Schedule" CTA to flip the active tab over to
+// the scheduling surface and pop the form open in one click.
+function goToScheduling() {
+  activeTab.value = 'scheduling';
+  showScheduleForm.value = true;
+}
 
 onBeforeUnmount(() => {
   clearInterval(nowTick);

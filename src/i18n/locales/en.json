@@ -706,6 +706,18 @@
       "attendeesNoneHint": "This class has no students assigned. Add students from the schedule form.",
       "openHint": "Open",
       "cancelledHint": "This class is cancelled. Past records stay visible for history."
+    },
+    "myStudents": "My students",
+    "scheduleScopedToTeacher": "Showing only the students assigned to you.",
+    "myClasses": {
+      "tab": "My classes",
+      "title": "My classes",
+      "subtitle": "Your upcoming sessions for the next two weeks. Tap any class to manage it.",
+      "tomorrow": "Tomorrow",
+      "emptyTitle": "No upcoming classes.",
+      "emptyHint": "Schedule a class for one of your students to see it here.",
+      "noStudentsTitle": "No students assigned yet.",
+      "noStudentsHint": "Once the site owner assigns you students, your classes will show up here."
     }
   }
 }
