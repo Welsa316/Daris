@@ -808,6 +808,38 @@
               </p>
             </div>
 
+            <!-- Teacher assignment (sheikh-only). When a student is
+                 selected we show a checkbox row of every active teacher,
+                 pre-checked for ones already assigned to this student.
+                 Saving the form also saves these assignments. Promotion
+                 to/from teacher stays owner-only via the CLI; this is
+                 just routing students between existing staff. -->
+            <div v-if="isAdmin && scheduleForm.studentId">
+              <label class="block text-sm text-slate-500 mb-2">{{ $t('admin.scheduleTeachersLabel') }}</label>
+              <div v-if="!teachersList.length" class="text-xs text-slate-400 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200">
+                {{ $t('admin.scheduleNoTeachers') }}
+              </div>
+              <div v-else class="flex flex-wrap gap-2">
+                <label
+                  v-for="tch in teachersList"
+                  :key="tch.id"
+                  class="flex items-center gap-2 px-3 py-1.5 rounded-full border cursor-pointer text-sm motion-safe:transition-colors"
+                  :class="scheduleForm.teacherIds.includes(tch.id)
+                    ? 'bg-primary/10 border-primary text-primary'
+                    : 'border-slate-200 text-slate-500 hover:border-slate-300'"
+                >
+                  <input
+                    type="checkbox"
+                    :value="tch.id"
+                    v-model="scheduleForm.teacherIds"
+                    class="sr-only"
+                  />
+                  {{ tch.firstName }} {{ tch.lastName }}
+                </label>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">{{ $t('admin.scheduleTeachersHint') }}</p>
+            </div>
+
             <!-- Subject. drives the calendar block colour + legend -->
             <div>
               <label class="block text-sm text-slate-500 mb-2">{{ $t('admin.subject') }}</label>
@@ -1109,7 +1141,34 @@ const scheduleForm = reactive({
   timezone: 'Africa/Cairo',
   duration: '60', // minutes
   weeks: '12',
+  // Sheikh-only field. Multi-select of teacher ids that this student
+  // is taught by. Pre-filled from the student's current assignments
+  // when studentId changes; saved alongside the class on submit.
+  teacherIds: [],
 });
+
+// Cache of all active teachers, used for the schedule form's teacher
+// picker. Lazy-loaded the first time the sheikh opens the form.
+const teachersList = ref([]);
+const teachersListLoaded = ref(false);
+
+async function loadTeachersList() {
+  if (teachersListLoaded.value) return;
+  try {
+    const data = await api.get('/api/admin/teachers');
+    teachersList.value = (data.teachers || []).map((t) => ({
+      id: t.id,
+      firstName: t.firstName,
+      lastName: t.lastName,
+      taughtStudentIds: new Set(
+        (t.taughtStudents || []).map((ts) => ts.student?.id).filter(Boolean)
+      ),
+    }));
+    teachersListLoaded.value = true;
+  } catch (e) {
+    showToast(e, 'loadTeachers');
+  }
+}
 
 // The fixed list of subjects we offer in the schedule form + legend. Each
 // entry maps to a colour class pair used by the calendar block; picking
@@ -1746,11 +1805,39 @@ async function scheduleStudent() {
     }
 
     const result = await api.post('/api/admin/classes/batch', payload);
+    // Save teacher assignments AFTER the class lands. If the assignment
+    // PUT fails, the class is still scheduled — we surface the error in
+    // a toast but don't roll back the booking. The endpoint is idempotent
+    // so the user can retry from the form on the next save.
+    await saveScheduleFormTeachers();
     showBatchOutcomeToast(result);
     closeScheduleForm();
     loadClasses();
   } catch (e) { showToast(e, 'scheduleStudent'); } finally {
     creatingClass.value = false;
+  }
+}
+
+// Sheikh-only: persist whichever teachers are checked in the schedule
+// form against this student. No-op for teachers (they can't see the
+// picker) and for empty studentId (defensive). The PUT is idempotent
+// and replace-semantics, so calling it on every save is safe even when
+// the picker hasn't changed.
+async function saveScheduleFormTeachers() {
+  if (!isAdmin.value || !scheduleForm.studentId) return;
+  try {
+    await api.put(
+      `/api/admin/students/${scheduleForm.studentId}/teachers`,
+      { teacherIds: scheduleForm.teacherIds }
+    );
+    // Refresh the local cache so subsequent picker opens reflect the
+    // new state without another full /teachers GET.
+    teachersListLoaded.value = false;
+    await loadTeachersList();
+  } catch (e) {
+    // The class itself is already saved; surface the assignment error
+    // separately so the sheikh knows their teacher pick didn't stick.
+    showToast(e, 'saveTeacherAssignments');
   }
 }
 
@@ -1769,6 +1856,7 @@ async function submitConflictResolution() {
         c.kind === 'existing_slot' ? conflictModal.bulkExisting : conflictModal.bulkSame;
     }
     const result = await api.post('/api/admin/classes/batch', { ...payload, resolutions });
+    await saveScheduleFormTeachers();
     showBatchOutcomeToast(result);
     closeScheduleForm();
     loadClasses();
@@ -1785,6 +1873,7 @@ function closeScheduleForm() {
   showScheduleForm.value = false;
   Object.assign(scheduleForm, {
     studentId: '', subject: 'quran', days: [], time: '17:00', timezone: 'Africa/Cairo', duration: '60', weeks: '12',
+    teacherIds: [],
   });
   conflictModal.conflicts = [];
   conflictModal.pendingPayload = null;
@@ -2187,7 +2276,30 @@ watch(activeTab, (tab) => {
 });
 
 watch(studentSearch, () => { loadStudents(); });
-watch(showScheduleForm, (v) => { if (v && !students.value.length) loadStudents(); });
+watch(showScheduleForm, (v) => {
+  if (!v) return;
+  if (!students.value.length) loadStudents();
+  // Sheikh's Teachers picker in the schedule form: load the list once
+  // per session. Teachers don't see the picker so skip the call.
+  if (isAdmin.value) loadTeachersList();
+});
+
+// When the sheikh changes the picked student, snap the teachers picker
+// to that student's current assignments so it shows the actual state.
+// We pull it from the cached teachersList (each entry already carries
+// the set of student ids it teaches), avoiding an extra round-trip.
+watch(
+  () => scheduleForm.studentId,
+  (sid) => {
+    if (!sid || !isAdmin.value) {
+      scheduleForm.teacherIds = [];
+      return;
+    }
+    scheduleForm.teacherIds = teachersList.value
+      .filter((t) => t.taughtStudentIds?.has(sid))
+      .map((t) => t.id);
+  }
+);
 
 // Escape key closes the topmost open modal. The ConfirmDialog component
 // handles its own escape. so we don't touch it here.

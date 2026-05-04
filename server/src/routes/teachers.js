@@ -1,24 +1,23 @@
 /**
  * Multi-teacher read endpoints.
  *
- * Two access tiers are exposed here, both READ-ONLY:
- *
  *   - Sheikh-only ("/teachers") full list with management metadata
- *     (emails, last-login, student rosters). Used by the Teachers tab.
- *
+ *     (emails, last-login, student rosters). Used by the Teachers tab
+ *     and as the source list for the schedule form's teacher picker.
  *   - Admin-or-teacher ("/teachers/directory") read-only directory so
  *     teachers know who else is on the team.
  *
- * Promotion, demotion, and student-to-teacher assignment are intentionally
- * NOT exposed as HTTP routes. The site owner manages them out-of-band:
+ * Writes live elsewhere:
+ *   - Sheikh assigns existing teachers to a student from the schedule
+ *     form via `PUT /api/admin/students/:id/teachers` (in admin.js,
+ *     near the rest of the student-centric endpoints).
+ *   - Promote / demote a user is owner-only via the CLI scripts.
+ *   - Bulk-assign by teacher email is owner-only via the CLI scripts.
  *
- *   - Roles via `node server/scripts/set-user-role.js <email> <role>`
- *   - Assignments via `node server/scripts/assign-students-to-teacher.js`
- *   - Or directly via Prisma Studio / SQL
- *
- * The sheikh (admin role) can VIEW teachers and rosters but cannot mutate
- * either from the dashboard. This is a deliberate product choice: the
- * owner wants single-source control over who teaches and who they teach.
+ * Why this split: who BECOMES a teacher is an owner decision (who is on
+ * the staff). Once teachers exist, routing students to them is a sheikh
+ * decision (day-to-day operations). Both writes go through the same
+ * TeacherStudent table, just with different ergonomics and call sites.
  */
 
 import { Router } from 'express';
@@ -76,7 +75,8 @@ router.get('/directory', async (req, res, next) => {
 // --- Sheikh-only read ---
 
 // Full teacher list with management metadata: emails, last-login, full
-// student roster preview. Used by the (read-only) Teachers tab.
+// student roster preview. Used by the (read-only) Teachers tab AND by
+// the schedule form's teacher picker.
 router.get('/', requireAdmin, async (req, res, next) => {
   try {
     const teachers = await prisma.user.findMany({

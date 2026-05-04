@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { authenticate, verifyTokenVersion } from '../middleware/auth.js';
 import { requireAdmin, requireAdminOrTeacher } from '../middleware/rbac.js';
 import { validate } from '../middleware/validate.js';
-import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, rescheduleClassSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema, batchClassSchema, meetingLinkSchema, checkConflictsSchema, classLogSchema, paymentSchema, paymentUpdateSchema, studentProfileSchema } from '../validators/adminSchemas.js';
+import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, rescheduleClassSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema, batchClassSchema, meetingLinkSchema, checkConflictsSchema, classLogSchema, paymentSchema, paymentUpdateSchema, studentProfileSchema, studentTeachersSchema } from '../validators/adminSchemas.js';
 import { getPendingEnrollments, approveEnrollment, rejectEnrollment, getRejectedApplicants, suspendStudent, removeStudent } from '../services/enrollmentService.js';
 import { prisma } from '../config/database.js';
 import { sendClassCancelledEmail, sendClassRescheduledEmail, sendFutureAssignmentsClearedEmail } from '../services/emailService.js';
@@ -514,6 +514,92 @@ router.post('/students/:id/notes', validate(adminNoteSchema), async (req, res, n
     next(error);
   }
 });
+
+// Replace this student's full taught-by set. Sheikh-only on purpose:
+// who teaches whom is a sheikh-driven decision, not a teacher-driven
+// one. The endpoint is idempotent (re-submitting the same list is a
+// no-op) so the schedule form can call it on every save without
+// special-casing "did the picker change".
+router.put(
+  '/students/:id/teachers',
+  requireAdmin,
+  validate(studentTeachersSchema),
+  async (req, res, next) => {
+    try {
+      const lang = getLang(req);
+      const studentId = req.params.id;
+      const { teacherIds } = req.body;
+
+      const student = await prisma.user.findFirst({
+        where: { id: studentId, role: 'enrolled_student', deletedAt: null },
+        select: { id: true },
+      });
+      if (!student) {
+        return res.status(404).json({ error: t('error.notFound', lang) });
+      }
+
+      // Verify every teacherId actually refers to an active teacher.
+      // Refuses to silently drop bogus ids on the floor — typos or stale
+      // dashboard state should fail loudly so the sheikh knows to refresh.
+      if (teacherIds.length > 0) {
+        const existingTeachers = await prisma.user.findMany({
+          where: {
+            id: { in: teacherIds },
+            role: 'teacher',
+            deletedAt: null,
+          },
+          select: { id: true },
+        });
+        if (existingTeachers.length !== teacherIds.length) {
+          return res.status(400).json({
+            error: 'One or more teacherIds do not refer to an active teacher',
+          });
+        }
+      }
+
+      // Diff in a transaction so the assignments table never reflects a
+      // half-applied state if a concurrent request changes things mid-flight.
+      const desired = new Set(teacherIds);
+      const result = await prisma.$transaction(async (tx) => {
+        const current = await tx.teacherStudent.findMany({
+          where: { studentId },
+          select: { teacherId: true },
+        });
+        const currentSet = new Set(current.map((r) => r.teacherId));
+
+        const toAdd = [...desired].filter((tid) => !currentSet.has(tid));
+        const toRemove = [...currentSet].filter((tid) => !desired.has(tid));
+
+        if (toRemove.length) {
+          await tx.teacherStudent.deleteMany({
+            where: { studentId, teacherId: { in: toRemove } },
+          });
+        }
+        if (toAdd.length) {
+          await tx.teacherStudent.createMany({
+            data: toAdd.map((teacherId) => ({
+              teacherId,
+              studentId,
+              assignedByAdminId: req.user.id,
+            })),
+          });
+        }
+
+        return { added: toAdd.length, removed: toRemove.length, total: desired.size };
+      });
+
+      auditLog('STUDENT_TEACHERS_UPDATED', {
+        studentId,
+        adminId: req.user.id,
+        ...result,
+      });
+
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 router.put('/notes/:id', validate(adminNoteSchema), async (req, res, next) => {
   try {

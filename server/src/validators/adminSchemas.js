@@ -196,8 +196,15 @@ export const availabilityOverrideSchema = z.object({
   reason: z.string().max(200).optional().nullable(),
 });
 
-// Multi-teacher promote/demote and student-to-teacher assignment are
-// intentionally NOT exposed as HTTP routes (the sheikh's view of the
-// Teachers tab is read-only). Roles are managed via
-// `server/scripts/set-user-role.js` and assignments via
-// `server/scripts/assign-students-to-teacher.js`.
+// Multi-teacher promote/demote stays out-of-band (CLI only): who BECOMES
+// a teacher is an owner decision. Student-to-teacher assignments, by
+// contrast, are sheikh-driven from the dashboard via the schedule form.
+//
+// Replace-semantics: the body's teacherIds list becomes the student's
+// full taught-by set. The route diffs against the current set and
+// applies adds + removes atomically. Idempotent: re-submitting the same
+// list is a no-op. Cap at 50 teachers per student — anything more is a
+// data-modelling problem we'd rather catch loudly than silently truncate.
+export const studentTeachersSchema = z.object({
+  teacherIds: z.array(z.string().uuid()).max(50),
+});

@@ -599,6 +599,8 @@
       "loadStats": "تعذر تحميل الإحصائيات",
       "loadEnrollments": "تعذر تحميل التسجيلات",
       "loadStudents": "تعذر تحميل الطلاب",
+      "loadTeachers": "تعذر تحميل المعلمين",
+      "saveTeacherAssignments": "تمت جدولة الحصة، لكن إسناد المعلم فشل",
       "loadClasses": "تعذر تحميل الحصص",
       "loadStudentData": "تعذر تحميل بيانات الطالب",
       "saveMeetingLink": "تعذر حفظ رابط الاجتماع",
@@ -709,6 +711,9 @@
     },
     "myStudents": "طلابي",
     "scheduleScopedToTeacher": "تظهر فقط أسماء الطلاب المُسندين إليك.",
+    "scheduleTeachersLabel": "المعلمون",
+    "scheduleTeachersHint": "سيرى هؤلاء المعلمون حصص هذا الطالب في لوحاتهم. يستبدل الحفظ المجموعة الحالية بالكامل.",
+    "scheduleNoTeachers": "لم يتم إضافة معلمين بعد.",
     "myClasses": {
       "tab": "حصصي",
       "title": "حصصي",

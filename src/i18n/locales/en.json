@@ -599,6 +599,8 @@
       "loadStats": "Couldn't load stats",
       "loadEnrollments": "Couldn't load enrollments",
       "loadStudents": "Couldn't load students",
+      "loadTeachers": "Couldn't load teachers",
+      "saveTeacherAssignments": "Class scheduled, but teacher assignment failed",
       "loadClasses": "Couldn't load classes",
       "loadStudentData": "Couldn't load student data",
       "saveMeetingLink": "Couldn't save meeting link",
@@ -709,6 +711,9 @@
     },
     "myStudents": "My students",
     "scheduleScopedToTeacher": "Showing only the students assigned to you.",
+    "scheduleTeachersLabel": "Teachers",
+    "scheduleTeachersHint": "These teachers will see this student's classes on their dashboard. Replaces the current set on save.",
+    "scheduleNoTeachers": "No teachers have been added yet.",
     "myClasses": {
       "tab": "My classes",
       "title": "My classes",
