@@ -22,8 +22,19 @@ import {
   isGoogleCalendarConfigured,
 } from './googleCalendar.js';
 
-const MAX_PER_TICK = 10;
+// Per-tick cap. The atomic claim makes any number safe across rolling
+// deploys; this is purely a kindness to Google's rate limiter. 50
+// keeps us well under the per-user/per-second soft cap (~250 req/s)
+// while letting a typical batch (12 weekly classes) drain in one tick.
+const MAX_PER_TICK = 50;
 const MAX_ATTEMPTS = 5;
+
+// Debounce timer for kickTick(). Set when an enqueue triggers a tick;
+// cleared when the tick fires. Subsequent enqueues during the debounce
+// window collapse onto the same scheduled tick so a batch of 12
+// classes results in one extra DB scan, not 12.
+let scheduledKick = null;
+const KICK_DEBOUNCE_MS = 200;
 
 // Backoff delays in seconds: 1m, 5m, 30m, 2h, 12h. Index = attemptCount
 // AFTER this attempt fails. So a fresh op (attemptCount: 0) failing
@@ -210,6 +221,12 @@ async function processOp(op) {
  * Idempotent for `update`: if there's already a pending update op for
  * this class, we leave it in place (the next tick picks up the latest
  * class state regardless). For create/cancel we always queue.
+ *
+ * After enqueueing, kicks the sync tick immediately (with a 200ms
+ * debounce so a batch of 12 enqueues collapses into one tick) so the
+ * Google Calendar update lands within ~half a second instead of
+ * waiting for the 60-second interval. The interval ticks stay around
+ * as a safety net in case the immediate kick fails.
  */
 export async function enqueueSyncOp(classSessionId, op) {
   if (!['create', 'update', 'cancel'].includes(op)) {
@@ -220,11 +237,31 @@ export async function enqueueSyncOp(classSessionId, op) {
       where: { classSessionId, op: 'update', resolved: false },
       select: { id: true },
     });
-    if (existing) return existing.id; // already queued
+    if (existing) {
+      kickTick();
+      return existing.id; // already queued
+    }
   }
   const created = await prisma.googleCalendarSyncOp.create({
     data: { classSessionId, op },
     select: { id: true },
   });
+  kickTick();
   return created.id;
+}
+
+/**
+ * Trigger a sync-job tick on the next event loop iteration, debounced
+ * so multiple enqueues within 200ms result in one extra tick. Safe to
+ * call alongside the regular interval tick — the atomic claim in
+ * runGCalSyncTick ensures no op is processed twice.
+ */
+function kickTick() {
+  if (scheduledKick) return;
+  scheduledKick = setTimeout(() => {
+    scheduledKick = null;
+    runGCalSyncTick().catch((err) =>
+      logger.error('GCal sync immediate tick failed', { error: err.message })
+    );
+  }, KICK_DEBOUNCE_MS);
 }
