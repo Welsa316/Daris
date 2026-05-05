@@ -8,8 +8,10 @@
 -- treating them as a series-of-one means the button shows + clicking
 -- it deletes the single class (functionally equivalent to Cancel).
 --
--- Casting "id"::text gives us a deterministic, unique value per row
--- without needing pgcrypto or uuid-ossp extensions on the database.
+-- The series_id column is type UUID (added in
+-- 20260417100000_round3_schema). Postgres won't auto-cast a TEXT into a
+-- UUID column, so we copy "id" (already UUID) directly. UUID-to-UUID
+-- assignment doesn't need any cast.
 UPDATE "class_sessions"
-SET "series_id" = "id"::text
+SET "series_id" = "id"
 WHERE "series_id" IS NULL;
