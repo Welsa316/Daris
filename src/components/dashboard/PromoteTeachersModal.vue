@@ -120,7 +120,7 @@
         <footer class="p-5 border-t border-slate-100 flex justify-end gap-2">
           <button
             @click="$emit('close')"
-            class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 rounded-full transition"
+            class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 rounded-full motion-safe:transition-colors"
           >
             {{ $t('admin.cancel') }}
           </button>

@@ -15,10 +15,20 @@
     </div>
 
     <!-- Empty state. Three flavours so the teacher knows whether they're
-         waiting on the sheikh or on themselves. -->
+         waiting on the sheikh or on themselves. When they have students
+         assigned but no classes booked, surface the same Schedule CTA
+         that's at the top — saves a glance up to find it. -->
     <div v-if="!grouped.length" class="text-center py-10">
       <p class="text-slate-400 text-sm">{{ emptyTitle }}</p>
       <p class="text-xs text-slate-400 mt-1">{{ emptyHint }}</p>
+      <button
+        v-if="hasStudents"
+        type="button"
+        @click="$emit('schedule')"
+        class="mt-4 bg-primary text-cream text-sm font-medium px-4 py-2 rounded-full hover:bg-primary-800 motion-safe:transition-colors"
+      >
+        {{ $t('admin.scheduleStudent') }}
+      </button>
     </div>
 
     <ol v-else class="space-y-6">

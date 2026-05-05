@@ -1107,7 +1107,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth.js';
 import { api } from '@/config/api.js';
@@ -1155,6 +1155,17 @@ const rescheduleTime = ref('');
 const rescheduleSeriesMode = ref(false);
 const rescheduleSeriesTimezone = ref('Africa/Cairo');
 const rescheduleSeriesDuration = ref('60');
+
+// When the user toggles "Apply to whole series", the modal's body
+// re-renders with different inputs visible. Move keyboard focus to
+// the time input (the one field that's present in both modes) so
+// tabbing stays sensible.
+watch(rescheduleSeriesMode, async () => {
+  if (!showRescheduleModal.value) return;
+  await nextTick();
+  const modal = document.querySelector('[aria-labelledby="rescheduleTitle"]');
+  modal?.querySelector('input[type="time"]')?.focus();
+});
 
 // --- Student detail expansion: tabs + per-student data -------------------
 // The old modal had a single free-form notes textbox. It's now replaced with

@@ -291,13 +291,22 @@ const secondaryTime = computed(() => {
 // animated in via a watch on classInfo. Tailwind's motion-safe: prefix
 // gates the transform so reduced-motion users see an instant transition.
 const open = ref(false);
+// In LTR, justify-end puts the panel on the physical right; in RTL,
+// justify-end follows the writing direction and puts it on the physical
+// left. Both correct via flexbox's main-axis logic.
 const containerClass = computed(() => 'items-end lg:items-stretch lg:justify-end');
 const panelMotion = computed(() => {
-  // Off-screen direction depends on viewport: bottom on mobile, end on
-  // desktop. We can't use ms/end utilities for transform values cleanly,
-  // so toggle a flag and let the class binding swap the transform.
+  // Off-screen direction depends on viewport AND writing direction:
+  //   - mobile: always slides up from the bottom (translate-y-full)
+  //   - desktop LTR: panel sits on the right, slides off to the right
+  //     (translate-x-full = move +100% on the X axis)
+  //   - desktop RTL: panel sits on the left, slides off to the left
+  //     (-translate-x-full = move -100% on the X axis)
+  // Tailwind's rtl: prefix handles the desktop-RTL case for us; without
+  // it the panel would slide INTO the viewport from the right edge of
+  // an RTL layout, which looks like a glitch.
   if (open.value) return 'translate-y-0 lg:translate-x-0';
-  return 'translate-y-full lg:translate-y-0 lg:translate-x-full';
+  return 'translate-y-full lg:translate-y-0 lg:translate-x-full rtl:lg:-translate-x-full';
 });
 
 watch(
