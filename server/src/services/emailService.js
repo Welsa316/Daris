@@ -226,6 +226,61 @@ export async function sendClassCancelledEmail(email, firstName, classTitle, clas
   await sendEmail({ to: email, subject, html });
 }
 
+/**
+ * Consolidated cancellation email for a series. The student gets ONE
+ * message listing every cancelled class instead of N separate emails.
+ *
+ * `cancelledList` is an array of { title, dateLabel } already formatted
+ * in the student's preferred language by the caller. Order preserved.
+ */
+export async function sendClassSeriesCancelledEmail(email, firstName, cancelledList, lang = 'en') {
+  if (!cancelledList || cancelledList.length === 0) return;
+
+  // For a one-off list of one (defensive fallback) we render as a
+  // normal cancellation rather than the bulk shape.
+  if (cancelledList.length === 1) {
+    return sendClassCancelledEmail(
+      email,
+      firstName,
+      cancelledList[0].title,
+      cancelledList[0].dateLabel,
+      lang
+    );
+  }
+
+  const count = cancelledList.length;
+  const subject = lang === 'ar'
+    ? `دارس. إلغاء ${count} حصص`
+    : `Daris. ${count} Classes Cancelled`;
+
+  const items = cancelledList
+    .map(
+      (c) => `
+      <li style="margin-bottom: 6px;">
+        <strong>${escapeHtml(c.title)}</strong> — ${escapeHtml(c.dateLabel)}
+      </li>
+    `
+    )
+    .join('');
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ${lang === 'ar' ? 'rtl' : 'ltr'};">
+      <h2 style="color: #1F4D3A;">${lang === 'ar' ? `تم إلغاء ${count} حصة` : `${count} Classes Cancelled`}</h2>
+      <p>${lang === 'ar'
+        ? `عزيزي ${firstName}، تم إلغاء الحصص التالية:`
+        : `Dear ${firstName}, the following classes have been cancelled:`}</p>
+      <ul style="background: #f5f1e8; padding: 16px 24px; border-radius: 6px; list-style: disc;">
+        ${items}
+      </ul>
+      <p style="color: #666; font-size: 14px;">${lang === 'ar'
+        ? 'إذا كانت لديك أسئلة، يرجى التواصل مع الشيخ.'
+        : 'If you have questions, please reach out to the Sheikh.'}</p>
+    </div>
+  `;
+
+  await sendEmail({ to: email, subject, html });
+}
+
 export async function sendClassRescheduledEmail(email, firstName, classTitle, oldDate, newDate, lang = 'en') {
   const subject = lang === 'ar'
     ? 'دارس. إعادة جدولة حصة'

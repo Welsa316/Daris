@@ -6,7 +6,7 @@ import { validate } from '../middleware/validate.js';
 import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, rescheduleClassSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema, batchClassSchema, meetingLinkSchema, checkConflictsSchema, classLogSchema, paymentSchema, paymentUpdateSchema, studentProfileSchema, studentTeachersSchema } from '../validators/adminSchemas.js';
 import { getPendingEnrollments, approveEnrollment, rejectEnrollment, getRejectedApplicants, suspendStudent, removeStudent } from '../services/enrollmentService.js';
 import { prisma } from '../config/database.js';
-import { sendClassCancelledEmail, sendClassRescheduledEmail, sendFutureAssignmentsClearedEmail } from '../services/emailService.js';
+import { sendClassCancelledEmail, sendClassSeriesCancelledEmail, sendClassRescheduledEmail, sendFutureAssignmentsClearedEmail } from '../services/emailService.js';
 import { findConflicts } from '../services/classConflictService.js';
 import {
   scopedStudentFilter,
@@ -668,7 +668,12 @@ router.get('/classes', validate(paginationSchema, 'query'), async (req, res, nex
     // clutter the calendar). Then layer the role-based scope on top:
     // sheikh sees everything, teacher sees own creations + assigned
     // students' classes.
+    //
+    // cancelled=false is defense-in-depth: cancellation now hard-deletes
+    // the row, but legacy soft-cancelled rows from before that change
+    // shouldn't keep cluttering the dashboard either.
     const classWhere = {
+      cancelled: false,
       assignments: { some: { student: { deletedAt: null } } },
       ...scopedClassFilter(req.user),
     };
@@ -818,20 +823,21 @@ router.put('/classes/:id', validate(classSessionUpdateSchema), async (req, res, 
   }
 });
 
+// Hard-delete the class. The sheikh asked: cancelled classes shouldn't
+// linger in history or on the calendar — they should be gone. We
+// preserve the audit trail via the auditLog entry below + capture
+// googleEventId BEFORE the delete so we can still cancel on Google
+// (the cascade FK would wipe the GoogleCalendarSyncOp row otherwise,
+// orphaning the event on the user's calendar).
 router.post('/classes/:id/cancel', async (req, res, next) => {
   try {
     const lang = getLang(req);
 
     // Scope check: sheikh can cancel any class; teachers only their own.
-    const owned = await prisma.classSession.findFirst({
+    // Hydrate the row up front so we have everything we need to send
+    // emails and call Google before the row goes away.
+    const classSession = await prisma.classSession.findFirst({
       where: { id: req.params.id, ...scopedClassFilter(req.user) },
-      select: { id: true },
-    });
-    if (!owned) return res.status(404).json({ error: t('schedule.classNotFound', lang) });
-
-    const classSession = await prisma.classSession.update({
-      where: { id: req.params.id },
-      data: { cancelled: true, cancelledAt: new Date() },
       include: {
         assignments: {
           where: { student: { deletedAt: null } },
@@ -841,8 +847,16 @@ router.post('/classes/:id/cancel', async (req, res, next) => {
         },
       },
     });
+    if (!classSession) return res.status(404).json({ error: t('schedule.classNotFound', lang) });
+
+    // Capture the Google event id before delete so we can cancel it
+    // even after the local row is gone.
+    const googleEventId = classSession.googleEventId;
+    const adminId = classSession.createdByAdminId;
 
     // Notify each assigned student in their own preferred language.
+    // One email per student. Fire-and-forget so a slow Resend call
+    // can't hold up the delete.
     for (const assignment of classSession.assignments) {
       const studentLang = assignment.student.preferredLanguage === 'en' ? 'en' : 'ar';
       sendClassCancelledEmail(
@@ -854,10 +868,31 @@ router.post('/classes/:id/cancel', async (req, res, next) => {
       ).catch(() => {});
     }
 
-    auditLog('CLASS_CANCELLED', { classId: classSession.id, adminId: req.user.id });
+    // Best-effort cancel on Google. Failure here doesn't block the
+    // local delete — orphaned event is acceptable; orphaned local
+    // row is not. Logged for follow-up.
+    if (googleEventId && adminId) {
+      try {
+        const { cancelEvent } = await import('../services/googleCalendar.js');
+        await cancelEvent(adminId, googleEventId);
+      } catch (err) {
+        logger.warn('GCal cancel-on-delete failed (continuing local delete)', {
+          classId: classSession.id,
+          error: err.message,
+        });
+      }
+    }
 
-    // Drop the Google Calendar event if there was one.
-    await enqueueSyncOp(classSession.id, 'cancel');
+    // Hard delete. Cascade FK removes class_assignments, class_logs,
+    // payments-from-this-class, and any pending GoogleCalendarSyncOp
+    // rows automatically.
+    await prisma.classSession.delete({ where: { id: classSession.id } });
+
+    auditLog('CLASS_DELETED_VIA_CANCEL', {
+      classId: classSession.id,
+      adminId: req.user.id,
+      hadGoogleEvent: !!googleEventId,
+    });
 
     res.json({ message: t('schedule.cancelled', lang) });
   } catch (error) {
@@ -882,15 +917,12 @@ router.post('/classes/:id/cancel-series', async (req, res, next) => {
       return res.status(400).json({ error: t('schedule.notSeries', lang) });
     }
 
-    // Find every not-already-cancelled session in the same series at or
-    // after this anchor that the user can also act on. The createdByAdminId
-    // filter on `anchor.createdByAdminId` keeps the original "cancel only
-    // sessions in this series owned by the same person" semantics, which
-    // happens to align with the scope filter for teachers anyway.
+    // Find every session in the same series at or after this anchor
+    // that the user can also act on. Hydrate fully so we have what we
+    // need for emails and Google API calls before deletion.
     const targets = await prisma.classSession.findMany({
       where: {
         seriesId: anchor.seriesId,
-        cancelled: false,
         startTime: { gte: anchor.startTime },
         createdByAdminId: anchor.createdByAdminId,
         ...scopedClassFilter(req.user),
@@ -899,40 +931,105 @@ router.post('/classes/:id/cancel-series', async (req, res, next) => {
         assignments: {
           where: { student: { deletedAt: null } },
           include: {
-            student: { select: { email: true, firstName: true, preferredLanguage: true } },
+            student: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                preferredLanguage: true,
+              },
+            },
           },
         },
       },
     });
 
-    await prisma.classSession.updateMany({
-      where: { id: { in: targets.map((c) => c.id) } },
-      data: { cancelled: true, cancelledAt: new Date() },
-    });
+    if (targets.length === 0) {
+      return res.json({ message: t('schedule.cancelled', lang), count: 0 });
+    }
 
-    // Notify each student once per cancelled class in their own language.
+    // Group by student so each one gets ONE email listing every
+    // cancelled class they were attending. Keeps a 12-week series
+    // cancellation from spamming a student with 12 separate emails.
+    const cancelledByStudent = new Map();
     for (const cls of targets) {
       for (const a of cls.assignments) {
-        const studentLang = a.student.preferredLanguage === 'en' ? 'en' : 'ar';
-        sendClassCancelledEmail(
-          a.student.email,
-          a.student.firstName,
-          cls.title,
-          cls.startTime.toISOString(),
-          studentLang
-        ).catch(() => {});
+        const sid = a.student.id;
+        if (!cancelledByStudent.has(sid)) {
+          cancelledByStudent.set(sid, {
+            student: a.student,
+            entries: [],
+          });
+        }
+        cancelledByStudent.get(sid).entries.push({
+          title: cls.title,
+          startTime: cls.startTime,
+          timezone: cls.timezone,
+        });
       }
     }
 
-    auditLog('CLASS_SERIES_CANCELLED', {
+    // Capture Google event ids before delete so we can cancel them
+    // even after the local rows are gone.
+    const googleEventIds = targets
+      .map((c) => c.googleEventId)
+      .filter(Boolean);
+    const adminId = anchor.createdByAdminId;
+
+    // Send the consolidated email per student. Fire-and-forget.
+    for (const [, { student, entries }] of cancelledByStudent) {
+      const studentLang = student.preferredLanguage === 'en' ? 'en' : 'ar';
+      const cancelledList = entries
+        .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
+        .map((e) => ({
+          title: e.title,
+          dateLabel: new Intl.DateTimeFormat(studentLang === 'ar' ? 'ar-EG' : 'en-GB', {
+            timeZone: e.timezone || 'UTC',
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          }).format(new Date(e.startTime)),
+        }));
+      sendClassSeriesCancelledEmail(
+        student.email,
+        student.firstName,
+        cancelledList,
+        studentLang
+      ).catch(() => {});
+    }
+
+    // Best-effort cancel on Google for every event in the series.
+    // Run sequentially-ish to stay polite to Google's rate limits.
+    if (adminId && googleEventIds.length > 0) {
+      const { cancelEvent } = await import('../services/googleCalendar.js');
+      for (const eventId of googleEventIds) {
+        try {
+          await cancelEvent(adminId, eventId);
+        } catch (err) {
+          logger.warn('GCal cancel-on-series-delete failed (continuing)', {
+            eventId,
+            error: err.message,
+          });
+        }
+      }
+    }
+
+    // Hard delete the whole series in one statement. Cascade FKs clean
+    // up class_assignments, class_logs, GoogleCalendarSyncOp rows, etc.
+    await prisma.classSession.deleteMany({
+      where: { id: { in: targets.map((c) => c.id) } },
+    });
+
+    auditLog('CLASS_SERIES_DELETED', {
       anchorClassId: anchor.id,
       seriesId: anchor.seriesId,
       count: targets.length,
       adminId: req.user.id,
     });
-
-    // Drop every Google Calendar event in the cancelled series.
-    for (const cls of targets) await enqueueSyncOp(cls.id, 'cancel');
 
     res.json({ message: t('schedule.cancelled', lang), count: targets.length });
   } catch (error) {

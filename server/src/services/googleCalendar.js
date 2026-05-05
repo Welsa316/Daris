@@ -213,7 +213,42 @@ export async function exchangeCodeForTokens({ code, state }) {
 
   auditLog('GCAL_CONNECTED', { adminId: payload.userId, googleEmail });
 
+  // Auto-backfill any future un-synced classes the admin owns. Covers
+  // both first-time connect AND reconnect-after-disconnect: anything
+  // created while disconnected gets queued the moment the connection
+  // is back. The sync job's debounce makes this near-instant.
+  await autoBackfillForUser(payload.userId);
+
   return { userId: payload.userId, googleEmail };
+}
+
+/**
+ * Find every future, un-cancelled, un-synced class this user owns and
+ * drop a `create` sync op for each. Called from exchangeCodeForTokens
+ * (first connect / reconnect) so existing classes start syncing
+ * automatically without the user having to click anything.
+ */
+async function autoBackfillForUser(userId) {
+  // Lazy require to avoid the circular dep between this service and
+  // googleCalendarSyncJob (which imports event methods from here).
+  const { enqueueSyncOp } = await import('./googleCalendarSyncJob.js');
+  const future = await prisma.classSession.findMany({
+    where: {
+      createdByAdminId: userId,
+      // cancelled stays in the schema for any legacy soft-cancelled
+      // rows that pre-date the hard-delete change; we still skip them.
+      cancelled: false,
+      startTime: { gte: new Date() },
+      googleEventId: null,
+    },
+    select: { id: true },
+  });
+  for (const cls of future) {
+    await enqueueSyncOp(cls.id, 'create');
+  }
+  if (future.length > 0) {
+    auditLog('GCAL_AUTO_BACKFILL', { adminId: userId, count: future.length });
+  }
 }
 
 /**

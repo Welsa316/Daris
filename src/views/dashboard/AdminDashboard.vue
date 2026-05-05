@@ -380,7 +380,7 @@
 
           <!-- List View (original) -->
           <div v-else>
-            <div v-if="!classes.length" class="text-center py-10">
+            <div v-if="!futureClasses.length" class="text-center py-10">
               <p class="text-slate-400 text-sm">{{ $t('admin.noClasses') }}</p>
               <button @click="showScheduleForm = true"
                 class="mt-3 bg-primary text-cream text-sm font-medium px-4 py-2 rounded-full hover:bg-primary-800 transition-colors">
@@ -389,12 +389,11 @@
             </div>
             <div v-else class="space-y-3">
               <button
-                v-for="cls in classes"
+                v-for="cls in futureClasses"
                 :key="cls.id"
                 type="button"
                 @click="selectedClass = cls"
                 class="w-full text-start border border-slate-100 rounded-xl p-4 hover:border-primary/30 hover:bg-cream-50/40 motion-safe:transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
-                :class="cls.cancelled ? 'opacity-50' : ''"
                 :aria-label="classBlockAriaLabel(cls)"
               >
                 <div class="flex items-start justify-between gap-3">
@@ -1274,6 +1273,18 @@ const classesByDay = computed(() => {
 const isThisWeek = computed(() => {
   const now = getMonday(new Date());
   return calendarWeekStart.value.getTime() === now.getTime();
+});
+
+// Future classes only — drives the list view in the Scheduling tab.
+// Past classes drop off naturally so the list stays focused on what
+// the sheikh can still act on. A class currently in progress (started
+// but not ended) still counts as future. With hard-delete on cancel,
+// this list never includes cancelled classes either.
+const futureClasses = computed(() => {
+  const now = Date.now();
+  return classes.value
+    .filter((c) => new Date(c.endTime).getTime() >= now)
+    .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 });
 
 const upcomingClasses = computed(() => {

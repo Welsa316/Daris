@@ -23,10 +23,8 @@ import {
   getStatus,
   isGoogleCalendarConfigured,
 } from '../services/googleCalendar.js';
-import { enqueueSyncOp } from '../services/googleCalendarSyncJob.js';
 import { verifyAccessToken } from '../services/tokenService.js';
-import { prisma } from '../config/database.js';
-import { logger, auditLog } from '../utils/logger.js';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 
@@ -44,21 +42,6 @@ router.get(
   async (req, res, next) => {
     try {
       const status = await getStatus(req.user.id);
-      // Tack on the count of future, uncancelled, un-synced classes so
-      // the dashboard card can show a "Sync N existing classes" CTA.
-      // Only relevant when the connection is active.
-      if (status.status === 'active') {
-        status.unsyncedCount = await prisma.classSession.count({
-          where: {
-            createdByAdminId: req.user.id,
-            cancelled: false,
-            startTime: { gte: new Date() },
-            googleEventId: null,
-          },
-        });
-      } else {
-        status.unsyncedCount = 0;
-      }
       res.json(status);
     } catch (error) {
       next(error);
@@ -162,42 +145,10 @@ router.post(
   }
 );
 
-// Enqueue a `create` sync op for every future, uncancelled, un-synced
-// class this admin owns. The background job processes them at ~10 per
-// minute (rate-limit friendly), so a 100-class backfill drains in
-// roughly 10 minutes. Returns the count enqueued so the dashboard can
-// show progress.
-router.post(
-  '/backfill',
-  authenticate,
-  verifyTokenVersion,
-  requireAdmin,
-  async (req, res, next) => {
-    try {
-      // Only target the admin's own creations. A teacher's classes
-      // remain on whoever's calendar they were created from (today,
-      // nobody but the sheikh has a connection).
-      const future = await prisma.classSession.findMany({
-        where: {
-          createdByAdminId: req.user.id,
-          cancelled: false,
-          startTime: { gte: new Date() },
-          googleEventId: null,
-        },
-        select: { id: true },
-      });
-      for (const cls of future) {
-        await enqueueSyncOp(cls.id, 'create');
-      }
-      auditLog('GCAL_BACKFILL_ENQUEUED', {
-        adminId: req.user.id,
-        count: future.length,
-      });
-      res.json({ enqueued: future.length });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
+// Backfill is now automatic. The OAuth callback path
+// (exchangeCodeForTokens → autoBackfillForUser) enqueues create ops
+// for every future, uncancelled, un-synced class the admin owns the
+// moment the connection becomes active. The previous manual endpoint
+// is gone; the dashboard card no longer renders a button.
 
 export default router;
