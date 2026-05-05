@@ -9,6 +9,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { logger } from './utils/logger.js';
 import { cleanExpiredSessions } from './services/tokenService.js';
 import { runClassReminderTick } from './services/classReminderJob.js';
+import { runGCalSyncTick } from './services/googleCalendarSyncJob.js';
 
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -179,6 +180,19 @@ setInterval(() => {
 // Also run once on boot so restarts don't create a 5-min gap.
 runClassReminderTick().catch((err) =>
   logger.error('Initial class reminder tick failed', { error: err.message })
+);
+
+// --- Google Calendar sync (every 60s). Drains GoogleCalendarSyncOp
+// rows that need to be reflected on the admin's calendar (events
+// created, updated, or cancelled by the dashboard). Atomic-claim
+// based so a Railway rolling deploy never double-fires an op. ---
+setInterval(() => {
+  runGCalSyncTick().catch((err) =>
+    logger.error('GCal sync tick failed', { error: err.message })
+  );
+}, 60 * 1000);
+runGCalSyncTick().catch((err) =>
+  logger.error('Initial GCal sync tick failed', { error: err.message })
 );
 
 // --- Start server ---

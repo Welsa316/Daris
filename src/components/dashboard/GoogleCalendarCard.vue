@@ -89,6 +89,23 @@
           <dd class="text-slate-600 tabular-nums">{{ formatDateTime(data.lastSyncedAt) }}</dd>
         </div>
       </dl>
+      <!-- Backfill CTA shows up only when there's at least one
+           future, uncancelled class that hasn't synced yet. The
+           background job drains at ~10/min so a 100-class backfill
+           takes about 10 minutes. -->
+      <div v-if="data.unsyncedCount > 0" class="mt-3 p-3 rounded-lg bg-cream-50 border border-cream-200">
+        <p class="text-sm text-primary mb-2">
+          {{ $t('admin.gcal.backfillHint', { count: data.unsyncedCount }) }}
+        </p>
+        <button
+          type="button"
+          @click="handleBackfill"
+          :disabled="busy"
+          class="bg-primary text-cream px-4 py-2 rounded-full text-xs font-medium hover:bg-primary-800 motion-safe:transition-colors disabled:opacity-50"
+        >
+          {{ busy ? $t('admin.saving') : $t('admin.gcal.backfillCta', { count: data.unsyncedCount }) }}
+        </button>
+      </div>
       <div class="mt-4 flex flex-wrap gap-2">
         <button
           type="button"
@@ -228,6 +245,22 @@ async function handleConnect() {
     busy.value = false;
   }
   // Don't reset busy on success — the navigation is in flight.
+}
+
+async function handleBackfill() {
+  busy.value = true;
+  try {
+    const res = await api.post('/api/admin/google-calendar/backfill');
+    const enqueued = res?.enqueued ?? 0;
+    emit('toast', t('admin.gcal.backfillToast', { count: enqueued }));
+    // Re-fetch status so the unsyncedCount drops as the job drains.
+    // Setting a small delay so the first ops have time to be picked up.
+    setTimeout(() => loadStatus(), 1500);
+  } catch (err) {
+    emit('toast', err, 'gcalBackfill');
+  } finally {
+    busy.value = false;
+  }
 }
 
 async function handleDisconnect() {

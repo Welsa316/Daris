@@ -17,6 +17,7 @@ import {
 import { toCsv, sendCsv } from '../utils/csv.js';
 import { t, getLang } from '../utils/i18n.js';
 import { auditLog, logger } from '../utils/logger.js';
+import { enqueueSyncOp } from '../services/googleCalendarSyncJob.js';
 import { sendEmail } from '../services/emailService.js';
 import { env } from '../config/env.js';
 
@@ -751,6 +752,10 @@ router.post('/classes', validate(classSessionSchema), async (req, res, next) => 
 
     auditLog('CLASS_CREATED', { classId: classSession.id, adminId: req.user.id });
 
+    // Hand off to Google Calendar sync job. No-op if the creator has
+    // no active connection; the job picks it up within 60s.
+    await enqueueSyncOp(classSession.id, 'create');
+
     res.status(201).json({ message: t('schedule.created', lang), classSession });
   } catch (error) {
     next(error);
@@ -803,6 +808,10 @@ router.put('/classes/:id', validate(classSessionUpdateSchema), async (req, res, 
 
     auditLog('CLASS_UPDATED', { classId: classSession.id, adminId: req.user.id });
 
+    // Reflect the change on Google Calendar. update op promotes itself
+    // to a create if the class doesn't yet have a googleEventId.
+    await enqueueSyncOp(classSession.id, 'update');
+
     res.json({ message: t('schedule.updated', lang), classSession });
   } catch (error) {
     next(error);
@@ -846,6 +855,9 @@ router.post('/classes/:id/cancel', async (req, res, next) => {
     }
 
     auditLog('CLASS_CANCELLED', { classId: classSession.id, adminId: req.user.id });
+
+    // Drop the Google Calendar event if there was one.
+    await enqueueSyncOp(classSession.id, 'cancel');
 
     res.json({ message: t('schedule.cancelled', lang) });
   } catch (error) {
@@ -919,6 +931,9 @@ router.post('/classes/:id/cancel-series', async (req, res, next) => {
       adminId: req.user.id,
     });
 
+    // Drop every Google Calendar event in the cancelled series.
+    for (const cls of targets) await enqueueSyncOp(cls.id, 'cancel');
+
     res.json({ message: t('schedule.cancelled', lang), count: targets.length });
   } catch (error) {
     next(error);
@@ -985,6 +1000,10 @@ router.post('/classes/:id/reschedule', validate(rescheduleClassSchema), async (r
     }
 
     auditLog('CLASS_RESCHEDULED', { classId: classSession.id, adminId: req.user.id });
+
+    // Reflect the new time on Google Calendar (or create the event if
+    // this is a pre-Phase-C class that never had one).
+    await enqueueSyncOp(classSession.id, 'update');
 
     res.json({ message: t('schedule.rescheduled', lang), classSession });
   } catch (error) {
@@ -1100,6 +1119,12 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
     // all future occurrences" by matching this ID.
     const seriesId = randomUUID();
 
+    // Class IDs that need a Google Calendar sync op. Collected inside
+    // the transaction; drained right after so the ops are visible to
+    // the background job within the next 60 seconds.
+    const createdSyncIds = [];
+    const mergedSyncIds = [];
+
     const result = await prisma.$transaction(async (tx) => {
       let created = 0;
       let merged = 0;
@@ -1150,6 +1175,9 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
               create: { classSessionId: existing.id, studentId },
               update: {},
             });
+            // Roster of an existing event changed; enqueue an update so
+            // the Google Calendar event title reflects the new attendee.
+            mergedSyncIds.push(existing.id);
             merged += 1;
             continue;
           }
@@ -1177,11 +1205,18 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
             studentId,
           },
         });
+        createdSyncIds.push(classSession.id);
         created += 1;
       }
 
       return { created, merged, skipped };
     });
+
+    // Outside the transaction: drop sync ops for everything we touched
+    // so the GCal job picks them up next tick. Ignored silently if the
+    // creator has no Google Calendar connection.
+    for (const id of createdSyncIds) await enqueueSyncOp(id, 'create');
+    for (const id of mergedSyncIds) await enqueueSyncOp(id, 'update');
 
     auditLog('CLASSES_BATCH_CREATED', {
       ...result,

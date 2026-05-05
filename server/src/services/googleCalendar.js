@@ -41,6 +41,16 @@ const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_REVOKE_URL = 'https://oauth2.googleapis.com/revoke';
 const GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo';
+const GOOGLE_CALENDAR_API = 'https://www.googleapis.com/calendar/v3';
+
+// Subject keys we render on calendar events. Matches the SUBJECTS array
+// in the frontend so labels stay consistent across the dashboard and
+// Google's UI.
+const SUBJECT_LABELS = {
+  quran: 'Quran',
+  fiqh: 'Fiqh',
+  arabic: 'Arabic',
+};
 
 /**
  * True when all four env vars are set. Routes that need the integration
@@ -363,5 +373,180 @@ export async function getStatus(userId) {
   return { configured: true, ...conn };
 }
 
+// --- Event API ---
+//
+// Each method requires an active connection for the given userId.
+// Throws if there's no connection or the access token can't be
+// obtained. The sync job catches and reschedules with backoff.
+
+/**
+ * Format an ISO timestamp into Google's `dateTime` field. Always send
+ * the full ISO string + the `timeZone` field so Google interprets it
+ * in the class's home zone, not the calendar's default.
+ */
+function toGoogleDateTime(iso, timeZone) {
+  return {
+    dateTime: new Date(iso).toISOString(),
+    timeZone: timeZone || 'UTC',
+  };
+}
+
+/**
+ * Build the event summary line. Single-subject classes get
+ * "{names} · {Subject}", split-subject classes (Phase D) will get
+ * "{names} · {Primary} + {Secondary}". For now we only handle the
+ * single-subject case; subjectSecondary is reserved for later.
+ */
+function buildEventSummary(classSession) {
+  const names = (classSession.assignments || [])
+    .map((a) => a.student?.firstName)
+    .filter(Boolean)
+    .join(' + ');
+  const primary = SUBJECT_LABELS[classSession.subject] || 'Class';
+  const subjectLine = classSession.subjectSecondary
+    ? `${primary} + ${SUBJECT_LABELS[classSession.subjectSecondary] || classSession.subjectSecondary}`
+    : primary;
+  return names ? `${names} · ${subjectLine}` : subjectLine;
+}
+
+const EVENT_DESCRIPTION = 'Scheduled via Daris. Manage at https://daris.education/admin';
+
+/**
+ * Build the full event body for a Google Calendar create/patch call.
+ */
+function buildEventBody(classSession) {
+  return {
+    summary: buildEventSummary(classSession),
+    description: EVENT_DESCRIPTION,
+    start: toGoogleDateTime(classSession.startTime, classSession.timezone),
+    end: toGoogleDateTime(classSession.endTime, classSession.timezone),
+    // Daris owns reminder timing — we send our own emails 24h before.
+    // Tell Google to skip its own pop/email reminders so the user
+    // isn't double-pinged.
+    reminders: { useDefault: false, overrides: [] },
+    // Status of an event — left default 'confirmed'. Cancellations
+    // delete the event rather than flipping status.
+  };
+}
+
+/**
+ * Create a Calendar event with an auto-generated Google Meet link.
+ * Returns { eventId, meetingLink } so the caller can store both on
+ * the ClassSession row.
+ */
+export async function createEvent(userId, classSession) {
+  const conn = await prisma.googleCalendarConnection.findUnique({
+    where: { userId },
+    select: { googleCalendarId: true, status: true },
+  });
+  if (!conn || conn.status !== 'active') {
+    throw new Error('No active Google Calendar connection for this user');
+  }
+  const accessToken = await getValidAccessToken(userId);
+  const body = {
+    ...buildEventBody(classSession),
+    // conferenceData.createRequest tells Google to allocate a new Meet
+    // room for this event. requestId must be unique-ish per call so
+    // retries don't collide.
+    conferenceData: {
+      createRequest: {
+        requestId: `daris-${classSession.id}-${Date.now()}`,
+        conferenceSolutionKey: { type: 'hangoutsMeet' },
+      },
+    },
+  };
+
+  const url =
+    `${GOOGLE_CALENDAR_API}/calendars/${encodeURIComponent(conn.googleCalendarId)}` +
+    `/events?conferenceDataVersion=1`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    throw new Error(`createEvent ${res.status}: ${errBody}`);
+  }
+  const event = await res.json();
+  return {
+    eventId: event.id,
+    meetingLink: event.hangoutLink || event.conferenceData?.entryPoints?.[0]?.uri || null,
+  };
+}
+
+/**
+ * Patch an existing event in place. Used when a class is rescheduled
+ * or its details change. Keeps the same eventId + Meet link.
+ */
+export async function updateEvent(userId, classSession) {
+  if (!classSession.googleEventId) {
+    throw new Error('updateEvent: classSession has no googleEventId');
+  }
+  const conn = await prisma.googleCalendarConnection.findUnique({
+    where: { userId },
+    select: { googleCalendarId: true, status: true },
+  });
+  if (!conn || conn.status !== 'active') {
+    throw new Error('No active Google Calendar connection for this user');
+  }
+  const accessToken = await getValidAccessToken(userId);
+  const body = buildEventBody(classSession);
+  const url =
+    `${GOOGLE_CALENDAR_API}/calendars/${encodeURIComponent(conn.googleCalendarId)}` +
+    `/events/${encodeURIComponent(classSession.googleEventId)}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 404) {
+    // Event was deleted out from under us. Treat as gone — caller
+    // can decide to recreate or just drop the link.
+    throw new Error('updateEvent 404: event missing on Google');
+  }
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    throw new Error(`updateEvent ${res.status}: ${errBody}`);
+  }
+  return { eventId: classSession.googleEventId };
+}
+
+/**
+ * Delete an event. 404 (already gone) is treated as success — that's
+ * what the caller wanted anyway. Other non-2xx errors throw.
+ */
+export async function cancelEvent(userId, googleEventId) {
+  const conn = await prisma.googleCalendarConnection.findUnique({
+    where: { userId },
+    select: { googleCalendarId: true, status: true },
+  });
+  if (!conn || conn.status !== 'active') {
+    throw new Error('No active Google Calendar connection for this user');
+  }
+  const accessToken = await getValidAccessToken(userId);
+  const url =
+    `${GOOGLE_CALENDAR_API}/calendars/${encodeURIComponent(conn.googleCalendarId)}` +
+    `/events/${encodeURIComponent(googleEventId)}`;
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (res.status === 404 || res.status === 410) {
+    return { alreadyGone: true };
+  }
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    throw new Error(`cancelEvent ${res.status}: ${errBody}`);
+  }
+  return { alreadyGone: false };
+}
+
 // Exposed for tests / unrelated callers; stays unused in production.
-export const __internal = { signState, verifyState };
+export const __internal = { signState, verifyState, buildEventSummary };

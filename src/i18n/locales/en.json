@@ -604,6 +604,7 @@
       "loadGCalStatus": "Couldn't load Google Calendar status",
       "gcalConnect": "Couldn't start Google Calendar connect flow",
       "gcalDisconnect": "Couldn't disconnect Google Calendar",
+      "gcalBackfill": "Couldn't queue classes for sync",
       "promoteTeachers": "Couldn't promote teachers",
       "demoteTeachers": "Couldn't remove teacher role",
       "loadClasses": "Couldn't load classes",
@@ -766,7 +767,10 @@
       "disconnectedHint": "You disconnected this earlier. Events created while connected are still on your Google Calendar.",
       "account": "Account",
       "connectedOn": "Connected",
-      "lastSynced": "Last synced"
+      "lastSynced": "Last synced",
+      "backfillHint": "{count} existing future class(es) aren't on your calendar yet.",
+      "backfillCta": "Sync {count} existing classes",
+      "backfillToast": "Queued {count} classes for sync. They'll appear on your calendar within a few minutes."
     },
     "scheduleTeachersLabel": "Teachers",
     "scheduleTeachersHint": "These teachers will see this student's classes on their dashboard. Replaces the current set on save.",

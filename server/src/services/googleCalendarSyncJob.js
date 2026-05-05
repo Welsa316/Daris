@@ -1,0 +1,230 @@
+/**
+ * Background drain for GoogleCalendarSyncOp rows.
+ *
+ * Runs every 60 seconds. Pulls up to 10 unresolved ops with
+ * nextAttemptAt <= now and processes them serially. Each op is
+ * "claimed" with an atomic updateMany before we make any Google API
+ * call, so two server instances on a Railway rolling deploy can't both
+ * process the same op (only the instance whose updateMany returns
+ * count: 1 proceeds).
+ *
+ * Failure mode: exponential backoff (1m, 5m, 30m, 2h, 12h). After 5
+ * attempts the op stays unresolved with errorMessage set and the
+ * dashboard shows a warning banner (Phase G).
+ */
+
+import { prisma } from '../config/database.js';
+import { logger } from '../utils/logger.js';
+import {
+  createEvent,
+  updateEvent,
+  cancelEvent,
+  isGoogleCalendarConfigured,
+} from './googleCalendar.js';
+
+const MAX_PER_TICK = 10;
+const MAX_ATTEMPTS = 5;
+
+// Backoff delays in seconds: 1m, 5m, 30m, 2h, 12h. Index = attemptCount
+// AFTER this attempt fails. So a fresh op (attemptCount: 0) failing
+// once gets a 1-minute delay; failing the 5th time stops retrying.
+const BACKOFF_DELAYS_SEC = [60, 300, 1800, 7200, 43200];
+
+export async function runGCalSyncTick() {
+  if (!isGoogleCalendarConfigured()) return;
+  try {
+    const now = new Date();
+    const candidates = await prisma.googleCalendarSyncOp.findMany({
+      where: {
+        resolved: false,
+        nextAttemptAt: { lte: now },
+        attemptCount: { lt: MAX_ATTEMPTS },
+      },
+      orderBy: { nextAttemptAt: 'asc' },
+      take: MAX_PER_TICK,
+      include: {
+        classSession: {
+          include: {
+            assignments: {
+              where: { student: { deletedAt: null } },
+              include: { student: { select: { firstName: true, lastName: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    for (const op of candidates) {
+      // Atomic claim: only the instance whose updateMany returns count
+      // 1 proceeds. The (id, attemptCount) WHERE clause is the lock.
+      const claimed = await prisma.googleCalendarSyncOp.updateMany({
+        where: {
+          id: op.id,
+          attemptCount: op.attemptCount,
+          resolved: false,
+        },
+        data: {
+          attemptCount: { increment: 1 },
+          lastAttemptAt: now,
+        },
+      });
+      if (claimed.count !== 1) continue;
+
+      try {
+        await processOp(op);
+        await prisma.googleCalendarSyncOp.update({
+          where: { id: op.id },
+          data: { resolved: true, errorMessage: null },
+        });
+      } catch (err) {
+        // Schedule a retry with backoff. attemptCount is already
+        // incremented from the claim above; nextAttemptAt uses the
+        // current attempt index to pick the right delay.
+        const nextAttempt = op.attemptCount + 1;
+        const delaySec = BACKOFF_DELAYS_SEC[Math.min(nextAttempt - 1, BACKOFF_DELAYS_SEC.length - 1)];
+        const nextAttemptAt = new Date(Date.now() + delaySec * 1000);
+        await prisma.googleCalendarSyncOp.update({
+          where: { id: op.id },
+          data: {
+            nextAttemptAt,
+            errorMessage: String(err.message || err).slice(0, 500),
+          },
+        });
+        logger.error('GCal sync op failed', {
+          opId: op.id,
+          classSessionId: op.classSessionId,
+          op: op.op,
+          attempts: nextAttempt,
+          willRetryAt: nextAttemptAt,
+          error: err.message,
+        });
+      }
+
+      // Update the connection row's lastSyncedAt so the dashboard
+      // card shows when we last touched Google. Do this regardless
+      // of success/failure so the timestamp reflects activity, not
+      // health (health is read from the connection's status field).
+      const adminId = op.classSession?.createdByAdminId;
+      if (adminId) {
+        await prisma.googleCalendarConnection
+          .update({
+            where: { userId: adminId },
+            data: { lastSyncedAt: new Date() },
+          })
+          .catch(() => {}); // never fail the job because of this update
+      }
+    }
+  } catch (err) {
+    logger.error('GCal sync tick fatal', { error: err.message });
+  }
+}
+
+/**
+ * Process one op. Throws on Google API failure (caller catches and
+ * schedules a retry). Returns silently on permanent skips (class
+ * deleted, user not connected, etc) so the op gets marked resolved.
+ */
+async function processOp(op) {
+  const cls = op.classSession;
+  if (!cls) {
+    // Class deleted before its sync ran — nothing to do.
+    return;
+  }
+  const adminId = cls.createdByAdminId;
+  if (!adminId) {
+    return; // orphan class; can't tell whose calendar to use
+  }
+
+  const conn = await prisma.googleCalendarConnection.findUnique({
+    where: { userId: adminId },
+    select: { status: true },
+  });
+  if (!conn || conn.status !== 'active') {
+    // No active connection — can't sync. Mark resolved so we don't
+    // keep retrying a permanently-skipped op. If the admin reconnects
+    // later, the backfill flow re-enqueues for everything.
+    return;
+  }
+
+  if (op.op === 'create') {
+    if (cls.googleEventId) return; // already created (dup op)
+    const result = await createEvent(adminId, cls);
+    await prisma.classSession.update({
+      where: { id: cls.id },
+      data: {
+        googleEventId: result.eventId,
+        meetingLink: result.meetingLink || cls.meetingLink,
+        googleEventSyncedAt: new Date(),
+      },
+    });
+    return;
+  }
+
+  if (op.op === 'update') {
+    if (!cls.googleEventId) {
+      // No event yet — promote to a create. This handles the case
+      // where someone reschedules a pre-Phase-C class that never had
+      // a Google event in the first place.
+      const result = await createEvent(adminId, cls);
+      await prisma.classSession.update({
+        where: { id: cls.id },
+        data: {
+          googleEventId: result.eventId,
+          meetingLink: result.meetingLink || cls.meetingLink,
+          googleEventSyncedAt: new Date(),
+        },
+      });
+      return;
+    }
+    await updateEvent(adminId, cls);
+    await prisma.classSession.update({
+      where: { id: cls.id },
+      data: { googleEventSyncedAt: new Date() },
+    });
+    return;
+  }
+
+  if (op.op === 'cancel') {
+    if (!cls.googleEventId) return; // never created on Google
+    const result = await cancelEvent(adminId, cls.googleEventId);
+    await prisma.classSession.update({
+      where: { id: cls.id },
+      data: {
+        googleEventId: null,
+        googleEventSyncedAt: new Date(),
+      },
+    });
+    if (result.alreadyGone) {
+      logger.info('GCal cancel: event already gone', {
+        classSessionId: cls.id,
+      });
+    }
+    return;
+  }
+
+  throw new Error(`Unknown op type: ${op.op}`);
+}
+
+/**
+ * Helper used by the admin routes to drop a sync op into the queue.
+ * Idempotent for `update`: if there's already a pending update op for
+ * this class, we leave it in place (the next tick picks up the latest
+ * class state regardless). For create/cancel we always queue.
+ */
+export async function enqueueSyncOp(classSessionId, op) {
+  if (!['create', 'update', 'cancel'].includes(op)) {
+    throw new Error(`enqueueSyncOp: invalid op ${op}`);
+  }
+  if (op === 'update') {
+    const existing = await prisma.googleCalendarSyncOp.findFirst({
+      where: { classSessionId, op: 'update', resolved: false },
+      select: { id: true },
+    });
+    if (existing) return existing.id; // already queued
+  }
+  const created = await prisma.googleCalendarSyncOp.create({
+    data: { classSessionId, op },
+    select: { id: true },
+  });
+  return created.id;
+}
