@@ -63,12 +63,14 @@
       <p class="text-sm text-slate-500 mb-3">
         {{ $t('admin.gcal.notConnectedHint') }}
       </p>
-      <a
-        :href="connectUrl"
-        class="inline-block bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 motion-safe:transition-colors"
+      <button
+        type="button"
+        @click="handleConnect"
+        :disabled="busy"
+        class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 motion-safe:transition-colors disabled:opacity-50"
       >
-        {{ $t('admin.gcal.connectCta') }}
-      </a>
+        {{ busy ? $t('admin.saving') : $t('admin.gcal.connectCta') }}
+      </button>
     </div>
 
     <!-- Connected and healthy. -->
@@ -110,12 +112,14 @@
       <p v-if="data.lastErrorMessage" class="text-xs text-slate-500 mb-3 truncate" :title="data.lastErrorMessage">
         {{ data.lastErrorMessage }}
       </p>
-      <a
-        :href="connectUrl"
-        class="inline-block bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 motion-safe:transition-colors"
+      <button
+        type="button"
+        @click="handleConnect"
+        :disabled="busy"
+        class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 motion-safe:transition-colors disabled:opacity-50"
       >
-        {{ $t('admin.gcal.reconnectCta') }}
-      </a>
+        {{ busy ? $t('admin.saving') : $t('admin.gcal.reconnectCta') }}
+      </button>
     </div>
 
     <!-- Previously disconnected. Same connect button as not_connected
@@ -125,12 +129,14 @@
       <p class="text-sm text-slate-500 mb-3">
         {{ $t('admin.gcal.disconnectedHint') }}
       </p>
-      <a
-        :href="connectUrl"
-        class="inline-block bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 motion-safe:transition-colors"
+      <button
+        type="button"
+        @click="handleConnect"
+        :disabled="busy"
+        class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 motion-safe:transition-colors disabled:opacity-50"
       >
-        {{ $t('admin.gcal.reconnectCta') }}
-      </a>
+        {{ busy ? $t('admin.saving') : $t('admin.gcal.reconnectCta') }}
+      </button>
     </div>
   </div>
 </template>
@@ -144,10 +150,6 @@ import { confirmDialog } from '@/composables/useConfirmDialog.js';
 const emit = defineEmits(['toast']);
 
 const { t } = useI18n();
-
-// API connect endpoint is a server 302 redirect; we just point an
-// <a href> at it instead of doing any client-side fetch dance.
-const connectUrl = '/api/admin/google-calendar/connect';
 
 const loading = ref(true);
 const busy = ref(false);
@@ -203,6 +205,29 @@ async function loadStatus() {
   } finally {
     loading.value = false;
   }
+}
+
+// Fetch the OAuth consent URL from the server, then navigate to it.
+// Going through fetch() (instead of an <a href>) means our api.js
+// wrapper handles silent token refresh on TOKEN_EXPIRED. A bare link
+// would 401 the moment the 15-min access JWT expired with no chance
+// to recover.
+async function handleConnect() {
+  busy.value = true;
+  try {
+    const res = await api.get('/api/admin/google-calendar/connect');
+    if (res?.url) {
+      // Top-level navigation to Google's consent screen.
+      window.location.href = res.url;
+    } else {
+      emit('toast', t('admin.gcal.connectError', { reason: 'no_url' }));
+      busy.value = false;
+    }
+  } catch (err) {
+    emit('toast', err, 'gcalConnect');
+    busy.value = false;
+  }
+  // Don't reset busy on success — the navigation is in flight.
 }
 
 async function handleDisconnect() {

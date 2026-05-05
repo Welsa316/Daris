@@ -602,6 +602,7 @@
       "loadTeachers": "Couldn't load teachers",
       "saveTeacherAssignments": "Class scheduled, but teacher assignment failed",
       "loadGCalStatus": "Couldn't load Google Calendar status",
+      "gcalConnect": "Couldn't start Google Calendar connect flow",
       "gcalDisconnect": "Couldn't disconnect Google Calendar",
       "promoteTeachers": "Couldn't promote teachers",
       "demoteTeachers": "Couldn't remove teacher role",

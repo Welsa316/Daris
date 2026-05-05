@@ -48,6 +48,12 @@ router.get(
   }
 );
 
+// Return the OAuth consent URL as JSON. The frontend then navigates
+// the browser there manually. We DON'T 302 directly because the only
+// way to call this endpoint is via fetch() with credentials, which
+// goes through the api.js wrapper's refresh-on-TOKEN_EXPIRED path.
+// A direct <a href> navigation would skip that path and 401 the
+// instant the access-token JWT (15-min) expires.
 router.get(
   '/connect',
   authenticate,
@@ -59,8 +65,7 @@ router.get(
         return res.status(503).json({ error: 'Google Calendar is not configured' });
       }
       const url = buildAuthUrl({ userId: req.user.id });
-      // 302 so the browser navigates to Google's consent screen.
-      res.redirect(302, url);
+      res.json({ url });
     } catch (error) {
       next(error);
     }

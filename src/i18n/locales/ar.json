@@ -602,6 +602,7 @@
       "loadTeachers": "تعذر تحميل المعلمين",
       "saveTeacherAssignments": "تمت جدولة الحصة، لكن إسناد المعلم فشل",
       "loadGCalStatus": "تعذر تحميل حالة تقويم جوجل",
+      "gcalConnect": "تعذر بدء خطوة ربط تقويم جوجل",
       "gcalDisconnect": "تعذر قطع ربط تقويم جوجل",
       "promoteTeachers": "تعذرت ترقية المعلمين",
       "demoteTeachers": "تعذرت إزالة دور المعلم",
