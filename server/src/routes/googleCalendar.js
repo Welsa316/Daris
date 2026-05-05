@@ -23,6 +23,7 @@ import {
   getStatus,
   isGoogleCalendarConfigured,
 } from '../services/googleCalendar.js';
+import { verifyAccessToken } from '../services/tokenService.js';
 import { logger } from '../utils/logger.js';
 
 const router = Router();
@@ -72,50 +73,62 @@ router.get(
   }
 );
 
-// Google's redirect target. The admin's browser is making the request,
-// so the auth cookie comes along normally. We don't run requireAdmin
-// here because we want to render a clean error page rather than 403 if
-// something's off — but we DO require an authenticated session: the
-// state's HMAC isn't enough on its own (a leaked state would let an
-// attacker complete the flow on someone else's behalf).
-router.get(
-  '/callback',
-  authenticate,
-  verifyTokenVersion,
-  async (req, res) => {
-    const { code, state, error: oauthError } = req.query;
+// Google's redirect target. Critical: the request to this URL is a
+// CROSS-SITE navigation (Google → Daris), so cookies marked
+// SameSite=Strict are NOT sent — even though the user is logged in.
+// We therefore can NOT use the standard authenticate middleware here.
+//
+// Instead we rely on the HMAC-signed `state` parameter: it encodes the
+// initiating user's id + a 10-minute timestamp window, signed with
+// JWT_ACCESS_SECRET, so an attacker can't forge it. The state itself
+// is the proof that whoever is hitting this URL initiated the connect
+// flow. exchangeCodeForTokens() verifies the signature and timestamp
+// before trusting any payload field.
+//
+// Defense in depth: if a cookie IS sent (e.g. SameSite=Lax in the
+// future, or same-site browser quirk), we still cross-check the
+// authenticated user against the state's userId.
+router.get('/callback', async (req, res) => {
+  const { code, state, error: oauthError } = req.query;
 
-    // The user denied consent or Google sent us back with an error.
-    if (oauthError) {
-      logger.warn('GCal OAuth callback: provider error', { error: oauthError });
-      return res.redirect(302, '/admin?calendar=error&reason=denied');
-    }
-    if (!code || !state) {
-      return res.redirect(302, '/admin?calendar=error&reason=missing_code');
-    }
-
-    try {
-      const result = await exchangeCodeForTokens({ code, state });
-
-      // Defense in depth: the state encodes a userId. The user making
-      // this request must be the same person who initiated the connect
-      // flow. Otherwise an attacker who got hold of a state could
-      // attach their Google account to a different admin's record.
-      if (result.userId !== req.user.id) {
-        logger.warn('GCal callback: state userId mismatch', {
-          authUserId: req.user.id,
-          stateUserId: result.userId,
-        });
-        return res.redirect(302, '/admin?calendar=error&reason=state_mismatch');
-      }
-
-      return res.redirect(302, '/admin?calendar=connected');
-    } catch (error) {
-      logger.error('GCal OAuth callback failed', { error: error.message });
-      return res.redirect(302, '/admin?calendar=error&reason=exchange_failed');
-    }
+  if (oauthError) {
+    logger.warn('GCal OAuth callback: provider error', { error: oauthError });
+    return res.redirect(302, '/admin?calendar=error&reason=denied');
   }
-);
+  if (!code || !state) {
+    return res.redirect(302, '/admin?calendar=error&reason=missing_code');
+  }
+
+  try {
+    // exchangeCodeForTokens does the signature + 10-min window check
+    // on the state internally and throws if either fails.
+    const result = await exchangeCodeForTokens({ code, state });
+
+    // Best-effort cross-check against any cookie that DID make it
+    // through. If the cookie is missing (the common case under
+    // SameSite=Strict) we still trust the verified state.
+    if (req.cookies?.accessToken) {
+      try {
+        const decoded = verifyAccessToken(req.cookies.accessToken);
+        if (decoded?.sub && decoded.sub !== result.userId) {
+          logger.warn('GCal callback: cookie userId did not match state userId', {
+            cookieUserId: decoded.sub,
+            stateUserId: result.userId,
+          });
+          return res.redirect(302, '/admin?calendar=error&reason=state_mismatch');
+        }
+      } catch {
+        // Cookie present but invalid/expired. Don't fail the whole flow
+        // on that — the state is still trustworthy on its own.
+      }
+    }
+
+    return res.redirect(302, '/admin?calendar=connected');
+  } catch (error) {
+    logger.error('GCal OAuth callback failed', { error: error.message });
+    return res.redirect(302, '/admin?calendar=error&reason=exchange_failed');
+  }
+});
 
 router.post(
   '/disconnect',
