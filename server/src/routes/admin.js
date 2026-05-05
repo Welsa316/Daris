@@ -555,6 +555,13 @@ router.put(
       const studentId = req.params.id;
       const { teacherIds } = req.body;
 
+      // Defense in depth: the route is requireAdmin so a sheikh's JWT is
+      // already required, and the sheikh bypasses requireStudentAccess
+      // anyway. But if a future code path widens this gate (or a
+      // hand-crafted JWT lands here) we want one more check before
+      // mutating teacher assignments.
+      await requireStudentAccess(req.user, studentId, prisma);
+
       const student = await prisma.user.findFirst({
         where: { id: studentId, role: 'enrolled_student', isStudent: true, deletedAt: null },
         select: { id: true },
@@ -735,6 +742,15 @@ router.post('/classes', validate(classSessionSchema), async (req, res, next) => 
         startTime: new Date(classData.startTime),
         endTime: new Date(classData.endTime),
         recurrenceEnd: classData.recurrenceEnd ? new Date(classData.recurrenceEnd) : null,
+        // Always assign a seriesId, even for single classes. A class with
+        // no seriesId hides the "Cancel series" button in the drawer
+        // (which makes sense — there's no series). But once a student is
+        // merged into the class via /classes/batch later, the merged-into
+        // class is effectively a series of one and the user expects the
+        // button to appear. By giving every class a series id at creation
+        // time, the merge path inherits a proper id and the UI stays
+        // consistent.
+        seriesId: classData.seriesId || randomUUID(),
         createdByAdminId: req.user.id,
       },
     });
@@ -1095,6 +1111,16 @@ router.post(
       // timezone. This is what the sheikh wants for the timezone-fix
       // case AND the time-change case: classes stay on the same days,
       // just at the new clock time in the new zone.
+      //
+      // Edge case (rare, accepted): a class that crosses midnight in
+      // the OLD timezone but not in the NEW one (or vice-versa) can
+      // shift to a different calendar day in the NEW timezone. This
+      // matters for late-evening classes near a +/-3h tz shift. We
+      // accept the shift here because the alternative — pinning the
+      // date in the NEW timezone — produces wronger results for the
+      // common case where the user is fixing a wrong-tz class. If
+      // this becomes a real complaint we'll add a "preserve which
+      // timezone's date" toggle to the form.
       const updates = targets.map((cls) => {
         const currentTz = cls.timezone || timezone;
         const date = dateComponentsInTz(cls.startTime, currentTz);

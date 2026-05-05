@@ -254,36 +254,63 @@ export async function runGCalSweep() {
       });
       if (unsynced.length === 0) continue;
 
-      let enqueued = 0;
-      let revived = 0;
-      for (const cls of unsynced) {
-        // Most recent op for this class (any status).
-        const existing = await prisma.googleCalendarSyncOp.findFirst({
-          where: { classSessionId: cls.id, op: 'create' },
-          orderBy: { createdAt: 'desc' },
-        });
-        if (!existing) {
-          await enqueueSyncOp(cls.id, 'create');
-          enqueued++;
-        } else if (!existing.resolved && existing.attemptCount >= MAX_ATTEMPTS) {
-          // Resurrect a dead op so the user doesn't have to disconnect
-          // and reconnect to recover from a transient failure run.
-          await prisma.googleCalendarSyncOp.update({
-            where: { id: existing.id },
-            data: {
-              attemptCount: 0,
-              nextAttemptAt: new Date(),
-              errorMessage: null,
-            },
-          });
-          revived++;
+      const unsyncedIds = unsynced.map((c) => c.id);
+
+      // Bulk-fetch the most recent 'create' op per class in ONE query
+      // instead of one findFirst per class. Group by classSessionId in
+      // memory after sorting by createdAt desc.
+      const allOps = await prisma.googleCalendarSyncOp.findMany({
+        where: {
+          classSessionId: { in: unsyncedIds },
+          op: 'create',
+        },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          classSessionId: true,
+          attemptCount: true,
+          resolved: true,
+        },
+      });
+      const latestOpByClass = new Map();
+      for (const op of allOps) {
+        if (!latestOpByClass.has(op.classSessionId)) {
+          latestOpByClass.set(op.classSessionId, op);
         }
       }
-      if (enqueued + revived > 0) {
+
+      // IDs of dead ops we'll revive in a single updateMany at the end.
+      const reviveIds = [];
+      let enqueued = 0;
+
+      for (const id of unsyncedIds) {
+        const existing = latestOpByClass.get(id);
+        if (!existing) {
+          await enqueueSyncOp(id, 'create');
+          enqueued++;
+        } else if (!existing.resolved && existing.attemptCount >= MAX_ATTEMPTS) {
+          // Dead op: resurrect so the user doesn't have to disconnect
+          // and reconnect to recover from a transient failure run.
+          reviveIds.push(existing.id);
+        }
+      }
+
+      if (reviveIds.length > 0) {
+        await prisma.googleCalendarSyncOp.updateMany({
+          where: { id: { in: reviveIds } },
+          data: {
+            attemptCount: 0,
+            nextAttemptAt: new Date(),
+            errorMessage: null,
+          },
+        });
+      }
+
+      if (enqueued + reviveIds.length > 0) {
         logger.info('GCal sweep refreshed sync state', {
           userId,
           enqueued,
-          revived,
+          revived: reviveIds.length,
         });
         // Kick the tick now so the user sees results immediately
         // instead of waiting another full minute.

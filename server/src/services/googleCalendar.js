@@ -554,8 +554,16 @@ export async function updateEvent(userId, classSession) {
 }
 
 /**
- * Delete an event. 404 (already gone) is treated as success — that's
- * what the caller wanted anyway. Other non-2xx errors throw.
+ * Delete an event. 404/410 (already gone) is treated as success — that's
+ * what the caller wanted anyway. 5xx errors get one automatic retry
+ * after a 1-second pause to handle transient Google outages; if the
+ * retry still fails, throws so the caller's local hard-delete proceeds
+ * with an orphaned event on the user's calendar (acceptable
+ * worst-case; the alternative is blocking class deletion on Google's
+ * health, which is worse for the user).
+ *
+ * 4xx errors (other than 404/410) throw immediately — those are
+ * permanent (auth, scope, malformed request) and a retry won't help.
  */
 export async function cancelEvent(userId, googleEventId) {
   const conn = await prisma.googleCalendarConnection.findUnique({
@@ -569,12 +577,24 @@ export async function cancelEvent(userId, googleEventId) {
   const url =
     `${GOOGLE_CALENDAR_API}/calendars/${encodeURIComponent(conn.googleCalendarId)}` +
     `/events/${encodeURIComponent(googleEventId)}`;
-  const res = await fetch(url, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+
+  const doRequest = () =>
+    fetch(url, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+  let res = await doRequest();
   if (res.status === 404 || res.status === 410) {
     return { alreadyGone: true };
+  }
+  // Single retry on 5xx (Google had a transient hiccup).
+  if (res.status >= 500 && res.status <= 599) {
+    await new Promise((r) => setTimeout(r, 1000));
+    res = await doRequest();
+    if (res.status === 404 || res.status === 410) {
+      return { alreadyGone: true };
+    }
   }
   if (!res.ok) {
     const errBody = await res.text().catch(() => '');
