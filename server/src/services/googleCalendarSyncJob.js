@@ -217,6 +217,85 @@ async function processOp(op) {
 }
 
 /**
+ * Convergent sync sweep. Walks every active GoogleCalendarConnection
+ * and looks for future, uncancelled, un-synced classes the admin owns.
+ * For each, ensures there's a viable `create` sync op:
+ *
+ *   - No op ever created → enqueue one (e.g. class predates the
+ *     Phase C wiring; or the connection was set up after the class
+ *     was scheduled).
+ *   - Existing op is dead (attemptCount >= MAX_ATTEMPTS) → reset
+ *     attemptCount to 0 + nextAttemptAt to now, so the next tick
+ *     retries. Useful when a transient Google outage exhausted the
+ *     backoff and the class would otherwise stay un-synced forever.
+ *   - Existing op is unresolved and still has retries left → leave
+ *     it alone, normal backoff handles it.
+ *
+ * Cheap enough to run every few minutes — the per-connection work
+ * is one COUNT query plus, in the rare un-synced case, a few writes.
+ */
+export async function runGCalSweep() {
+  if (!isGoogleCalendarConfigured()) return;
+  try {
+    const connections = await prisma.googleCalendarConnection.findMany({
+      where: { status: 'active' },
+      select: { userId: true },
+    });
+
+    for (const { userId } of connections) {
+      const unsynced = await prisma.classSession.findMany({
+        where: {
+          createdByAdminId: userId,
+          cancelled: false,
+          startTime: { gte: new Date() },
+          googleEventId: null,
+        },
+        select: { id: true },
+      });
+      if (unsynced.length === 0) continue;
+
+      let enqueued = 0;
+      let revived = 0;
+      for (const cls of unsynced) {
+        // Most recent op for this class (any status).
+        const existing = await prisma.googleCalendarSyncOp.findFirst({
+          where: { classSessionId: cls.id, op: 'create' },
+          orderBy: { createdAt: 'desc' },
+        });
+        if (!existing) {
+          await enqueueSyncOp(cls.id, 'create');
+          enqueued++;
+        } else if (!existing.resolved && existing.attemptCount >= MAX_ATTEMPTS) {
+          // Resurrect a dead op so the user doesn't have to disconnect
+          // and reconnect to recover from a transient failure run.
+          await prisma.googleCalendarSyncOp.update({
+            where: { id: existing.id },
+            data: {
+              attemptCount: 0,
+              nextAttemptAt: new Date(),
+              errorMessage: null,
+            },
+          });
+          revived++;
+        }
+      }
+      if (enqueued + revived > 0) {
+        logger.info('GCal sweep refreshed sync state', {
+          userId,
+          enqueued,
+          revived,
+        });
+        // Kick the tick now so the user sees results immediately
+        // instead of waiting another full minute.
+        kickTick();
+      }
+    }
+  } catch (err) {
+    logger.error('GCal sweep failed', { error: err.message });
+  }
+}
+
+/**
  * Helper used by the admin routes to drop a sync op into the queue.
  * Idempotent for `update`: if there's already a pending update op for
  * this class, we leave it in place (the next tick picks up the latest

@@ -9,7 +9,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { logger } from './utils/logger.js';
 import { cleanExpiredSessions } from './services/tokenService.js';
 import { runClassReminderTick } from './services/classReminderJob.js';
-import { runGCalSyncTick } from './services/googleCalendarSyncJob.js';
+import { runGCalSyncTick, runGCalSweep } from './services/googleCalendarSyncJob.js';
 
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -193,6 +193,20 @@ setInterval(() => {
 }, 60 * 1000);
 runGCalSyncTick().catch((err) =>
   logger.error('Initial GCal sync tick failed', { error: err.message })
+);
+
+// --- Convergent sync sweep (every 5 min). Catches classes that
+// missed their original create op (legacy data, deploy-timing race,
+// or an op that exhausted its retry budget). Cheap: one COUNT per
+// active connection per tick, plus a few writes only when something
+// is actually unsynced. Runs once on boot so deploys self-heal. ---
+setInterval(() => {
+  runGCalSweep().catch((err) =>
+    logger.error('GCal sweep failed', { error: err.message })
+  );
+}, 5 * 60 * 1000);
+runGCalSweep().catch((err) =>
+  logger.error('Initial GCal sweep failed', { error: err.message })
 );
 
 // --- Start server ---
