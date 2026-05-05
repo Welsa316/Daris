@@ -299,6 +299,11 @@ router.get('/students/:id', async (req, res, next) => {
           },
         },
         classAssignments: {
+          // Hide assignments whose class is soft-cancelled (legacy
+          // pre-hard-delete data). New cancellations hard-delete the
+          // class so this filter is moot for fresh data, but keeps
+          // the student detail clean for any old rows still in DB.
+          where: { classSession: { cancelled: false } },
           orderBy: { classSession: { startTime: 'desc' } },
           select: {
             id: true,
