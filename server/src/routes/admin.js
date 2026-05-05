@@ -3,10 +3,14 @@ import { randomUUID } from 'node:crypto';
 import { authenticate, verifyTokenVersion } from '../middleware/auth.js';
 import { requireAdmin, requireAdminOrTeacher } from '../middleware/rbac.js';
 import { validate } from '../middleware/validate.js';
-import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, rescheduleClassSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema, batchClassSchema, meetingLinkSchema, checkConflictsSchema, classLogSchema, paymentSchema, paymentUpdateSchema, studentProfileSchema, studentTeachersSchema } from '../validators/adminSchemas.js';
+import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, rescheduleClassSchema, rescheduleSeriesSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema, batchClassSchema, meetingLinkSchema, checkConflictsSchema, classLogSchema, paymentSchema, paymentUpdateSchema, studentProfileSchema, studentTeachersSchema } from '../validators/adminSchemas.js';
 import { getPendingEnrollments, approveEnrollment, rejectEnrollment, getRejectedApplicants, suspendStudent, removeStudent } from '../services/enrollmentService.js';
 import { prisma } from '../config/database.js';
-import { sendClassCancelledEmail, sendClassSeriesCancelledEmail, sendClassRescheduledEmail, sendFutureAssignmentsClearedEmail } from '../services/emailService.js';
+// Cancel + reschedule emails are intentionally NOT imported here.
+// The sheikh's product call: students should only receive ONE auto
+// email — the 24-hour reminder. Cancellation/reschedule notices
+// belong on WhatsApp or in person, not in the inbox.
+import { sendFutureAssignmentsClearedEmail } from '../services/emailService.js';
 import { findConflicts } from '../services/classConflictService.js';
 import {
   scopedStudentFilter,
@@ -18,6 +22,7 @@ import { toCsv, sendCsv } from '../utils/csv.js';
 import { t, getLang } from '../utils/i18n.js';
 import { auditLog, logger } from '../utils/logger.js';
 import { enqueueSyncOp } from '../services/googleCalendarSyncJob.js';
+import { zonedTimeToUtc, dateComponentsInTz } from '../utils/timezone.js';
 import { sendEmail } from '../services/emailService.js';
 import { env } from '../config/env.js';
 
@@ -834,17 +839,15 @@ router.post('/classes/:id/cancel', async (req, res, next) => {
     const lang = getLang(req);
 
     // Scope check: sheikh can cancel any class; teachers only their own.
-    // Hydrate the row up front so we have everything we need to send
-    // emails and call Google before the row goes away.
+    // We only need the googleEventId before delete — no email blast,
+    // so no student hydration needed.
     const classSession = await prisma.classSession.findFirst({
       where: { id: req.params.id, ...scopedClassFilter(req.user) },
-      include: {
-        assignments: {
-          where: { student: { deletedAt: null } },
-          include: {
-            student: { select: { email: true, firstName: true, preferredLanguage: true } },
-          },
-        },
+      select: {
+        id: true,
+        title: true,
+        googleEventId: true,
+        createdByAdminId: true,
       },
     });
     if (!classSession) return res.status(404).json({ error: t('schedule.classNotFound', lang) });
@@ -854,19 +857,9 @@ router.post('/classes/:id/cancel', async (req, res, next) => {
     const googleEventId = classSession.googleEventId;
     const adminId = classSession.createdByAdminId;
 
-    // Notify each assigned student in their own preferred language.
-    // One email per student. Fire-and-forget so a slow Resend call
-    // can't hold up the delete.
-    for (const assignment of classSession.assignments) {
-      const studentLang = assignment.student.preferredLanguage === 'en' ? 'en' : 'ar';
-      sendClassCancelledEmail(
-        assignment.student.email,
-        assignment.student.firstName,
-        classSession.title,
-        classSession.startTime.toISOString(),
-        studentLang
-      ).catch(() => {});
-    }
+    // No cancellation email — sheikh's product call. Students only
+    // get the one auto email (the 24-hour reminder). Cancellations
+    // are communicated out-of-band (WhatsApp, in person).
 
     // Best-effort cancel on Google. Failure here doesn't block the
     // local delete — orphaned event is acceptable; orphaned local
@@ -927,20 +920,9 @@ router.post('/classes/:id/cancel-series', async (req, res, next) => {
         createdByAdminId: anchor.createdByAdminId,
         ...scopedClassFilter(req.user),
       },
-      include: {
-        assignments: {
-          where: { student: { deletedAt: null } },
-          include: {
-            student: {
-              select: {
-                id: true,
-                email: true,
-                firstName: true,
-                preferredLanguage: true,
-              },
-            },
-          },
-        },
+      select: {
+        id: true,
+        googleEventId: true,
       },
     });
 
@@ -948,26 +930,9 @@ router.post('/classes/:id/cancel-series', async (req, res, next) => {
       return res.json({ message: t('schedule.cancelled', lang), count: 0 });
     }
 
-    // Group by student so each one gets ONE email listing every
-    // cancelled class they were attending. Keeps a 12-week series
-    // cancellation from spamming a student with 12 separate emails.
-    const cancelledByStudent = new Map();
-    for (const cls of targets) {
-      for (const a of cls.assignments) {
-        const sid = a.student.id;
-        if (!cancelledByStudent.has(sid)) {
-          cancelledByStudent.set(sid, {
-            student: a.student,
-            entries: [],
-          });
-        }
-        cancelledByStudent.get(sid).entries.push({
-          title: cls.title,
-          startTime: cls.startTime,
-          timezone: cls.timezone,
-        });
-      }
-    }
+    // No cancellation email — sheikh's product call. Students only
+    // get the one auto email (the 24-hour reminder). Cancellations
+    // are communicated out-of-band.
 
     // Capture Google event ids before delete so we can cancel them
     // even after the local rows are gone.
@@ -975,32 +940,6 @@ router.post('/classes/:id/cancel-series', async (req, res, next) => {
       .map((c) => c.googleEventId)
       .filter(Boolean);
     const adminId = anchor.createdByAdminId;
-
-    // Send the consolidated email per student. Fire-and-forget.
-    for (const [, { student, entries }] of cancelledByStudent) {
-      const studentLang = student.preferredLanguage === 'en' ? 'en' : 'ar';
-      const cancelledList = entries
-        .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
-        .map((e) => ({
-          title: e.title,
-          dateLabel: new Intl.DateTimeFormat(studentLang === 'ar' ? 'ar-EG' : 'en-GB', {
-            timeZone: e.timezone || 'UTC',
-            weekday: 'short',
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          }).format(new Date(e.startTime)),
-        }));
-      sendClassSeriesCancelledEmail(
-        student.email,
-        student.firstName,
-        cancelledList,
-        studentLang
-      ).catch(() => {});
-    }
 
     // Best-effort cancel on Google for every event in the series.
     // Run sequentially-ish to stay polite to Google's rate limits.
@@ -1073,28 +1012,11 @@ router.post('/classes/:id/reschedule', validate(rescheduleClassSchema), async (r
         reminder30SentAt: null,
         reminder24SentAt: null,
       },
-      include: {
-        assignments: {
-          where: { student: { deletedAt: null } },
-          include: {
-            student: { select: { email: true, firstName: true, preferredLanguage: true } },
-          },
-        },
-      },
     });
 
-    // Notify each assigned student in their own preferred language.
-    for (const assignment of classSession.assignments) {
-      const studentLang = assignment.student.preferredLanguage === 'en' ? 'en' : 'ar';
-      sendClassRescheduledEmail(
-        assignment.student.email,
-        assignment.student.firstName,
-        classSession.title,
-        existing.startTime.toISOString(),
-        new Date(startTime).toISOString(),
-        studentLang
-      ).catch(() => {});
-    }
+    // No reschedule email — sheikh's product call. Students only get
+    // the one auto email (the 24-hour reminder), which re-fires for
+    // the new time because reminder24SentAt was reset above.
 
     auditLog('CLASS_RESCHEDULED', { classId: classSession.id, adminId: req.user.id });
 
@@ -1107,6 +1029,139 @@ router.post('/classes/:id/reschedule', validate(rescheduleClassSchema), async (r
     next(error);
   }
 });
+
+// Reschedule every future class in this series in one shot. Common
+// reasons: the original schedule used the wrong timezone (silently
+// stored 11:00 UTC instead of 11:00 Cairo), the class needs to move
+// from Tuesdays-at-5 to Tuesdays-at-6, or the duration needs to grow.
+// The day-of-week pattern is PRESERVED (each class keeps its old date,
+// just gets a new wall-clock time + tz + duration); changing days
+// would require inserting/removing classes which is a different feature.
+router.post(
+  '/classes/:id/reschedule-series',
+  validate(rescheduleSeriesSchema),
+  async (req, res, next) => {
+    try {
+      const lang = getLang(req);
+      const { time, timezone, duration } = req.body;
+
+      // Anchor: the class the action was triggered from. Series-wide
+      // change applies from this anchor's date forward.
+      const anchor = await prisma.classSession.findFirst({
+        where: { id: req.params.id, ...scopedClassFilter(req.user) },
+        select: {
+          id: true,
+          seriesId: true,
+          startTime: true,
+          createdByAdminId: true,
+        },
+      });
+      if (!anchor) {
+        return res.status(404).json({ error: t('schedule.classNotFound', lang) });
+      }
+      if (!anchor.seriesId) {
+        return res.status(400).json({ error: t('schedule.notSeries', lang) });
+      }
+
+      // Every future class in the series. We use the anchor's start
+      // as the lower bound so historical occurrences are left alone —
+      // moving past classes makes no sense.
+      const targets = await prisma.classSession.findMany({
+        where: {
+          seriesId: anchor.seriesId,
+          startTime: { gte: anchor.startTime },
+          createdByAdminId: anchor.createdByAdminId,
+          ...scopedClassFilter(req.user),
+        },
+      });
+
+      if (targets.length === 0) {
+        return res.json({
+          message: t('schedule.rescheduled', lang),
+          updated: 0,
+        });
+      }
+
+      const [hour, minute] = time.split(':').map(Number);
+      const durationMs = duration * 60 * 1000;
+
+      // For each class: keep its DATE (in its current timezone) and
+      // re-anchor that date at the new wall-clock time in the new
+      // timezone. This is what the sheikh wants for the timezone-fix
+      // case AND the time-change case: classes stay on the same days,
+      // just at the new clock time in the new zone.
+      const updates = targets.map((cls) => {
+        const currentTz = cls.timezone || timezone;
+        const date = dateComponentsInTz(cls.startTime, currentTz);
+        const newStart = zonedTimeToUtc(
+          {
+            year: date.year,
+            month: date.month,
+            day: date.day,
+            hour,
+            minute,
+          },
+          timezone
+        );
+        const newEnd = new Date(newStart.getTime() + durationMs);
+        return {
+          id: cls.id,
+          startTime: newStart,
+          endTime: newEnd,
+          // Preserve the very first original times (don't overwrite if
+          // this class has been rescheduled before).
+          originalStartTime: cls.originalStartTime || cls.startTime,
+          originalEndTime: cls.originalEndTime || cls.endTime,
+        };
+      });
+
+      // Apply in one transaction so a partial failure can't leave the
+      // series half-updated.
+      await prisma.$transaction(
+        updates.map((u) =>
+          prisma.classSession.update({
+            where: { id: u.id },
+            data: {
+              startTime: u.startTime,
+              endTime: u.endTime,
+              timezone,
+              rescheduled: true,
+              rescheduledAt: new Date(),
+              originalStartTime: u.originalStartTime,
+              originalEndTime: u.originalEndTime,
+              // Reset reminder flags so the 24h email re-fires for the
+              // new time. Without this, a rescheduled class silently
+              // skips its reminder forever.
+              reminder30SentAt: null,
+              reminder24SentAt: null,
+            },
+          })
+        )
+      );
+
+      auditLog('CLASS_SERIES_RESCHEDULED', {
+        anchorClassId: anchor.id,
+        seriesId: anchor.seriesId,
+        count: updates.length,
+        adminId: req.user.id,
+      });
+
+      // Push every change to Google Calendar. The sync job's debounce
+      // collapses 12+ enqueues into one tick, so the calendar updates
+      // within seconds rather than 12 successive ticks.
+      for (const u of updates) {
+        await enqueueSyncOp(u.id, 'update');
+      }
+
+      res.json({
+        message: t('schedule.rescheduled', lang),
+        updated: updates.length,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 router.delete('/classes/:id', async (req, res, next) => {
   try {

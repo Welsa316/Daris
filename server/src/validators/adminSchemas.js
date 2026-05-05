@@ -51,6 +51,17 @@ export const rescheduleClassSchema = z
   })
   .refine(endAfterStart, endAfterStartErr);
 
+// Reschedule every future occurrence in a series at once. Takes the
+// new wall-clock time + IANA timezone + duration and the server
+// recomputes the UTC start/end for every class in the series. Days
+// of the week stay the same (changing the day pattern would require
+// inserting/removing classes; that's a separate feature).
+export const rescheduleSeriesSchema = z.object({
+  time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid HH:MM time'),
+  timezone: z.string().min(1).max(64),
+  duration: z.coerce.number().int().min(15).max(480), // minutes; cap at 8 hours
+});
+
 export const announcementSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200).trim(),
   titleAr: z.string().max(200).trim().optional().nullable(),

@@ -1018,21 +1018,79 @@
             <button @click="showRescheduleModal = false" :aria-label="$t('admin.close')" class="text-slate-400 hover:text-slate-600">&times;</button>
           </div>
           <p class="text-sm text-slate-500 mb-4">{{ rescheduleTarget.title }}</p>
+
+          <!-- Series toggle. Only renders when this class is part of a
+               recurring series. Switches the modal between single-class
+               (date + time) and whole-series (time + timezone + duration)
+               modes. The series mode preserves each class's day-of-week
+               and just shifts the wall-clock + timezone. -->
+          <label
+            v-if="rescheduleTarget.seriesId"
+            class="flex items-start gap-2 mb-4 p-3 rounded-lg bg-cream-50 border border-cream-200 cursor-pointer"
+          >
+            <input
+              type="checkbox"
+              v-model="rescheduleSeriesMode"
+              class="h-4 w-4 mt-0.5 rounded border-slate-300 text-primary focus:ring-primary"
+            />
+            <div class="min-w-0">
+              <span class="text-sm font-medium text-primary">
+                {{ $t('admin.rescheduleWholeSeries') }}
+              </span>
+              <span class="block text-xs text-slate-500 mt-0.5">
+                {{ $t('admin.rescheduleSeriesHint', { count: futureSeriesCount }) }}
+              </span>
+            </div>
+          </label>
+
           <div class="space-y-4">
-            <div>
-              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.newDate') }}</label>
-              <input v-model="rescheduleDate" type="date" dir="ltr" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
-            </div>
-            <div>
-              <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.newTime') }}</label>
-              <input v-model="rescheduleTime" type="time" dir="ltr" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
-            </div>
+            <!-- Single-class mode: pick a new date + time -->
+            <template v-if="!rescheduleSeriesMode">
+              <div>
+                <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.newDate') }}</label>
+                <input v-model="rescheduleDate" type="date" dir="ltr" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+              </div>
+              <div>
+                <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.newTime') }}</label>
+                <input v-model="rescheduleTime" type="time" dir="ltr" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+              </div>
+            </template>
+            <!-- Series mode: pick new time + timezone + duration. Days
+                 of the week are preserved (each class keeps the same
+                 calendar date in the OLD timezone, just at the new
+                 wall-clock + tz). -->
+            <template v-else>
+              <div>
+                <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.newTime') }}</label>
+                <input v-model="rescheduleTime" type="time" dir="ltr" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none" />
+              </div>
+              <div>
+                <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.timezone') }}</label>
+                <select v-model="rescheduleSeriesTimezone" dir="ltr" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white">
+                  <option v-for="tz in TZ_OPTIONS" :key="tz" :value="tz">{{ tz }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.duration') }}</label>
+                <select v-model="rescheduleSeriesDuration" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white">
+                  <option value="30">30 {{ $t('admin.minutes') }}</option>
+                  <option value="45">45 {{ $t('admin.minutes') }}</option>
+                  <option value="60">1 {{ $t('admin.hour') }}</option>
+                  <option value="90">1.5 {{ $t('admin.hours') }}</option>
+                  <option value="120">2 {{ $t('admin.hours') }}</option>
+                </select>
+              </div>
+            </template>
           </div>
+
           <div class="flex gap-3 justify-end mt-6">
             <button @click="showRescheduleModal = false" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $t('admin.cancel') }}</button>
-            <button @click="rescheduleClass" :disabled="!rescheduleDate || !rescheduleTime"
-              class="bg-amber-600 text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-amber-700 transition-colors disabled:opacity-50">
-              {{ $t('admin.reschedule') }}
+            <button
+              @click="submitReschedule"
+              :disabled="!canSubmitReschedule"
+              class="bg-amber-600 text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-amber-700 transition-colors disabled:opacity-50"
+            >
+              {{ rescheduleSeriesMode ? $t('admin.rescheduleSeriesCta') : $t('admin.reschedule') }}
             </button>
           </div>
         </div>
@@ -1091,6 +1149,12 @@ const showRescheduleModal = ref(false);
 const rescheduleTarget = ref(null);
 const rescheduleDate = ref('');
 const rescheduleTime = ref('');
+// Series-mode state. When true, the reschedule modal hides the date
+// input and shows timezone + duration instead, applying changes to
+// every future class in the series.
+const rescheduleSeriesMode = ref(false);
+const rescheduleSeriesTimezone = ref('Africa/Cairo');
+const rescheduleSeriesDuration = ref('60');
 
 // --- Student detail expansion: tabs + per-student data -------------------
 // The old modal had a single free-form notes textbox. It's now replaced with
@@ -1734,14 +1798,53 @@ function cancelClass(id) {
 
 function openReschedule(cls) {
   rescheduleTarget.value = cls;
+  // Pre-fill the form in viewer-local time so the inputs are usable
+  // out of the box. The server-side reschedule of a single class
+  // takes raw UTC ISO and stores it; tz-mode handles the wall-clock
+  // dance via the dedicated endpoint.
   const d = new Date(cls.startTime);
   rescheduleDate.value = d.toISOString().split('T')[0];
   rescheduleTime.value = d.toTimeString().slice(0, 5);
+  // Series-mode defaults: pre-fill with the class's current timezone
+  // and duration so a "fix the timezone" change only requires picking
+  // the new tz and submitting. Mode itself defaults to off — even if
+  // the class is part of a series, the most common reschedule is a
+  // single class.
+  rescheduleSeriesMode.value = false;
+  rescheduleSeriesTimezone.value = cls.timezone || 'Africa/Cairo';
+  const durationMin = Math.round(
+    (new Date(cls.endTime).getTime() - new Date(cls.startTime).getTime()) / 60000
+  );
+  rescheduleSeriesDuration.value = String(durationMin || 60);
   showRescheduleModal.value = true;
 }
 
-async function rescheduleClass() {
-  if (!rescheduleTarget.value || !rescheduleDate.value || !rescheduleTime.value) return;
+// How many classes in this series fall on or after the anchor's date.
+// Used in the "applies to N classes" subtitle on the series toggle.
+const futureSeriesCount = computed(() => {
+  const target = rescheduleTarget.value;
+  if (!target?.seriesId) return 0;
+  const anchorTime = new Date(target.startTime).getTime();
+  return classes.value.filter(
+    (c) => c.seriesId === target.seriesId && new Date(c.startTime).getTime() >= anchorTime
+  ).length;
+});
+
+const canSubmitReschedule = computed(() => {
+  if (!rescheduleTarget.value) return false;
+  if (rescheduleSeriesMode.value) {
+    return !!rescheduleTime.value && !!rescheduleSeriesTimezone.value && !!rescheduleSeriesDuration.value;
+  }
+  return !!rescheduleDate.value && !!rescheduleTime.value;
+});
+
+async function submitReschedule() {
+  if (!canSubmitReschedule.value) return;
+  if (rescheduleSeriesMode.value) return rescheduleEntireSeries();
+  return rescheduleSingleClass();
+}
+
+async function rescheduleSingleClass() {
   const cls = rescheduleTarget.value;
   const originalDuration = new Date(cls.endTime) - new Date(cls.startTime);
   const newStart = new Date(`${rescheduleDate.value}T${rescheduleTime.value}:00`);
@@ -1755,6 +1858,22 @@ async function rescheduleClass() {
     showRescheduleModal.value = false;
     rescheduleTarget.value = null;
     selectedClass.value = null;
+    loadClasses();
+  } catch (e) { showToast(e, 'reschedule'); }
+}
+
+async function rescheduleEntireSeries() {
+  const cls = rescheduleTarget.value;
+  try {
+    const res = await api.post(`/api/admin/classes/${cls.id}/reschedule-series`, {
+      time: rescheduleTime.value,
+      timezone: rescheduleSeriesTimezone.value,
+      duration: rescheduleSeriesDuration.value,
+    });
+    showRescheduleModal.value = false;
+    rescheduleTarget.value = null;
+    selectedClass.value = null;
+    showToast(t('admin.rescheduleSeriesDone', { count: res?.updated ?? 0 }));
     loadClasses();
   } catch (e) { showToast(e, 'reschedule'); }
 }
