@@ -621,6 +621,7 @@
       "gcalConnect": "تعذر بدء خطوة ربط تقويم جوجل",
       "gcalDisconnect": "تعذر قطع ربط تقويم جوجل",
       "gcalRetryFailed": "تعذرت إعادة محاولة المزامنة",
+      "createNotebook": "تعذر إنشاء الدفتر",
       "promoteTeachers": "تعذرت ترقية المعلمين",
       "demoteTeachers": "تعذرت إزالة دور المعلم",
       "loadClasses": "تعذر تحميل الحصص",
@@ -764,9 +765,9 @@
     "myStudents": "طلابي",
     "scheduleScopedToTeacher": "تظهر فقط أسماء الطلاب المُسندين إليك.",
     "gcal": {
-      "title": "تقويم جوجل",
-      "subtitleNotConnected": "اربط تقويم جوجل ليصبح لكل حصة جديدة موعد في التقويم برابط Meet خاص بها.",
-      "subtitleActive": "تتم مزامنة الحصص مع تقويم جوجل تلقائياً مع روابط Meet لكل حصة.",
+      "title": "تقويم جوجل + Sheets",
+      "subtitleNotConnected": "اربط حسابك في جوجل لتصبح كل حصة موعداً في التقويم برابط Meet خاص بها، ولتُحفظ دفاتر الطلاب في Drive.",
+      "subtitleActive": "تتم مزامنة الحصص + روابط Meet تلقائياً. دفاتر الطلاب تُحفَظ في Drive.",
       "subtitleNeedsReconnect": "تعذّر الوصول إلى حساب جوجل. أعد الربط لاستئناف المزامنة.",
       "subtitleDisconnected": "المزامنة متوقفة. تستخدم الحصص الجديدة رابط الاجتماع العام أدناه.",
       "statusActive": "متصل",
@@ -789,7 +790,21 @@
       "lastSynced": "آخر مزامنة",
       "stuckSyncHint": "تعذرت مزامنة {count} حصة مع التقويم بعد عدة محاولات. سيُعاد المحاولة تلقائياً خلال ٥ دقائق، أو اضغط أدناه للمحاولة فوراً.",
       "retryFailedCta": "إعادة المحاولة الآن",
-      "retryFailedToast": "أُعيد إدراج {count} حصة في قائمة المزامنة."
+      "retryFailedToast": "أُعيد إدراج {count} حصة في قائمة المزامنة.",
+      "studentsFolderHint": "تُحفَظ دفاتر الطلاب في Drive داخل مجلد Daris Students/.",
+      "needsScopeUpgrade": "أعد الربط بـ Google لتفعيل دفاتر الطلاب (ترقية صلاحيات لمرة واحدة)."
+    },
+    "notebook": {
+      "title": "الدفتر",
+      "openCta": "فتح الدفتر",
+      "createCta": "إنشاء دفتر",
+      "creating": "جارٍ الإنشاء…",
+      "openHint": "جميع الملاحظات والمدفوعات وتقارير الحصص لهذا الطالب في ملف Google Sheets الخاص به.",
+      "createHint": "أنشئ ملف Google Sheets لهذا الطالب. ستُحرّر الملاحظات والمدفوعات والتقارير هناك مباشرة.",
+      "legacyData": "البيانات السابقة (قراءة فقط)",
+      "indicatorTooltip": "الدفتر جاهز",
+      "errNoConnection": "اربط تقويم جوجل أولاً، ثم أنشئ الدفتر.",
+      "errNeedsScopeUpgrade": "أعد الربط بـ Google لمنح صلاحيات Drive + Sheets، ثم حاول مرة أخرى."
     },
     "scheduleTeachersLabel": "المعلمون",
     "scheduleTeachersHint": "سيرى هؤلاء المعلمون حصص هذا الطالب في لوحاتهم. يستبدل الحفظ المجموعة الحالية بالكامل.",

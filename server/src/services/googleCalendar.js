@@ -33,7 +33,36 @@ import { prisma } from '../config/database.js';
 import { encryptSecret, decryptSecret } from '../utils/crypto.js';
 import { logger, auditLog } from '../utils/logger.js';
 
-const SCOPES = ['https://www.googleapis.com/auth/calendar.events.owned'];
+// All scopes Daris asks for. Calendar.events.owned is the original;
+// drive.file + spreadsheets enable the per-student notebook feature
+// (Daris creates a Sheet in the sheikh's Drive and stores the URL on
+// the student record, then never reads it back). drive.file is the
+// minimum-privilege Drive scope: the app only sees files it itself
+// created — never the rest of the user's Drive.
+const SCOPES = [
+  'https://www.googleapis.com/auth/calendar.events.owned',
+  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/spreadsheets',
+];
+
+// Subset of SCOPES that the notebook feature requires. Used to detect
+// when an existing connection was made before the scope expansion
+// shipped — the sheikh has to reconnect to grant the new permissions.
+export const NOTEBOOK_SCOPES = [
+  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/spreadsheets',
+];
+
+/**
+ * True when this connection was granted ALL the scopes needed for the
+ * notebook feature. Existing connections that pre-date the expansion
+ * are missing them and need a Reconnect.
+ */
+export function hasNotebookScopes(grantedScopesString) {
+  if (!grantedScopesString) return false;
+  const granted = new Set(grantedScopesString.split(/\s+/));
+  return NOTEBOOK_SCOPES.every((s) => granted.has(s));
+}
 const STATE_MAX_AGE_MS = 10 * 60 * 1000; // 10 minutes
 const ACCESS_TOKEN_REFRESH_LEAD_MS = 5 * 60 * 1000; // refresh if <5 min left
 

@@ -220,6 +220,10 @@ router.get('/students', validate(paginationSchema, 'query'), async (req, res, ne
           // the students table and lets the promote-teachers modal
           // filter out existing teachers from the candidate list.
           isTeacher: true,
+          // notebookSheetUrl drives the small 📓 indicator next to
+          // student names in the list — at-a-glance "this one has notes
+          // set up". Full URL not needed for the list, just truthiness.
+          notebookSheetUrl: true,
           expectedMonthlyAmount: true,
           expectedMonthlyCurrency: true,
         },
@@ -289,6 +293,10 @@ router.get('/students/:id', async (req, res, next) => {
         preferredLanguage: true,
         expectedMonthlyAmount: true,
         expectedMonthlyCurrency: true,
+        // Notebook URL for the "Open notebook" button on the detail
+        // modal. Null until the sheikh creates it.
+        notebookSheetId: true,
+        notebookSheetUrl: true,
         adminNotes: {
           orderBy: { createdAt: 'desc' },
           select: {
@@ -508,6 +516,97 @@ router.get('/students/:id/notes', async (req, res, next) => {
     });
 
     res.json({ notes });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Lazy-create the per-student Google Sheets notebook. Returns the
+// existing notebookSheetUrl if one is already set; otherwise creates a
+// fresh Sheet in the sheikh's Drive (Daris Students folder), stores
+// the URL on the student row, and returns it.
+//
+// Sheet creation always uses the SHEIKH'S Google connection — even
+// when triggered by a teacher — because that's where the OAuth tokens
+// live. Looks up the active admin connection at request time.
+router.post('/students/:id/notebook', async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    await requireStudentAccess(req.user, req.params.id, prisma);
+
+    const student = await prisma.user.findFirst({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        notebookSheetId: true,
+        notebookSheetUrl: true,
+      },
+    });
+    if (!student) {
+      return res.status(404).json({ error: t('student.notFound', lang) });
+    }
+
+    // Already created — short-circuit.
+    if (student.notebookSheetUrl) {
+      return res.json({
+        sheetId: student.notebookSheetId,
+        sheetUrl: student.notebookSheetUrl,
+        created: false,
+      });
+    }
+
+    // Find an active admin Google connection. Sheets always live in
+    // the sheikh's Drive since that's where the tokens point. If
+    // multiple admins exist, first-found wins (deterministic ordering
+    // by createdAt). If none, return a clear 400 with a hint.
+    const admin = await prisma.user.findFirst({
+      where: { role: 'admin', deletedAt: null },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    });
+    const conn = admin
+      ? await prisma.googleCalendarConnection.findUnique({
+          where: { userId: admin.id },
+          select: { status: true },
+        })
+      : null;
+    if (!admin || !conn || conn.status !== 'active') {
+      return res.status(400).json({
+        error: 'Google Calendar must be connected before creating notebooks.',
+        reason: 'no_connection',
+      });
+    }
+
+    // Lazy import to avoid circular deps in module init.
+    const { createStudentNotebook } = await import('../services/googleSheets.js');
+    let result;
+    try {
+      result = await createStudentNotebook(admin.id, student);
+    } catch (err) {
+      if (err.code === 'needs_scope_upgrade') {
+        return res.status(400).json({
+          error: err.message,
+          reason: 'needs_scope_upgrade',
+        });
+      }
+      throw err;
+    }
+
+    await prisma.user.update({
+      where: { id: student.id },
+      data: {
+        notebookSheetId: result.sheetId,
+        notebookSheetUrl: result.sheetUrl,
+      },
+    });
+
+    res.json({
+      sheetId: result.sheetId,
+      sheetUrl: result.sheetUrl,
+      created: true,
+    });
   } catch (error) {
     next(error);
   }

@@ -621,6 +621,7 @@
       "gcalConnect": "Couldn't start Google Calendar connect flow",
       "gcalDisconnect": "Couldn't disconnect Google Calendar",
       "gcalRetryFailed": "Couldn't retry failed sync ops",
+      "createNotebook": "Couldn't create notebook",
       "promoteTeachers": "Couldn't promote teachers",
       "demoteTeachers": "Couldn't remove teacher role",
       "loadClasses": "Couldn't load classes",
@@ -764,9 +765,9 @@
     "myStudents": "My students",
     "scheduleScopedToTeacher": "Showing only the students assigned to you.",
     "gcal": {
-      "title": "Google Calendar",
-      "subtitleNotConnected": "Connect your Google Calendar so every new class becomes a calendar event with its own Meet link.",
-      "subtitleActive": "Classes are syncing to your Google Calendar with auto-generated Meet links.",
+      "title": "Google Calendar + Sheets",
+      "subtitleNotConnected": "Connect your Google account so every class becomes a calendar event with its own Meet link, and per-student notebooks save to your Drive.",
+      "subtitleActive": "Calendar events + Meet links sync automatically. Per-student notebooks save to your Drive.",
       "subtitleNeedsReconnect": "We can no longer reach your Google account. Reconnect to resume syncing.",
       "subtitleDisconnected": "Sync is off. New classes fall back to the global meeting link below.",
       "statusActive": "Connected",
@@ -789,7 +790,21 @@
       "lastSynced": "Last synced",
       "stuckSyncHint": "{count} class(es) failed to sync to your calendar after retries. They'll auto-retry within 5 minutes, or click below to retry now.",
       "retryFailedCta": "Retry now",
-      "retryFailedToast": "Re-queued {count} classes for sync."
+      "retryFailedToast": "Re-queued {count} classes for sync.",
+      "studentsFolderHint": "Per-student notebooks save to your Drive at Daris Students/.",
+      "needsScopeUpgrade": "Reconnect Google to enable per-student notebooks (one-time permission upgrade)."
+    },
+    "notebook": {
+      "title": "Notebook",
+      "openCta": "Open notebook",
+      "createCta": "Create notebook",
+      "creating": "Creating…",
+      "openHint": "All notes, payments, and lesson reports for this student live in their Google Sheet.",
+      "createHint": "Create a Google Sheet for this student. You'll edit notes, payments, and lesson reports there directly.",
+      "legacyData": "Legacy data (read-only)",
+      "indicatorTooltip": "Notebook is set up",
+      "errNoConnection": "Connect Google Calendar first, then create the notebook.",
+      "errNeedsScopeUpgrade": "Reconnect Google to grant Drive + Sheets permissions, then try again."
     },
     "scheduleTeachersLabel": "Teachers",
     "scheduleTeachersHint": "These teachers will see this student's classes on their dashboard. Replaces the current set on save.",

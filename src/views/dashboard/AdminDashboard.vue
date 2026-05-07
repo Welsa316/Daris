@@ -229,7 +229,20 @@
             </thead>
             <tbody>
               <tr v-for="s in students" :key="s.id" class="border-b border-slate-50 hover:bg-slate-50/50">
-                <td class="py-3 px-2 truncate max-w-[12rem]">{{ s.firstName }} {{ s.lastName }}</td>
+                <td class="py-3 px-2 truncate max-w-[12rem]">
+                  <span class="inline-flex items-center gap-1.5">
+                    <span>{{ s.firstName }} {{ s.lastName }}</span>
+                    <!-- Notebook indicator. Tiny 📓 next to the name
+                         tells the sheikh at a glance which students
+                         have notebooks set up. -->
+                    <span
+                      v-if="s.notebookSheetUrl"
+                      class="text-xs"
+                      :title="$t('admin.notebook.indicatorTooltip')"
+                      aria-hidden="true"
+                    >📓</span>
+                  </span>
+                </td>
                 <td class="py-3 px-2 text-slate-500 truncate max-w-[16rem]">{{ s.email }}</td>
                 <td class="py-3 px-2 text-slate-500 truncate max-w-[10rem]">{{ s.country }}</td>
                 <td class="py-3 px-2">
@@ -592,8 +605,54 @@
             </div>
           </details>
 
-          <!-- Tabs: Classes | Payments | Export -->
-          <div class="mt-6 border-b border-slate-100 flex gap-1">
+          <!-- Per-student Google Sheets notebook. Primary action for
+               managing notes / payments / lesson reports. Sheikh edits
+               in Sheets directly; Daris just stores the link. -->
+          <div class="mt-6 p-4 rounded-xl bg-cream-50 border border-cream-200">
+            <div class="flex items-start gap-3">
+              <span class="text-2xl" aria-hidden="true">📓</span>
+              <div class="min-w-0 flex-1">
+                <h3 class="text-sm font-semibold text-primary">
+                  {{ $t('admin.notebook.title') }}
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  {{ selectedStudent.notebookSheetUrl
+                    ? $t('admin.notebook.openHint')
+                    : $t('admin.notebook.createHint') }}
+                </p>
+              </div>
+              <button
+                v-if="selectedStudent.notebookSheetUrl"
+                type="button"
+                @click="openNotebook"
+                class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-800 motion-safe:transition-colors shrink-0"
+              >
+                {{ $t('admin.notebook.openCta') }}
+              </button>
+              <button
+                v-else
+                type="button"
+                @click="createNotebook"
+                :disabled="creatingNotebook"
+                class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-800 motion-safe:transition-colors shrink-0 disabled:opacity-50"
+              >
+                {{ creatingNotebook ? $t('admin.notebook.creating') : $t('admin.notebook.createCta') }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Tabs: Classes | Payments | Export. Now collapsed under
+               a Legacy data expander since the notebook is the primary
+               surface. Anything written before the notebook went live
+               is still readable here. -->
+          <details class="mt-4">
+            <summary class="cursor-pointer list-none flex items-center justify-between text-xs text-slate-400 hover:text-slate-600 transition-colors">
+              <span class="font-semibold tracking-wider uppercase">
+                {{ $t('admin.notebook.legacyData') }}
+              </span>
+              <span class="text-slate-300">›</span>
+            </summary>
+          <div class="mt-4 border-b border-slate-100 flex gap-1">
             <button
               v-for="tab in ['classes', 'payments', 'export']"
               :key="tab"
@@ -841,6 +900,7 @@
               {{ $t('admin.export.allClassLogs') }}
             </button>
           </div>
+          </details>
         </div>
       </div>
 
@@ -1316,6 +1376,9 @@ watch(rescheduleSeriesMode, async () => {
 const studentDetailTab = ref('classes');
 const studentDetailLoading = ref(false);
 const studentClassLogs = ref([]);
+// Notebook creation state. Disables the button + shows "Creating…"
+// while the lazy POST /students/:id/notebook is in flight.
+const creatingNotebook = ref(false);
 const studentPayments = ref([]);
 const studentPaymentTotals = ref({});
 
@@ -1944,6 +2007,51 @@ async function viewStudent(id) {
 
 // Legacy AdminNote textbox was replaced by the Classes / Payments tabs.
 // Keeping the endpoints but no longer calling them from the UI.
+
+// Notebook handlers. createNotebook lazy-creates a Google Sheet for the
+// student via POST /students/:id/notebook, persists the URL on the
+// student row, and opens the Sheet in a new tab. openNotebook is the
+// short-circuit when a URL already exists.
+function openNotebook() {
+  const url = selectedStudent.value?.notebookSheetUrl;
+  if (!url) return;
+  window.open(url, '_blank', 'noopener');
+}
+
+async function createNotebook() {
+  if (!selectedStudent.value || creatingNotebook.value) return;
+  creatingNotebook.value = true;
+  try {
+    const res = await api.post(`/api/admin/students/${selectedStudent.value.id}/notebook`);
+    if (res?.sheetUrl) {
+      // Mutate the local copy so the button switches from
+      // "Create" to "Open" without a full reload of the student.
+      selectedStudent.value = {
+        ...selectedStudent.value,
+        notebookSheetId: res.sheetId,
+        notebookSheetUrl: res.sheetUrl,
+      };
+      window.open(res.sheetUrl, '_blank', 'noopener');
+      // Refresh the students list so the 📓 indicator appears next
+      // to this student's row.
+      loadStudents();
+    }
+  } catch (err) {
+    // Two known error reasons surface separately in the toast so the
+    // sheikh knows whether to (a) connect Google or (b) reconnect to
+    // upgrade scopes.
+    const reason = err?.data?.reason;
+    if (reason === 'no_connection') {
+      showToast(t('admin.notebook.errNoConnection'));
+    } else if (reason === 'needs_scope_upgrade') {
+      showToast(t('admin.notebook.errNeedsScopeUpgrade'));
+    } else {
+      showToast(err, 'createNotebook');
+    }
+  } finally {
+    creatingNotebook.value = false;
+  }
+}
 
 async function handleSuspend(id) {
   const ok = await confirmDialog({

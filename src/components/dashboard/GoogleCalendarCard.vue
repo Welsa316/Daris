@@ -90,6 +90,31 @@
         </div>
       </dl>
 
+      <p class="text-xs text-slate-400 mt-3">
+        {{ $t('admin.gcal.studentsFolderHint') }}
+      </p>
+
+      <!-- Scope-upgrade banner. Surfaces when the existing connection
+           pre-dates the Drive/Sheets scope expansion (notebook feature).
+           The sheikh has to disconnect + reconnect to grant the new
+           perms — there's no in-place upgrade in OAuth. -->
+      <div
+        v-if="needsScopeUpgrade"
+        class="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-200"
+      >
+        <p class="text-sm text-blue-800 mb-2">
+          {{ $t('admin.gcal.needsScopeUpgrade') }}
+        </p>
+        <button
+          type="button"
+          @click="handleConnect"
+          :disabled="busy"
+          class="bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-medium hover:bg-blue-700 motion-safe:transition-colors disabled:opacity-50"
+        >
+          {{ busy ? $t('admin.saving') : $t('admin.gcal.reconnectCta') }}
+        </button>
+      </div>
+
       <!-- Stuck-sync banner. Shows when one or more class events failed
            to sync after 5 retry attempts. The convergent sweep auto-
            resurrects them every 5 minutes, but this surfaces the count
@@ -197,6 +222,23 @@ const subtitleCopy = computed(() => {
     default:
       return t('admin.gcal.subtitleNotConnected');
   }
+});
+
+// Notebook feature requires drive.file + spreadsheets scopes. Existing
+// connections from before that expansion shipped lack them; the
+// /status endpoint returns the granted scope string and we check
+// here. Truthy → render the scope-upgrade banner asking for a
+// reconnect. The OAuth protocol doesn't allow in-place scope upgrade,
+// so disconnect+reconnect is the only path.
+const NOTEBOOK_SCOPES = [
+  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/spreadsheets',
+];
+const needsScopeUpgrade = computed(() => {
+  if (status.value !== 'active') return false;
+  const granted = (data.value?.scopes || '').split(/\s+/);
+  const grantedSet = new Set(granted);
+  return !NOTEBOOK_SCOPES.every((s) => grantedSet.has(s));
 });
 
 const iconBg = computed(() => {
