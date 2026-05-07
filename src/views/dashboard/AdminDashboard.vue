@@ -1362,18 +1362,27 @@ const futureClasses = computed(() => {
     .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 });
 
+// Show the next week of classes by default. The 3-day window we used
+// to ship was too tight: a class scheduled 4 days out wouldn't surface
+// here even though it's the next thing on the calendar.
 const upcomingClasses = computed(() => {
-  const now = new Date();
-  const threeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+  const nowMs = Date.now();
+  const sevenDays = nowMs + 7 * 24 * 60 * 60 * 1000;
   return classes.value
-    .filter(cls =>
-      !cls.cancelled
-      && new Date(cls.startTime) >= now
-      && new Date(cls.startTime) <= threeDays
-      // Drop classes whose only students have been removed. backend already
-      // strips soft-deleted assignments, so length === 0 means nobody is left.
-      && (cls.assignments?.length ?? 0) > 0
-    )
+    .filter((cls) => {
+      if (cls.cancelled) return false;
+      const start = new Date(cls.startTime).getTime();
+      const end = new Date(cls.endTime).getTime();
+      // Show classes that are upcoming OR currently in progress (so the
+      // Join button stays visible during the class itself).
+      if (end < nowMs) return false;
+      if (start > sevenDays) return false;
+      // Drop classes whose only students have been removed. The backend
+      // already strips soft-deleted assignments, so length === 0 means
+      // nobody is left.
+      if ((cls.assignments?.length ?? 0) === 0) return false;
+      return true;
+    })
     .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
     .slice(0, 10);
 });

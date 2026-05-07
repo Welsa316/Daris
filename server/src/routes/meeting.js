@@ -33,7 +33,17 @@ router.get('/:classId/link', meetingLinkLimiter, authenticate, verifyTokenVersio
       include: {
         assignments: {
           where: { student: { deletedAt: null } },
-          select: { studentId: true },
+          select: {
+            studentId: true,
+            // Hydrate the join from the student to their teachers so we
+            // can grant the join link to a teacher whose assigned student
+            // is in this class. One extra join per call, fixed-size.
+            student: {
+              select: {
+                teachers: { select: { teacherId: true } },
+              },
+            },
+          },
         },
       },
     });
@@ -42,10 +52,22 @@ router.get('/:classId/link', meetingLinkLimiter, authenticate, verifyTokenVersio
       return res.status(404).json({ error: 'Class not found' });
     }
 
-    // Admins can always join their own classes; students must be assigned.
+    // Three ways to be authorised:
+    //   - sheikh: any class
+    //   - assigned student: this class
+    //   - teacher: this user has isTeacher=true AND either created the
+    //     class OR has at least one assigned student attending it
     const isAdmin = req.user.role === 'admin';
     const isAssigned = cls.assignments.some((a) => a.studentId === req.user.id);
-    if (!isAdmin && !isAssigned) {
+    const isTeacherForClass = (() => {
+      if (!req.user.isTeacher) return false;
+      if (cls.createdByAdminId === req.user.id) return true;
+      return cls.assignments.some((a) =>
+        (a.student?.teachers || []).some((t) => t.teacherId === req.user.id)
+      );
+    })();
+
+    if (!isAdmin && !isAssigned && !isTeacherForClass) {
       auditLog('JOIN_LINK_FORBIDDEN', {
         classId: cls.id,
         userId: req.user.id,
@@ -89,7 +111,11 @@ router.get('/:classId/link', meetingLinkLimiter, authenticate, verifyTokenVersio
     auditLog('JOIN_LINK_ISSUED', {
       classId: cls.id,
       userId: req.user.id,
-      role: isAdmin ? 'admin' : 'student',
+      role: isAdmin
+        ? 'admin'
+        : isTeacherForClass
+        ? 'teacher'
+        : 'student',
     });
 
     res.json({ meetingLink });
