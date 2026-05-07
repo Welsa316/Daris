@@ -113,16 +113,21 @@ export async function createStudentNotebook(adminUserId, student) {
   // Arabic, so headers + tab name are in Arabic and the sheet is
   // marked rightToLeft so the column order reads naturally for him.
   //
-  // One row per CYCLE (one subject in one month = one row). The four
-  // session columns hold free-form notes for sessions 1 through 4 in
-  // that cycle. The مدفوع checkbox is per-cycle and manually ticked
-  // by the sheikh — one tick covers the whole cycle, no per-session
+  // One row per CYCLE (a 4-session run of one subject). The four
+  // session columns hold free-form notes for sessions 1 through 4.
+  // The مدفوع checkbox is per-cycle and manually ticked by the
+  // sheikh — one tick covers the whole cycle, no per-session
   // bookkeeping. Payments/Profile-notes tabs were dropped: a single
   // table is the entire surface.
   //
+  // Cycles don't align with calendar months (e.g. a cycle that starts
+  // May 10 ends around June 7), so col 0 is the **actual start date**
+  // of the cycle — sheikh enters the day the cycle began and the cell
+  // renders day + month + year.
+  //
   // Columns (7):
-  //   0 الشهر          (Month, displayed as "May 2026")
-  //   1 المادة          (Subject — dropdown: قرآن / فقه / عربي)
+  //   0 بدأ في          (Started on — date the cycle began, e.g. "10 May 2026")
+  //   1 المادة          (Subject — dropdown: قرآن / فقه / لغة عربية / تربية إسلامية)
   //   2 الجلسة الأولى  (Session 1 — date + free-form notes)
   //   3 الجلسة الثانية (Session 2)
   //   4 الجلسة الثالثة (Session 3)
@@ -145,7 +150,7 @@ export async function createStudentNotebook(adminUserId, student) {
             rowData: [
               {
                 values: [
-                  { userEnteredValue: { stringValue: 'الشهر' } },
+                  { userEnteredValue: { stringValue: 'بدأ في' } },
                   { userEnteredValue: { stringValue: 'المادة' } },
                   { userEnteredValue: { stringValue: 'الجلسة الأولى' } },
                   { userEnteredValue: { stringValue: 'الجلسة الثانية' } },
@@ -208,9 +213,10 @@ export async function createStudentNotebook(adminUserId, student) {
   //   4 الجلسة الثالثة | 5 الجلسة الرابعة | 6 مدفوع
   const notebookSheetId = sheetIds[0];
   if (notebookSheetId !== undefined) {
-    // Tight month + subject pills on the left, four equally-wide prose
-    // columns for session notes, a narrow centered checkbox at the end.
-    const widths = [120, 130, 280, 280, 280, 280, 90];
+    // Started-on date + subject pills on the left, four equally-wide
+    // prose columns for session notes, a narrow centered checkbox at
+    // the end. Col 0 widened to fit "10 May 2026" without truncation.
+    const widths = [140, 130, 280, 280, 280, 280, 90];
     widths.forEach((px, idx) => {
       formatRequests.push({
         updateDimensionProperties: {
@@ -226,9 +232,11 @@ export async function createStudentNotebook(adminUserId, student) {
       });
     });
 
-    // Month-only display format on column 0 (الشهر), rows 1..99. Sheikh
-    // can type any date in the cycle's month — the cell renders as
-    // e.g. "May 2026" so he doesn't have to think about which day.
+    // Full date display format on column 0 (بدأ في), rows 1..99.
+    // Sheikh enters the cycle's actual start date (e.g. 5/10/2026)
+    // and the cell renders as "10 May 2026" — day + month + year so
+    // cross-month cycles read truthfully (no forcing into a single
+    // calendar month).
     formatRequests.push({
       repeatCell: {
         range: {
@@ -240,7 +248,7 @@ export async function createStudentNotebook(adminUserId, student) {
         },
         cell: {
           userEnteredFormat: {
-            numberFormat: { type: 'DATE', pattern: 'mmmm yyyy' },
+            numberFormat: { type: 'DATE', pattern: 'd mmmm yyyy' },
           },
         },
         fields: 'userEnteredFormat.numberFormat',
