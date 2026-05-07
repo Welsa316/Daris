@@ -40,11 +40,20 @@ router.use(authenticate, verifyTokenVersion, requireAdminOrTeacher);
 // --- Read-only directory (admin or teacher) ---
 //
 // Returns every active teacher (isTeacher=true) + every active sheikh
-// so the teachers directory in the dashboard has something to render.
-// No PII beyond name + role + counts. Teachers don't get to see other
-// teachers' students or schedules through this surface.
+// so the teachers directory has something to render. No PII beyond
+// name + role.
+//
+// Aggregate `studentCount` is included ONLY for sheikh viewers. For
+// non-admin (teacher) viewers it's omitted, because seeing how many
+// students each other staff member is assigned to lets a teacher
+// count back-of-the-envelope how many students they DON'T see —
+// effectively leaking that other students exist. The Teachers tab
+// is hidden from teachers in the dashboard anyway, but we strip the
+// count here too so a direct API hit can't bypass the UI gate.
 router.get('/directory', async (req, res, next) => {
   try {
+    const isSheikh = req.user.role === 'admin';
+
     const users = await prisma.user.findMany({
       where: {
         OR: [
@@ -60,9 +69,7 @@ router.get('/directory', async (req, res, next) => {
         role: true,
         isTeacher: true,
         createdAt: true,
-        // Count assigned students. Admins generally don't have rows here;
-        // they're scoped globally. Teachers may have many.
-        _count: { select: { taughtStudents: true } },
+        ...(isSheikh ? { _count: { select: { taughtStudents: true } } } : {}),
       },
       orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
     });
@@ -77,7 +84,7 @@ router.get('/directory', async (req, res, next) => {
       // directory's eyes.
       role: u.role === 'admin' ? 'admin' : 'teacher',
       joinedAt: u.createdAt,
-      studentCount: u._count.taughtStudents,
+      ...(isSheikh ? { studentCount: u._count.taughtStudents } : {}),
     }));
 
     res.json({ teachers: directory });

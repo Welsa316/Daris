@@ -1882,8 +1882,11 @@ const showFirstRunChecklist = computed(() => {
 // Tabs are role-aware. The sheikh sees enrollments (review pending) +
 // every other surface globally. A teacher's first stop is "My classes"
 // (their own week ahead) and they never see the enrollments review.
-// Both see the Teachers tab, but only the sheikh sees a manage-style
-// view there (the component itself is read-only either way).
+// Sheikh sees the Teachers tab (manage staff). Teachers don't — the
+// directory leaks aggregate student counts for other teachers, which
+// reveals that students they aren't assigned to exist. Strict
+// isolation: teachers see only their own assigned students and their
+// own classes; nothing else.
 //
 // Computed so it reacts when `useAuth` rehydrates after login.
 const tabs = computed(() => {
@@ -1904,7 +1907,6 @@ const tabs = computed(() => {
     { key: 'students',   label: 'admin.students' },
     { key: 'scheduling', label: 'admin.scheduling' },
     { key: 'activity',   label: 'admin.activity' },
-    { key: 'teachers',   label: 'admin.teachers.tab' },
   ];
 });
 
