@@ -158,12 +158,16 @@ router.get('/dashboard', requireEnrolled, async (req, res, next) => {
       };
     });
 
-    // Past classes
+    // Past classes. Filter out soft-cancelled rows (legacy data from
+    // before hard-delete shipped) so the student doesn't see classes
+    // that were cancelled, especially since we no longer email them
+    // about cancellations — those should be invisible end-to-end.
     const pastClasses = await prisma.classAssignment.findMany({
       where: {
         studentId: req.user.id,
         classSession: {
           endTime: { lt: now },
+          cancelled: false,
         },
       },
       include: {

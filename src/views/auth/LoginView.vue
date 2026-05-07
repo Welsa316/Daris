@@ -87,9 +87,14 @@ async function handleLogin() {
 
   try {
     const data = await login(form.email, form.password);
-    if (data.user.role === 'admin') {
+    // Routing matches the Navbar's staff-first logic:
+    //   admin OR isTeacher → /admin (staff dashboard)
+    //   enrolled_student   → /dashboard (student-side view)
+    //   anything else      → /enrollment-status (pending review)
+    const u = data.user || {};
+    if (u.role === 'admin' || u.isTeacher === true) {
       router.push('/admin');
-    } else if (data.user.role === 'enrolled_student') {
+    } else if (u.role === 'enrolled_student') {
       router.push('/dashboard');
     } else {
       router.push('/enrollment-status');

@@ -319,6 +319,11 @@ export function sanitizeUserForClient(user) {
     whatsapp: user.whatsapp,
     telegram: user.telegram,
     role: user.role,
+    // Capability flags so the frontend's post-login redirect can
+    // distinguish a pure student from a dual-role user (isTeacher=true)
+    // and route them to /admin instead of /dashboard.
+    isTeacher: user.isTeacher,
+    isStudent: user.isStudent,
     emailVerified: user.emailVerified,
     enrolledAt: user.enrolledAt,
     createdAt: user.createdAt,
