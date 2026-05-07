@@ -746,7 +746,9 @@
       "dualRoleBadge": "طالب أيضاً",
       "dualRoleTooltip": "هذا المعلم ملتحق كطالب أيضاً ويحضر حصصاً بنفسه.",
       "pureTeacherBadge": "معلم فقط",
-      "pureTeacherTooltip": "هذا معلم فقط ولا يحضر حصصاً بنفسه."
+      "pureTeacherTooltip": "هذا معلم فقط ولا يحضر حصصاً بنفسه.",
+      "ownerBadge": "مالك",
+      "ownerTooltip": "الشيخ — يدير المدرسة ويُدرّس. يُسنَد تلقائياً كمعلم افتراضي عند عدم وجود إسناد صريح للطالب."
     },
     "classDrawer": {
       "when": "الموعد",

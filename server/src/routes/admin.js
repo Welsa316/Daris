@@ -570,15 +570,20 @@ router.put(
         return res.status(404).json({ error: t('error.notFound', lang) });
       }
 
-      // Verify every teacherId actually refers to an active teacher.
-      // Refuses to silently drop bogus ids on the floor — typos or stale
-      // dashboard state should fail loudly so the sheikh knows to refresh.
+      // Verify every teacherId actually refers to a user who can teach.
+      // Either an explicit teacher (isTeacher=true) or the sheikh (admin —
+      // implicit default teacher when none is explicitly assigned). The
+      // legacy `role: 'teacher'` enum value is gone post-Phase-G, so
+      // checking only that would reject every assignment.
       if (teacherIds.length > 0) {
         const existingTeachers = await prisma.user.findMany({
           where: {
             id: { in: teacherIds },
-            role: 'teacher',
             deletedAt: null,
+            OR: [
+              { isTeacher: true },
+              { role: 'admin' },
+            ],
           },
           select: { id: true },
         });

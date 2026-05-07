@@ -891,6 +891,13 @@
                     class="sr-only"
                   />
                   {{ tch.firstName }} {{ tch.lastName }}
+                  <span
+                    v-if="tch.isOwner"
+                    class="text-[9px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700"
+                    :title="$t('admin.teachers.ownerTooltip')"
+                  >
+                    {{ $t('admin.teachers.ownerBadge') }}
+                  </span>
                 </label>
               </div>
               <p class="text-xs text-slate-400 mt-1">{{ $t('admin.scheduleTeachersHint') }}</p>
@@ -1395,6 +1402,7 @@ async function loadTeachersList() {
       id: t.id,
       firstName: t.firstName,
       lastName: t.lastName,
+      isOwner: !!t.isOwner,
       taughtStudentIds: new Set(
         (t.taughtStudents || []).map((ts) => ts.student?.id).filter(Boolean)
       ),
@@ -2701,6 +2709,13 @@ watch(showScheduleForm, (v) => {
 // to that student's current assignments so it shows the actual state.
 // We pull it from the cached teachersList (each entry already carries
 // the set of student ids it teaches), avoiding an extra round-trip.
+//
+// Implicit-default rule: if the student has no explicit TeacherStudent
+// rows, pre-check the Owner (sheikh). Saving the form then materialises
+// that default into a real assignment row so subsequent loads show the
+// same state without depending on the fallback. Lets the sheikh assign
+// himself with one click instead of remembering to tick his own
+// checkbox on every fresh student.
 watch(
   () => scheduleForm.studentId,
   (sid) => {
@@ -2708,8 +2723,17 @@ watch(
       scheduleForm.teacherIds = [];
       return;
     }
-    scheduleForm.teacherIds = teachersList.value
+    const explicit = teachersList.value
       .filter((t) => t.taughtStudentIds?.has(sid))
+      .map((t) => t.id);
+    if (explicit.length > 0) {
+      scheduleForm.teacherIds = explicit;
+      return;
+    }
+    // No explicit teachers — default-check the Owner(s). Typically just
+    // the sheikh, but multi-admin schools all get default-checked.
+    scheduleForm.teacherIds = teachersList.value
+      .filter((t) => t.isOwner)
       .map((t) => t.id);
   }
 );

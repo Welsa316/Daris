@@ -746,7 +746,9 @@
       "dualRoleBadge": "Also a student",
       "dualRoleTooltip": "This teacher is also an enrolled student and attends classes themselves.",
       "pureTeacherBadge": "Teacher only",
-      "pureTeacherTooltip": "This is a pure teacher and doesn't attend classes themselves."
+      "pureTeacherTooltip": "This is a pure teacher and doesn't attend classes themselves.",
+      "ownerBadge": "Owner",
+      "ownerTooltip": "The sheikh — runs the school and teaches. Auto-default teacher when a student has no explicit assignment."
     },
     "classDrawer": {
       "when": "When",

@@ -40,13 +40,19 @@
               <h3 class="font-semibold text-primary">
                 {{ t.firstName }} {{ t.lastName }}
               </h3>
-              <!-- Capability badges. A teacher who's ALSO a student
-                   (isStudent=true) gets the "Also a student" pill;
-                   a pure teacher (isStudent=false) gets the
-                   "Teacher only" pill so the sheikh sees at a glance
-                   that they don't appear in the students list. -->
+              <!-- Capability badges. Admin (sheikh) gets the gold "Owner"
+                   pill at the top of the list. Regular teachers get
+                   "Also a student" or "Teacher only" depending on
+                   whether they have isStudent set. -->
               <span
-                v-if="isDualRole(t)"
+                v-if="t.isOwner"
+                class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200"
+                :title="$t('admin.teachers.ownerTooltip')"
+              >
+                {{ $t('admin.teachers.ownerBadge') }}
+              </span>
+              <span
+                v-else-if="isDualRole(t)"
                 class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-50 text-blue-700"
                 :title="$t('admin.teachers.dualRoleTooltip')"
               >
@@ -86,10 +92,14 @@
               </li>
             </ul>
           </div>
-          <!-- Sheikh-only demote button. Confirmation dialog warns about
-               the assignment cascade so the action isn't a surprise. -->
+          <!-- Sheikh-only demote button. Hidden on the Owner (admin) row
+               itself — there's no concept of "demoting the sheikh"
+               from the dashboard; that would require a CLI script
+               + rebuilding the school's admin chain. Confirmation
+               dialog warns about the assignment cascade for regular
+               teachers so the action isn't a surprise. -->
           <button
-            v-if="isAdmin"
+            v-if="isAdmin && !t.isOwner"
             type="button"
             @click="confirmDemote(t)"
             :disabled="demotingId === t.id"

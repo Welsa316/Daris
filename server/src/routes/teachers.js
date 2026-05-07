@@ -89,11 +89,21 @@ router.get('/directory', async (req, res, next) => {
 // --- Sheikh-only read ---
 
 // Full teacher list with management metadata: emails, last-login, full
-// student roster preview. Used by the (sheikh-managed) Teachers tab.
+// student roster preview. Used by the (sheikh-managed) Teachers tab
+// AND by the schedule form's teacher picker. Admins (the sheikh) are
+// included here too — they're the implicit default teacher when a
+// student has no explicit TeacherStudent rows. Each row carries an
+// `isOwner` flag the frontend uses to render an "Owner" badge.
 router.get('/', requireAdmin, async (req, res, next) => {
   try {
     const teachers = await prisma.user.findMany({
-      where: { isTeacher: true, deletedAt: null },
+      where: {
+        deletedAt: null,
+        OR: [
+          { isTeacher: true },
+          { role: 'admin' },
+        ],
+      },
       select: {
         id: true,
         firstName: true,
@@ -123,7 +133,18 @@ router.get('/', requireAdmin, async (req, res, next) => {
       orderBy: { createdAt: 'asc' },
     });
 
-    res.json({ teachers });
+    // Tag each row with `isOwner` so the frontend can render the
+    // Owner badge on admin rows + sort them to the top. Admins shouldn't
+    // ever be treated as "regular" teachers (no demote button, no
+    // promote candidacy) so the boolean is the cleanest plumbing.
+    const annotated = teachers.map((t) => ({ ...t, isOwner: t.role === 'admin' }));
+    annotated.sort((a, b) => {
+      if (a.isOwner && !b.isOwner) return -1;
+      if (!a.isOwner && b.isOwner) return 1;
+      return new Date(a.createdAt) - new Date(b.createdAt);
+    });
+
+    res.json({ teachers: annotated });
   } catch (error) {
     next(error);
   }
