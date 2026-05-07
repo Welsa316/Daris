@@ -809,7 +809,13 @@
       "legacyData": "البيانات السابقة (قراءة فقط)",
       "indicatorTooltip": "الدفتر جاهز",
       "errNoConnection": "اربط تقويم جوجل أولاً، ثم أنشئ الدفتر.",
-      "errNeedsScopeUpgrade": "أعد الربط بـ Google لمنح صلاحيات Drive + Sheets، ثم حاول مرة أخرى."
+      "errNeedsScopeUpgrade": "أعد الربط بـ Google لمنح صلاحيات Drive + Sheets، ثم حاول مرة أخرى.",
+      "recreateHint": "أُنشئ الدفتر بقالب قديم؟ أنشئ دفتراً جديداً بالتصميم الحالي. سيبقى الملف القديم في Drive.",
+      "recreateCta": "إعادة الإنشاء بالقالب الجديد",
+      "recreating": "جارٍ إعادة الإنشاء…",
+      "recreateConfirmTitle": "إعادة إنشاء الدفتر؟",
+      "recreateConfirmMessage": "سيتم إنشاء ملف Google Sheets جديد بالقالب الأحدث وربطه بهذا الطالب. سيبقى الملف القديم في Drive (داخل مجلد Daris Students) لتتمكن من نسخ البيانات قبل حذفه يدوياً.",
+      "recreated": "تم إنشاء الدفتر الجديد. الملف القديم لا يزال في Drive."
     },
     "scheduleTeachersLabel": "المعلمون",
     "scheduleTeachersHint": "سيرى هؤلاء المعلمون حصص هذا الطالب في لوحاتهم. يستبدل الحفظ المجموعة الحالية بالكامل.",

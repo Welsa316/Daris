@@ -654,6 +654,26 @@
                 {{ creatingNotebook ? $t('admin.notebook.creating') : $t('admin.notebook.createCta') }}
               </button>
             </div>
+            <!-- Recreate option for notebooks created on an older
+                 template. Only surfaced once a notebook exists.
+                 Confirms before unlinking the old sheet (which stays
+                 in Drive for manual data recovery). -->
+            <div
+              v-if="selectedStudent.notebookSheetUrl"
+              class="mt-3 pt-3 border-t border-cream-200/70 flex items-center justify-between gap-3"
+            >
+              <p class="text-xs text-slate-500 leading-relaxed text-pretty">
+                {{ $t('admin.notebook.recreateHint') }}
+              </p>
+              <button
+                type="button"
+                @click="recreateNotebook"
+                :disabled="creatingNotebook"
+                class="text-xs font-semibold text-primary hover:text-primary-800 underline-offset-2 hover:underline disabled:opacity-50 shrink-0"
+              >
+                {{ creatingNotebook ? $t('admin.notebook.recreating') : $t('admin.notebook.recreateCta') }}
+              </button>
+            </div>
           </div>
 
           <!-- Tabs: Classes | Payments | Export. Now collapsed under
@@ -2062,6 +2082,51 @@ async function createNotebook() {
       showToast(t('admin.notebook.errNeedsScopeUpgrade'));
     } else {
       showToast(err, 'createNotebook');
+    }
+  } finally {
+    creatingNotebook.value = false;
+  }
+}
+
+// Force a fresh notebook with the current template. Used when a
+// student's existing notebook was created under an older layout
+// (English headers, missing Subject/Session# columns, etc.). The
+// old sheet is NOT deleted from Drive — sheikh can manually copy
+// data over before removing the old file.
+async function recreateNotebook() {
+  if (!selectedStudent.value || creatingNotebook.value) return;
+  const ok = await confirmDialog({
+    title: t('admin.notebook.recreateConfirmTitle'),
+    message: t('admin.notebook.recreateConfirmMessage'),
+    confirmLabel: t('admin.notebook.recreateCta'),
+    cancelLabel: t('admin.cancel'),
+    danger: false,
+  });
+  if (!ok) return;
+
+  creatingNotebook.value = true;
+  try {
+    const res = await api.post(
+      `/api/admin/students/${selectedStudent.value.id}/notebook?recreate=true`
+    );
+    if (res?.sheetUrl) {
+      selectedStudent.value = {
+        ...selectedStudent.value,
+        notebookSheetId: res.sheetId,
+        notebookSheetUrl: res.sheetUrl,
+      };
+      window.open(res.sheetUrl, '_blank', 'noopener');
+      loadStudents();
+      showToast(t('admin.notebook.recreated'));
+    }
+  } catch (err) {
+    const reason = err?.data?.reason;
+    if (reason === 'no_connection') {
+      showToast(t('admin.notebook.errNoConnection'));
+    } else if (reason === 'needs_scope_upgrade') {
+      showToast(t('admin.notebook.errNeedsScopeUpgrade'));
+    } else {
+      showToast(err, 'recreateNotebook');
     }
   } finally {
     creatingNotebook.value = false;

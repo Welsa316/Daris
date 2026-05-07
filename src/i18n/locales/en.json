@@ -809,7 +809,13 @@
       "legacyData": "Legacy data (read-only)",
       "indicatorTooltip": "Notebook is set up",
       "errNoConnection": "Connect Google Calendar first, then create the notebook.",
-      "errNeedsScopeUpgrade": "Reconnect Google to grant Drive + Sheets permissions, then try again."
+      "errNeedsScopeUpgrade": "Reconnect Google to grant Drive + Sheets permissions, then try again.",
+      "recreateHint": "Created on an older layout? Build a fresh notebook with the current template. The old sheet stays in your Drive.",
+      "recreateCta": "Recreate with new layout",
+      "recreating": "Recreating…",
+      "recreateConfirmTitle": "Recreate notebook?",
+      "recreateConfirmMessage": "A new Google Sheet with the latest template will be created and linked to this student. The old sheet will stay in your Drive (under Daris Students) so you can copy data over before deleting it manually.",
+      "recreated": "New notebook created. Old sheet is still in your Drive."
     },
     "scheduleTeachersLabel": "Teachers",
     "scheduleTeachersHint": "These teachers will see this student's classes on their dashboard. Replaces the current set on save.",

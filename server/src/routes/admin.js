@@ -526,6 +526,14 @@ router.get('/students/:id/notes', async (req, res, next) => {
 // fresh Sheet in the sheikh's Drive (Daris Students folder), stores
 // the URL on the student row, and returns it.
 //
+// Pass ?recreate=true (or { recreate: true } in the body) to force a
+// fresh template even when a URL is already stored. Used when the
+// template structure has changed (e.g. v1 English headers → v2 Arabic
+// + auto-formula columns) and the sheikh wants the new layout. The
+// OLD sheet is NOT deleted from Drive — we just unlink it from the
+// student row, so the sheikh can manually copy any data over before
+// removing the old file. Old URL is breadcrumbed in the audit log.
+//
 // Sheet creation always uses the SHEIKH'S Google connection — even
 // when triggered by a teacher — because that's where the OAuth tokens
 // live. Looks up the active admin connection at request time.
@@ -533,6 +541,9 @@ router.post('/students/:id/notebook', async (req, res, next) => {
   try {
     const lang = getLang(req);
     await requireStudentAccess(req.user, req.params.id, prisma);
+
+    const recreate =
+      req.query.recreate === 'true' || req.body?.recreate === true;
 
     const student = await prisma.user.findFirst({
       where: { id: req.params.id },
@@ -548,8 +559,9 @@ router.post('/students/:id/notebook', async (req, res, next) => {
       return res.status(404).json({ error: t('student.notFound', lang) });
     }
 
-    // Already created — short-circuit.
-    if (student.notebookSheetUrl) {
+    // Already created — short-circuit unless the caller explicitly
+    // asked for a fresh template.
+    if (student.notebookSheetUrl && !recreate) {
       return res.json({
         sheetId: student.notebookSheetId,
         sheetUrl: student.notebookSheetUrl,
@@ -594,6 +606,9 @@ router.post('/students/:id/notebook', async (req, res, next) => {
       throw err;
     }
 
+    const previousSheetId = student.notebookSheetId;
+    const previousSheetUrl = student.notebookSheetUrl;
+
     await prisma.user.update({
       where: { id: student.id },
       data: {
@@ -602,10 +617,22 @@ router.post('/students/:id/notebook', async (req, res, next) => {
       },
     });
 
+    if (recreate && previousSheetId) {
+      auditLog('NOTEBOOK_RECREATED', {
+        studentId: student.id,
+        previousSheetId,
+        newSheetId: result.sheetId,
+        adminId: admin.id,
+        triggeredBy: req.user.id,
+      });
+    }
+
     res.json({
       sheetId: result.sheetId,
       sheetUrl: result.sheetUrl,
       created: true,
+      replaced: Boolean(recreate && previousSheetUrl),
+      previousSheetUrl: recreate ? previousSheetUrl : undefined,
     });
   } catch (error) {
     next(error);
