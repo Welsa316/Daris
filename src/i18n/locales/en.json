@@ -377,6 +377,7 @@
   "dashboard": {
     "welcome": "Welcome, {name}",
     "active": "Active",
+    "yourTeacher": "Taught by",
     "upcomingClasses": "Upcoming classes",
     "nextClass": "Next class",
     "comingUp": "Coming up",

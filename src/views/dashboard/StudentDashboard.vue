@@ -13,6 +13,17 @@
               {{ $t('dashboard.active') }}
             </span>
           </p>
+          <!-- Teacher line. Renders explicit TeacherStudent assignments
+               or falls back to the sheikh (admin) when no one is
+               explicitly assigned. Always shows for active students so
+               the relationship is visible. -->
+          <p
+            v-if="dashboard?.teachers?.length"
+            class="text-xs text-slate-500 mt-2 tabular-nums"
+          >
+            {{ $t('dashboard.yourTeacher', { count: dashboard.teachers.length }) }}
+            <span class="font-medium text-primary">{{ teacherNames }}</span>
+          </p>
         </div>
         <button @click="handleLogout" class="text-sm text-slate-400 hover:text-primary transition">{{ $t('auth.logout') }}</button>
       </div>
@@ -168,6 +179,18 @@ const nextClass = computed(() => {
 const laterClasses = computed(() => {
   const list = dashboard.value?.upcomingClasses || [];
   return list.filter((c) => c.id !== nextClass.value?.id && !c.cancelled);
+});
+
+// First names of the student's teachers, joined for the header line.
+// One teacher: "Walid". Two: "Walid + Bob". Three+: "Walid, Bob + 1 more"
+// to keep the header from wrapping awkwardly.
+const teacherNames = computed(() => {
+  const list = dashboard.value?.teachers || [];
+  if (list.length === 0) return '';
+  const names = list.map((t) => t.firstName).filter(Boolean);
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} + ${names[1]}`;
+  return `${names.slice(0, 2).join(', ')} + ${names.length - 2}`;
 });
 
 async function handleLogout() { await logout(); }

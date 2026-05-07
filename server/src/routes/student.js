@@ -203,6 +203,30 @@ router.get('/dashboard', requireEnrolled, async (req, res, next) => {
       take: 10,
     });
 
+    // Effective teachers = explicit TeacherStudent rows if any exist,
+    // otherwise fall back to all active admins (the sheikh teaches by
+    // default). The student-side dashboard renders this as
+    // "Your teacher: {first names}" so the relationship is visible
+    // even when no one explicitly assigned anything.
+    const explicitTeachers = await prisma.teacherStudent.findMany({
+      where: { studentId: req.user.id },
+      include: {
+        teacher: {
+          select: { id: true, firstName: true, lastName: true, role: true },
+        },
+      },
+    });
+    let teachers = explicitTeachers
+      .map((row) => row.teacher)
+      .filter((t) => t != null);
+    if (teachers.length === 0) {
+      const admins = await prisma.user.findMany({
+        where: { role: 'admin', deletedAt: null },
+        select: { id: true, firstName: true, lastName: true, role: true },
+      });
+      teachers = admins;
+    }
+
     res.json({
       student: {
         firstName: user.firstName,
@@ -210,6 +234,15 @@ router.get('/dashboard', requireEnrolled, async (req, res, next) => {
         enrolledAt: user.enrolledAt,
         status: 'Active',
       },
+      teachers: teachers.map((t) => ({
+        id: t.id,
+        firstName: t.firstName,
+        lastName: t.lastName,
+        // Owner flag so the frontend can show a small "Sheikh" or
+        // "Owner" hint next to the sheikh's name if multiple teachers
+        // exist.
+        isOwner: t.role === 'admin',
+      })),
       upcomingClasses: classesForClient,
       pastClasses: pastClasses.map((a) => a.classSession),
       announcements,

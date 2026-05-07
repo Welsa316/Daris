@@ -377,6 +377,7 @@
   "dashboard": {
     "welcome": "مرحباً، {name}",
     "active": "نشط",
+    "yourTeacher": "بتدريس",
     "upcomingClasses": "الحصص القادمة",
     "nextClass": "الحصة القادمة",
     "comingUp": "الحصص التالية",
