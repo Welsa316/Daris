@@ -1734,13 +1734,13 @@ function classTimeLabel(cls) {
   }
   if (diffMin <= 30 && diffMin > 0) {
     return {
-      text: t('admin.startsInMin').replace('{n}', diffMin),
+      text: t('admin.startsInMin', { n: diffMin }),
       color: 'text-amber-600 font-medium',
     };
   }
   if (diffMin <= 60 && diffMin > 0) {
     return {
-      text: t('admin.inMinutes').replace('{n}', diffMin),
+      text: t('admin.inMinutes', { n: diffMin }),
       color: 'text-blue-600',
     };
   }
@@ -2502,14 +2502,14 @@ function joinAvailabilityLabel(cls) {
   // hours for the next day, days further out.
   const minsUntilOpen = Math.max(1, Math.ceil((opens - now.value) / 60_000));
   if (minsUntilOpen <= 60) {
-    return t('admin.joinOpensInMin').replace('{n}', minsUntilOpen);
+    return t('admin.joinOpensInMin', { n: minsUntilOpen });
   }
   if (minsUntilOpen < 24 * 60) {
     const hours = Math.ceil(minsUntilOpen / 60);
-    return t('admin.joinOpensInHr').replace('{n}', hours);
+    return t('admin.joinOpensInHr', { n: hours });
   }
   const days = Math.ceil(minsUntilOpen / (24 * 60));
-  return t('admin.joinOpensInDays').replace('{n}', days);
+  return t('admin.joinOpensInDays', { n: days });
 }
 
 // Display name for a class. When multiple students share a class (co-taught),
