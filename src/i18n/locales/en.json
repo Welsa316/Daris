@@ -282,8 +282,12 @@
     "emailPlaceholder": "you{'@'}example.com",
     "message": "Message",
     "messagePlaceholder": "Share your current level, goals, and preferred times.",
-    "disclaimer": "By submitting, your message will open in your default email client via a mailto: link. If a form service is configured, it will be submitted directly instead.",
-    "submit": "Send message"
+    "disclaimer": "We'll use your email only to reply to this message. No newsletters, no sharing.",
+    "submit": "Send message",
+    "sending": "Sending…",
+    "successMessage": "Thanks — your message reached us. We'll reply within 1–3 working days.",
+    "errorMessage": "Something went wrong on our end. Please try again, or reach us on WhatsApp.",
+    "rateLimitMessage": "You've sent a few messages already. Please wait a bit before trying again."
   },
   "footer": {
     "brand": "Daris",

@@ -10,6 +10,10 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().default(''),            // Resend API key (starts with re_)
   EMAIL_FROM: z.string().default('Daris <noreply@daris.education>'),
   ADMIN_EMAIL: z.string().default(''),
+  // Inbox that receives public contact-form submissions. Falls back to
+  // the Gmail account behind the Cloudflare Email Routing forward, so
+  // the form works even if a domain alias hasn't been wired up yet.
+  CONTACT_INBOX: z.string().email().default('darislearn@gmail.com'),
   CSRF_SECRET: z.string().min(16).default('dev-csrf-secret-change-me'),
 
   // Google Calendar integration. All four are optional so the server can

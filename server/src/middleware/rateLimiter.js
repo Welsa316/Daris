@@ -80,3 +80,19 @@ export const meetingLinkLimiter = rateLimit({
   handler: tooManyHandler,
   keyGenerator: (req) => req.user?.id || req.ip,
 });
+
+/**
+ * Public contact form: max 5 submissions per IP per hour. The form is
+ * unauthenticated and visible to anyone on the public site, so we cap
+ * hard against bots and scrape-and-spam loops. Genuine retries (form
+ * mistypes, network errors) fit comfortably under 5; anything past
+ * that is almost certainly automated.
+ */
+export const contactFormLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: tooManyHandler,
+  keyGenerator: (req) => req.ip,
+});

@@ -90,9 +90,6 @@ export const contactConfig = {
 
   // Contact email address (must be a real, monitored inbox)
   contactEmail: 'contact@daris.education',
-
-  // Form endpoint — leave empty for mailto, or set to Formspree/similar URL
-  formEndpoint: ''
 };
 ```
 
@@ -103,20 +100,21 @@ Example: Egypt number `+20 123 456 7890` → `'201234567890'`
 
 ### Email
 
-Set `contactEmail` to your preferred email address.
+Set `contactEmail` to your preferred email address. The mailto links in
+the footer / About / FAQ / Programs / Contact page render this address.
 
 ### Contact form behaviour
 
-| `formEndpoint` value | Behaviour |
-|---|---|
-| `''` (empty, default) | Clicking "Send message" opens the user's email client with a pre-filled `mailto:` link |
-| `'https://formspree.io/f/your-id'` | Form data is POSTed directly to Formspree (or any compatible endpoint) |
+The "Send message" button on the Contact page POSTs to `/api/contact`,
+which uses Resend to relay the submission to `env.CONTACT_INBOX`
+(default `darislearn@gmail.com`) with the visitor's address as
+Reply-To. Set `CONTACT_INBOX` in the server's environment to a
+different address if you'd rather route to e.g. a Cloudflare Email
+Routing alias on your domain.
 
-**To set up Formspree:**
-
-1. Create a free form at [formspree.io](https://formspree.io)
-2. Copy your endpoint URL (e.g. `https://formspree.io/f/xyzabcde`)
-3. Paste it as the `formEndpoint` value in `contactConfig.js`
+Server-side guards:
+- Per-IP rate limit (5 submissions per hour)
+- A hidden honeypot field — filled-in submissions are silently dropped
 
 ---
 

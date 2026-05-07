@@ -10,7 +10,5 @@ export const contactConfig = {
   // the registrar or update this constant to the sheikh's preferred
   // address.
   contactEmail: 'contact@daris.education',
-  // Optional: Formspree or similar endpoint. Leave empty to use mailto.
-  formEndpoint: 'https://formspree.io/f/xnjbwqnj'
 };
 

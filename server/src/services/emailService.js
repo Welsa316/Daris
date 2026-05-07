@@ -6,8 +6,16 @@ const RESEND_API_URL = 'https://api.resend.com/emails';
 /**
  * Send an email via Resend HTTPS API.
  * No SMTP needed. uses fetch() on port 443, which works on all Railway plans.
+ *
+ * @param {object}  args
+ * @param {string}  args.to       Recipient address.
+ * @param {string}  args.subject  Email subject line.
+ * @param {string}  args.html     HTML body.
+ * @param {string=} args.replyTo  Optional Reply-To header. Used for the
+ *   contact-form path so when the sheikh hits Reply on the inbox copy,
+ *   the response goes to the visitor instead of the noreply mailbox.
  */
-export async function sendEmail({ to, subject, html }) {
+export async function sendEmail({ to, subject, html, replyTo }) {
   if (!env.RESEND_API_KEY) {
     if (isDev) {
       logger.info(`[DEV] EMAIL TO: ${to} | SUBJECT: ${subject}`);
@@ -34,6 +42,7 @@ export async function sendEmail({ to, subject, html }) {
         to: [to],
         subject,
         html,
+        ...(replyTo ? { reply_to: replyTo } : {}),
       }),
     });
 
@@ -523,6 +532,61 @@ export async function sendFutureAssignmentsClearedEmail(student, count, lang = '
   `;
 
   await sendEmail({ to: student.email, subject, html });
+}
+
+/**
+ * Send a public contact-form submission to the inbox configured in
+ * env.CONTACT_INBOX (default: darislearn@gmail.com via Cloudflare
+ * Email Routing). The visitor's email address is set as the Reply-To
+ * header so the sheikh can hit Reply and the response goes back to
+ * the visitor instead of the noreply mailbox.
+ */
+export async function sendContactFormEmail({ name, email, message, lang = 'en', source = 'website' }) {
+  const safeName = String(name || '').trim();
+  const safeEmail = String(email || '').trim();
+  const safeMessage = String(message || '').trim();
+
+  // Subject is shown in the sheikh's inbox preview row. Truncate the
+  // visitor name so a long string doesn't dominate the subject line.
+  const subjectName = safeName.length > 40 ? safeName.slice(0, 40) + '…' : safeName;
+  const subject = `Daris contact form — ${subjectName || 'New enquiry'}`;
+
+  const html = `
+    <div style="font-family: -apple-system, system-ui, sans-serif; max-width: 600px; line-height: 1.6; color: #1a1a1a;">
+      <h2 style="color: #1F4D3A; margin: 0 0 16px;">New contact-form message</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
+        <tr>
+          <td style="padding: 8px 12px; background: #F5F1E8; font-weight: 600; width: 120px;">Name</td>
+          <td style="padding: 8px 12px;">${escapeHtml(safeName)}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 12px; background: #F5F1E8; font-weight: 600;">Email</td>
+          <td style="padding: 8px 12px;"><a href="mailto:${escapeHtml(safeEmail)}" style="color: #1F4D3A;">${escapeHtml(safeEmail)}</a></td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 12px; background: #F5F1E8; font-weight: 600;">Language</td>
+          <td style="padding: 8px 12px;">${escapeHtml(lang)}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 12px; background: #F5F1E8; font-weight: 600;">Source</td>
+          <td style="padding: 8px 12px;">${escapeHtml(source)}</td>
+        </tr>
+      </table>
+      <h3 style="color: #1F4D3A; margin: 0 0 8px;">Message</h3>
+      <div style="padding: 16px; background: #F9F7F2; border-left: 4px solid #C8A951; white-space: pre-wrap;">${escapeHtml(safeMessage)}</div>
+      <p style="margin-top: 24px; font-size: 12px; color: #6b6b6b;">
+        Reply-To is set to the visitor's address — clicking Reply in your inbox
+        will respond directly to them. Sent from the Daris public site.
+      </p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: env.CONTACT_INBOX,
+    subject,
+    html,
+    replyTo: safeEmail,
+  });
 }
 
 function escapeHtml(str) {

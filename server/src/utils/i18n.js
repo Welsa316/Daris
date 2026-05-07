@@ -189,6 +189,14 @@ const messages = {
     en: 'Too many requests. Please try again later.',
     ar: 'طلبات كثيرة جداً. يرجى المحاولة لاحقاً.',
   },
+  'error.invalidInput': {
+    en: 'Please check the form fields and try again.',
+    ar: 'يرجى مراجعة حقول النموذج والمحاولة مجدداً.',
+  },
+  'error.contactFormFailed': {
+    en: "We couldn't send your message. Please try again or reach us on WhatsApp.",
+    ar: 'تعذّر إرسال رسالتك. يرجى المحاولة مجدداً أو التواصل عبر واتساب.',
+  },
 };
 
 /**
