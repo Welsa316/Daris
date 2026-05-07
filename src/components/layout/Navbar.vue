@@ -83,15 +83,19 @@
 
         <LanguageSwitcher :dark="!scrolled" />
 
-        <!-- Auth links -->
+        <!-- Auth links. Order matters: staff (admin OR teacher) routes
+             to /admin first, regular students fall to /dashboard. A
+             dual-role user (isStaff && isEnrolled) lands on /admin —
+             they can manually go to /dashboard for their student-side
+             classes if they want. -->
         <template v-if="isAuthenticated">
           <RouterLink
-            v-if="isAdmin"
+            v-if="isStaff"
             to="/admin"
             class="relative transition-colors duration-300"
             :class="scrolled ? 'text-primary/70 hover:text-primary' : 'text-cream/70 hover:text-cream'"
           >
-            {{ $t('auth.adminPanel') }}
+            {{ isAdmin ? $t('auth.adminPanel') : $t('auth.myDashboard') }}
           </RouterLink>
           <RouterLink
             v-else-if="isEnrolled"
@@ -162,16 +166,16 @@
           <div class="px-3 py-2.5">
             <LanguageSwitcher :dark="!scrolled" />
           </div>
-          <!-- Mobile auth links -->
+          <!-- Mobile auth links (same staff-first routing as desktop). -->
           <template v-if="isAuthenticated">
             <RouterLink
-              v-if="isAdmin"
+              v-if="isStaff"
               to="/admin"
               class="block px-3 py-2.5 rounded-lg transition-colors duration-200"
               :class="scrolled ? 'text-slate-700 hover:bg-primary/5' : 'text-cream/80 hover:bg-white/10'"
               @click="isOpen = false"
             >
-              {{ $t('auth.adminPanel') }}
+              {{ isAdmin ? $t('auth.adminPanel') : $t('auth.myDashboard') }}
             </RouterLink>
             <RouterLink
               v-else-if="isEnrolled"
@@ -224,7 +228,12 @@ import { useI18n } from 'vue-i18n';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 import { useAuth } from '@/composables/useAuth.js';
 
-const { isAuthenticated, isAdmin, isEnrolled, logout } = useAuth();
+// `isStaff` covers both the sheikh (admin) and any teacher capability —
+// they all belong on /admin. `isEnrolled` covers actual students (the
+// /dashboard view). Without `isStaff`, a teacher account would land in
+// the isEnrolled branch and be sent to /dashboard, which then bounces
+// back via the requiresStudent route guard. Net effect: click did nothing.
+const { isAuthenticated, isAdmin, isStaff, isEnrolled, logout } = useAuth();
 const { locale } = useI18n();
 
 const isOpen = ref(false);
