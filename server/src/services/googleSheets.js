@@ -108,34 +108,35 @@ export async function createStudentNotebook(adminUserId, student) {
 
   const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
 
-  // Step 1: create the spreadsheet with three Arabic-headered sheets.
+  // Step 1: create the spreadsheet with a SINGLE Arabic-headered tab.
   // The sheikh is the only editor; the school's working language is
-  // Arabic, so headers + tab names are in Arabic and each sheet is
+  // Arabic, so headers + tab name are in Arabic and the sheet is
   // marked rightToLeft so the column order reads naturally for him.
   //
-  // Lesson Notes columns (5): التاريخ | المادة | رقم الجلسة | الملاحظات | مدفوع
-  // Payments columns (7):     التاريخ | المبلغ | العملة | المادة | الشهر | طريقة الدفع | ملاحظات
-  // Profile Notes:            single free-form column for general notes.
+  // One row per CYCLE (one subject in one month = one row). The four
+  // session columns hold free-form notes for sessions 1 through 4 in
+  // that cycle. The مدفوع checkbox is per-cycle and manually ticked
+  // by the sheikh — one tick covers the whole cycle, no per-session
+  // bookkeeping. Payments/Profile-notes tabs were dropped: a single
+  // table is the entire surface.
   //
-  // Two columns on Lesson Notes are derived by formulas applied in the
-  // batchUpdate after create:
-  //   - رقم الجلسة (Session #): counts prior-or-equal rows with the same
-  //     subject in the same calendar month. Resets to 1 on the 1st of
-  //     each month, per subject, mirroring the sheikh's monthly cycle.
-  //   - مدفوع (Paid): TRUE iff a row exists on the Payments tab with the
-  //     same subject + same month-start date. So one Payments-tab entry
-  //     auto-checks all 4 Lesson Notes rows for that cycle. The cell has
-  //     BOOLEAN data validation so the formula's TRUE/FALSE renders as
-  //     a real checkbox.
+  // Columns (7):
+  //   0 الشهر          (Month, displayed as "May 2026")
+  //   1 المادة          (Subject — dropdown: قرآن / فقه / عربي)
+  //   2 الجلسة الأولى  (Session 1 — date + free-form notes)
+  //   3 الجلسة الثانية (Session 2)
+  //   4 الجلسة الثالثة (Session 3)
+  //   5 الجلسة الرابعة (Session 4)
+  //   6 مدفوع           (Paid — manual checkbox per cycle)
   const createBody = {
     properties: { title: studentName, locale: 'ar' },
     sheets: [
       {
         properties: {
-          title: 'ملاحظات الحصص',
+          title: 'الدفتر',
           index: 0,
           rightToLeft: true,
-          gridProperties: { rowCount: 200, columnCount: 5 },
+          gridProperties: { rowCount: 100, columnCount: 7, frozenRowCount: 1 },
         },
         data: [
           {
@@ -144,51 +145,18 @@ export async function createStudentNotebook(adminUserId, student) {
             rowData: [
               {
                 values: [
-                  { userEnteredValue: { stringValue: 'التاريخ' } },
+                  { userEnteredValue: { stringValue: 'الشهر' } },
                   { userEnteredValue: { stringValue: 'المادة' } },
-                  { userEnteredValue: { stringValue: 'رقم الجلسة' } },
-                  { userEnteredValue: { stringValue: 'الملاحظات' } },
+                  { userEnteredValue: { stringValue: 'الجلسة الأولى' } },
+                  { userEnteredValue: { stringValue: 'الجلسة الثانية' } },
+                  { userEnteredValue: { stringValue: 'الجلسة الثالثة' } },
+                  { userEnteredValue: { stringValue: 'الجلسة الرابعة' } },
                   { userEnteredValue: { stringValue: 'مدفوع' } },
                 ],
               },
             ],
           },
         ],
-      },
-      {
-        properties: {
-          title: 'المدفوعات',
-          index: 1,
-          rightToLeft: true,
-          gridProperties: { rowCount: 200, columnCount: 7 },
-        },
-        data: [
-          {
-            startRow: 0,
-            startColumn: 0,
-            rowData: [
-              {
-                values: [
-                  { userEnteredValue: { stringValue: 'التاريخ' } },
-                  { userEnteredValue: { stringValue: 'المبلغ' } },
-                  { userEnteredValue: { stringValue: 'العملة' } },
-                  { userEnteredValue: { stringValue: 'المادة' } },
-                  { userEnteredValue: { stringValue: 'الشهر' } },
-                  { userEnteredValue: { stringValue: 'طريقة الدفع' } },
-                  { userEnteredValue: { stringValue: 'ملاحظات' } },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-      {
-        properties: {
-          title: 'ملاحظات إضافية',
-          index: 2,
-          rightToLeft: true,
-          gridProperties: { rowCount: 200, columnCount: 1 },
-        },
       },
     ],
   };
@@ -234,21 +202,20 @@ export async function createStudentNotebook(adminUserId, student) {
     });
   }
 
-  // Lesson Notes formatting: column widths, subject dropdown, prose
-  // wrap, paid checkbox, and the per-row Session # / Paid formulas.
-  // lessonSheetId is the first tab. Column indices, in order:
-  //   0 التاريخ | 1 المادة | 2 رقم الجلسة | 3 الملاحظات | 4 مدفوع
-  const lessonSheetId = sheetIds[0];
-  if (lessonSheetId !== undefined) {
-    // 5 columns sized for the sheikh's actual flow: tight date, narrow
-    // subject pill, narrow session number, very wide prose column for
-    // the texted-paragraph notes, narrow checkbox at the end.
-    const widths = [110, 130, 90, 600, 90];
+  // Single-tab formatting. One row per cycle (subject × month). Column
+  // indices, in order:
+  //   0 الشهر | 1 المادة | 2 الجلسة الأولى | 3 الجلسة الثانية |
+  //   4 الجلسة الثالثة | 5 الجلسة الرابعة | 6 مدفوع
+  const notebookSheetId = sheetIds[0];
+  if (notebookSheetId !== undefined) {
+    // Tight month + subject pills on the left, four equally-wide prose
+    // columns for session notes, a narrow centered checkbox at the end.
+    const widths = [120, 130, 280, 280, 280, 280, 90];
     widths.forEach((px, idx) => {
       formatRequests.push({
         updateDimensionProperties: {
           range: {
-            sheetId: lessonSheetId,
+            sheetId: notebookSheetId,
             dimension: 'COLUMNS',
             startIndex: idx,
             endIndex: idx + 1,
@@ -259,16 +226,35 @@ export async function createStudentNotebook(adminUserId, student) {
       });
     });
 
-    // Subject dropdown on column 1 (المادة), rows 1..199. Non-strict
-    // so sheikh can type a custom subject if a fourth one ever shows
-    // up (he'd just need to use the same custom text on the Payments
-    // tab too for the Paid formula to match).
+    // Month-only display format on column 0 (الشهر), rows 1..99. Sheikh
+    // can type any date in the cycle's month — the cell renders as
+    // e.g. "May 2026" so he doesn't have to think about which day.
+    formatRequests.push({
+      repeatCell: {
+        range: {
+          sheetId: notebookSheetId,
+          startRowIndex: 1,
+          endRowIndex: 100,
+          startColumnIndex: 0,
+          endColumnIndex: 1,
+        },
+        cell: {
+          userEnteredFormat: {
+            numberFormat: { type: 'DATE', pattern: 'mmmm yyyy' },
+          },
+        },
+        fields: 'userEnteredFormat.numberFormat',
+      },
+    });
+
+    // Subject dropdown on column 1 (المادة), rows 1..99. Non-strict so
+    // a future fourth subject can be typed in directly.
     formatRequests.push({
       setDataValidation: {
         range: {
-          sheetId: lessonSheetId,
+          sheetId: notebookSheetId,
           startRowIndex: 1,
-          endRowIndex: 200,
+          endRowIndex: 100,
           startColumnIndex: 1,
           endColumnIndex: 2,
         },
@@ -283,18 +269,16 @@ export async function createStudentNotebook(adminUserId, student) {
       },
     });
 
-    // Wrap + top-align on column 3 (الملاحظات) so paragraph notes
-    // expand the row height instead of overflowing into adjacent
-    // columns. Top-align keeps the date/subject on the same line as
-    // the start of the prose.
+    // Wrap + top-align on the four session columns (cols 2..5) so
+    // paragraph notes expand the row height instead of overflowing.
     formatRequests.push({
       repeatCell: {
         range: {
-          sheetId: lessonSheetId,
+          sheetId: notebookSheetId,
           startRowIndex: 1,
-          endRowIndex: 200,
-          startColumnIndex: 3,
-          endColumnIndex: 4,
+          endRowIndex: 100,
+          startColumnIndex: 2,
+          endColumnIndex: 6,
         },
         cell: {
           userEnteredFormat: {
@@ -306,17 +290,18 @@ export async function createStudentNotebook(adminUserId, student) {
       },
     });
 
-    // Checkbox validation on column 4 (مدفوع), rows 1..199. The cell
-    // value comes from a formula (set below); BOOLEAN validation
-    // makes the resulting TRUE/FALSE render as a real checkbox.
+    // Manual paid checkbox on column 6 (مدفوع), rows 1..99. BOOLEAN
+    // data validation makes the cell render as a real checkbox the
+    // sheikh can click; no formula, no auto-derive — one tick per
+    // cycle is the entire payment-tracking surface.
     formatRequests.push({
       setDataValidation: {
         range: {
-          sheetId: lessonSheetId,
+          sheetId: notebookSheetId,
           startRowIndex: 1,
-          endRowIndex: 200,
-          startColumnIndex: 4,
-          endColumnIndex: 5,
+          endRowIndex: 100,
+          startColumnIndex: 6,
+          endColumnIndex: 7,
         },
         rule: {
           condition: { type: 'BOOLEAN' },
@@ -330,150 +315,16 @@ export async function createStudentNotebook(adminUserId, student) {
     formatRequests.push({
       repeatCell: {
         range: {
-          sheetId: lessonSheetId,
+          sheetId: notebookSheetId,
           startRowIndex: 1,
-          endRowIndex: 200,
-          startColumnIndex: 4,
-          endColumnIndex: 5,
+          endRowIndex: 100,
+          startColumnIndex: 6,
+          endColumnIndex: 7,
         },
         cell: {
           userEnteredFormat: { horizontalAlignment: 'CENTER' },
         },
         fields: 'userEnteredFormat.horizontalAlignment',
-      },
-    });
-
-    // Per-row Session # formula on column 2 (رقم الجلسة), rows 1..199.
-    // Each row gets its own formula text with the row number baked in
-    // (the Sheets API doesn't auto-adjust cell refs across a single
-    // updateCells request). The formula counts every prior-or-equal
-    // row in the same calendar month with the same subject — so the
-    // first Quran session of May returns 1, the second returns 2, and
-    // a Quran session in June restarts at 1.
-    const sessionRows = [];
-    for (let r = 0; r < 199; r++) {
-      const rowNum = r + 2; // first data row is row 2
-      const formula =
-        `=IF(OR(ISBLANK(A${rowNum}),ISBLANK(B${rowNum})),"",` +
-        `COUNTIFS($A$2:A${rowNum},">="&EOMONTH(A${rowNum},-1)+1,` +
-        `$A$2:A${rowNum},"<="&EOMONTH(A${rowNum},0),` +
-        `$B$2:B${rowNum},B${rowNum}))`;
-      sessionRows.push({
-        values: [{ userEnteredValue: { formulaValue: formula } }],
-      });
-    }
-    formatRequests.push({
-      updateCells: {
-        range: {
-          sheetId: lessonSheetId,
-          startRowIndex: 1,
-          endRowIndex: 200,
-          startColumnIndex: 2,
-          endColumnIndex: 3,
-        },
-        rows: sessionRows,
-        fields: 'userEnteredValue',
-      },
-    });
-
-    // Per-row Paid formula on column 4 (مدفوع), rows 1..199. Reads
-    // the Payments tab; returns TRUE iff a payment row exists with
-    // the same subject (col D) and the same month-start date (col E,
-    // truncated to the 1st via DATE(YEAR,MONTH,1)). One Payments
-    // entry covers the whole monthly cycle, auto-checking all 4
-    // Lesson Notes rows for that subject.
-    const paidRows = [];
-    for (let r = 0; r < 199; r++) {
-      const rowNum = r + 2;
-      const formula =
-        `=IF(OR(ISBLANK(A${rowNum}),ISBLANK(B${rowNum})),FALSE,` +
-        `COUNTIFS('المدفوعات'!$D$2:$D,B${rowNum},` +
-        `'المدفوعات'!$E$2:$E,DATE(YEAR(A${rowNum}),MONTH(A${rowNum}),1))>0)`;
-      paidRows.push({
-        values: [{ userEnteredValue: { formulaValue: formula } }],
-      });
-    }
-    formatRequests.push({
-      updateCells: {
-        range: {
-          sheetId: lessonSheetId,
-          startRowIndex: 1,
-          endRowIndex: 200,
-          startColumnIndex: 4,
-          endColumnIndex: 5,
-        },
-        rows: paidRows,
-        fields: 'userEnteredValue',
-      },
-    });
-  }
-
-  // Payments tab: column widths, subject dropdown, and the month-only
-  // display format on the الشهر column (sheikh enters any date in the
-  // month, the cell renders as e.g. "May 2026").
-  // Column indices, in order:
-  //   0 التاريخ | 1 المبلغ | 2 العملة | 3 المادة | 4 الشهر |
-  //   5 طريقة الدفع | 6 ملاحظات
-  const paymentsSheetId = sheetIds[1];
-  if (paymentsSheetId !== undefined) {
-    const widths = [110, 100, 80, 130, 130, 140, 280];
-    widths.forEach((px, idx) => {
-      formatRequests.push({
-        updateDimensionProperties: {
-          range: {
-            sheetId: paymentsSheetId,
-            dimension: 'COLUMNS',
-            startIndex: idx,
-            endIndex: idx + 1,
-          },
-          properties: { pixelSize: px },
-          fields: 'pixelSize',
-        },
-      });
-    });
-
-    // Subject dropdown on column 3 (المادة), rows 1..199. Same options
-    // as the Lesson Notes dropdown so the Paid match formula compares
-    // identical strings on both sides.
-    formatRequests.push({
-      setDataValidation: {
-        range: {
-          sheetId: paymentsSheetId,
-          startRowIndex: 1,
-          endRowIndex: 200,
-          startColumnIndex: 3,
-          endColumnIndex: 4,
-        },
-        rule: {
-          condition: {
-            type: 'ONE_OF_LIST',
-            values: SUBJECTS.map((s) => ({ userEnteredValue: s })),
-          },
-          showCustomUi: true,
-          strict: false,
-        },
-      },
-    });
-
-    // Month-only display format on column 4 (الشهر), rows 1..199.
-    // The underlying cell stores a real date so the Lesson Notes Paid
-    // formula can match via DATE(YEAR,MONTH,1). The pattern hides the
-    // day component — sheikh sees "May 2026" but enters any May date.
-    formatRequests.push({
-      repeatCell: {
-        range: {
-          sheetId: paymentsSheetId,
-          startRowIndex: 1,
-          endRowIndex: 200,
-          startColumnIndex: 4,
-          endColumnIndex: 5,
-        },
-        cell: {
-          userEnteredFormat: {
-            numberFormat: { type: 'DATE', pattern: 'mmmm yyyy' },
-          },
-        },
-        fields: 'userEnteredFormat.numberFormat',
       },
     });
   }
