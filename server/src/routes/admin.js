@@ -1067,19 +1067,23 @@ router.post('/classes/:id/cancel-series', async (req, res, next) => {
     const adminId = anchor.createdByAdminId;
 
     // Best-effort cancel on Google for every event in the series.
-    // Run sequentially-ish to stay polite to Google's rate limits.
+    // Parallel via Promise.allSettled — sequential made cancel-series
+    // feel like the dashboard hung for 3-6 sec on a 12-week series
+    // while one DELETE per event went out. Google's per-user rate
+    // limit (~250 req/s) is far above any series we'd cancel at once.
     if (adminId && googleEventIds.length > 0) {
       const { cancelEvent } = await import('../services/googleCalendar.js');
-      for (const eventId of googleEventIds) {
-        try {
-          await cancelEvent(adminId, eventId);
-        } catch (err) {
+      const settled = await Promise.allSettled(
+        googleEventIds.map((eventId) => cancelEvent(adminId, eventId))
+      );
+      settled.forEach((result, idx) => {
+        if (result.status === 'rejected') {
           logger.warn('GCal cancel-on-series-delete failed (continuing)', {
-            eventId,
-            error: err.message,
+            eventId: googleEventIds[idx],
+            error: result.reason?.message || String(result.reason),
           });
         }
-      }
+      });
     }
 
     // Hard delete the whole series in one statement. Cascade FKs clean

@@ -2086,8 +2086,15 @@ async function handleSuspend(id) {
 }
 
 // Cancel this class + every future occurrence sharing the same seriesId.
-// This is too destructive to silently undo, so it keeps a confirm dialog.
+// Too destructive for an undo toast, so it keeps a confirm dialog.
+// Returns true when the cancellation actually fired (so the caller
+// knows to close the drawer); false on cancel-at-dialog or failure
+// (so the drawer stays open for a retry).
 async function cancelSeriesFromHere(cls) {
+  if (!cls.seriesId) {
+    showToast(t('admin.actionFailed.cancelClass') + ': ' + t('admin.cancelSeriesNotSeries'));
+    return false;
+  }
   const futureCount = classes.value.filter(
     (c) =>
       c.seriesId === cls.seriesId &&
@@ -2097,19 +2104,21 @@ async function cancelSeriesFromHere(cls) {
 
   const ok = await confirmDialog({
     title: t('admin.cancelSeriesTitle'),
-    message: t('admin.cancelSeriesConfirm').replace('{count}', futureCount),
+    message: t('admin.cancelSeriesConfirm', { count: futureCount }),
     confirmLabel: t('admin.cancelSeries'),
     cancelLabel: t('admin.cancel'),
     danger: true,
   });
-  if (!ok) return;
+  if (!ok) return false;
 
   try {
     const data = await api.post(`/api/admin/classes/${cls.id}/cancel-series`);
-    showToast(t('admin.cancelSeriesDone').replace('{count}', data.count));
+    showToast(t('admin.cancelSeriesDone', { count: data.count }));
     loadClasses();
+    return true;
   } catch (e) {
     showToast(e, 'cancelClass');
+    return false;
   }
 }
 
@@ -2536,9 +2545,18 @@ function onDrawerCancel(id) {
   cancelClass(id);
   selectedClass.value = null;
 }
-function onDrawerCancelSeries(cls) {
-  cancelSeriesFromHere(cls);
-  selectedClass.value = null;
+async function onDrawerCancelSeries(cls) {
+  // AWAIT the cancel flow before closing the drawer. cancelSeriesFromHere
+  // is async (confirmDialog + API call). Closing the drawer before the
+  // confirm dialog appeared made the click feel like nothing happened
+  // for several seconds — the dialog showed up over a different surface.
+  // Now: drawer stays open during the dialog. If user cancels at the
+  // dialog, drawer stays open. If they confirm + API succeeds, drawer
+  // closes and loadClasses refreshes the dashboard.
+  const handled = await cancelSeriesFromHere(cls);
+  if (handled) {
+    selectedClass.value = null;
+  }
 }
 function onDrawerViewStudent(studentId) {
   // Pivot to the student detail modal so the user can edit lesson

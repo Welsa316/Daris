@@ -100,12 +100,27 @@ export async function createStudentNotebook(adminUserId, student) {
 
   const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
 
-  // Step 1: create the spreadsheet with three sheets and header rows.
+  // Step 1: create the spreadsheet with three Arabic-headered sheets.
+  // The sheikh is the only editor; the school's working language is
+  // Arabic, so headers + tab names are in Arabic and each sheet is
+  // marked rightToLeft so the column order reads naturally for him.
+  //
+  // Lesson Notes columns (4): التاريخ | الموضوع | الجلسة القادمة | مدفوع
+  // Payments columns (6):     التاريخ | المبلغ | العملة | الفترة | طريقة الدفع | ملاحظات
+  // Profile Notes:            single free-form column for general notes.
+  //
+  // The 'Paid?' column on Lesson Notes is a real Sheets checkbox
+  // (data-validation rule set up in the batchUpdate after create).
   const createBody = {
-    properties: { title: studentName },
+    properties: { title: studentName, locale: 'ar' },
     sheets: [
       {
-        properties: { title: 'Lesson Notes', index: 0, gridProperties: { rowCount: 200, columnCount: 7 } },
+        properties: {
+          title: 'ملاحظات الحصص',
+          index: 0,
+          rightToLeft: true,
+          gridProperties: { rowCount: 200, columnCount: 4 },
+        },
         data: [
           {
             startRow: 0,
@@ -113,12 +128,10 @@ export async function createStudentNotebook(adminUserId, student) {
             rowData: [
               {
                 values: [
-                  { userEnteredValue: { stringValue: 'Date' } },
-                  { userEnteredValue: { stringValue: 'Class' } },
-                  { userEnteredValue: { stringValue: 'What was covered' } },
-                  { userEnteredValue: { stringValue: 'Homework' } },
-                  { userEnteredValue: { stringValue: 'Next session' } },
-                  { userEnteredValue: { stringValue: 'Private notes' } },
+                  { userEnteredValue: { stringValue: 'التاريخ' } },
+                  { userEnteredValue: { stringValue: 'الموضوع' } },
+                  { userEnteredValue: { stringValue: 'الجلسة القادمة' } },
+                  { userEnteredValue: { stringValue: 'مدفوع' } },
                 ],
               },
             ],
@@ -126,7 +139,12 @@ export async function createStudentNotebook(adminUserId, student) {
         ],
       },
       {
-        properties: { title: 'Payments', index: 1, gridProperties: { rowCount: 200, columnCount: 6 } },
+        properties: {
+          title: 'المدفوعات',
+          index: 1,
+          rightToLeft: true,
+          gridProperties: { rowCount: 200, columnCount: 6 },
+        },
         data: [
           {
             startRow: 0,
@@ -134,12 +152,12 @@ export async function createStudentNotebook(adminUserId, student) {
             rowData: [
               {
                 values: [
-                  { userEnteredValue: { stringValue: 'Date' } },
-                  { userEnteredValue: { stringValue: 'Amount' } },
-                  { userEnteredValue: { stringValue: 'Currency' } },
-                  { userEnteredValue: { stringValue: 'Period' } },
-                  { userEnteredValue: { stringValue: 'Method' } },
-                  { userEnteredValue: { stringValue: 'Notes' } },
+                  { userEnteredValue: { stringValue: 'التاريخ' } },
+                  { userEnteredValue: { stringValue: 'المبلغ' } },
+                  { userEnteredValue: { stringValue: 'العملة' } },
+                  { userEnteredValue: { stringValue: 'الفترة' } },
+                  { userEnteredValue: { stringValue: 'طريقة الدفع' } },
+                  { userEnteredValue: { stringValue: 'ملاحظات' } },
                 ],
               },
             ],
@@ -147,7 +165,12 @@ export async function createStudentNotebook(adminUserId, student) {
         ],
       },
       {
-        properties: { title: 'Profile Notes', index: 2, gridProperties: { rowCount: 200, columnCount: 1 } },
+        properties: {
+          title: 'ملاحظات إضافية',
+          index: 2,
+          rightToLeft: true,
+          gridProperties: { rowCount: 200, columnCount: 1 },
+        },
       },
     ],
   };
@@ -193,16 +216,76 @@ export async function createStudentNotebook(adminUserId, student) {
     });
   }
 
-  // Reasonable column widths on the lesson notes sheet (the busiest).
-  // Sheets default is 100px which crops "What was covered" badly.
+  // Column widths + a Sheets-native checkbox in the "مدفوع" column on
+  // the lesson notes sheet. lessonSheetId is the first tab; column
+  // index 3 is "مدفوع". setDataValidation with a BOOLEAN condition
+  // makes the cells render as actual checkboxes (Insert > Checkbox
+  // equivalent). showCustomUi:true paints the checkbox UI.
   const lessonSheetId = sheetIds[0];
   if (lessonSheetId !== undefined) {
-    const widths = [110, 200, 320, 240, 240, 240]; // 6 columns
+    // 4 columns: التاريخ (date), الموضوع (topic — widest), الجلسة القادمة, مدفوع (checkbox)
+    const widths = [120, 360, 260, 90];
     widths.forEach((px, idx) => {
       formatRequests.push({
         updateDimensionProperties: {
           range: {
             sheetId: lessonSheetId,
+            dimension: 'COLUMNS',
+            startIndex: idx,
+            endIndex: idx + 1,
+          },
+          properties: { pixelSize: px },
+          fields: 'pixelSize',
+        },
+      });
+    });
+    // Checkbox validation on column 3 (مدفوع), rows 1..199 (header
+    // stays at row 0 untouched).
+    formatRequests.push({
+      setDataValidation: {
+        range: {
+          sheetId: lessonSheetId,
+          startRowIndex: 1,
+          endRowIndex: 200,
+          startColumnIndex: 3,
+          endColumnIndex: 4,
+        },
+        rule: {
+          condition: { type: 'BOOLEAN' },
+          showCustomUi: true,
+          strict: false,
+        },
+      },
+    });
+    // Center the checkbox column for tidiness.
+    formatRequests.push({
+      repeatCell: {
+        range: {
+          sheetId: lessonSheetId,
+          startRowIndex: 1,
+          endRowIndex: 200,
+          startColumnIndex: 3,
+          endColumnIndex: 4,
+        },
+        cell: {
+          userEnteredFormat: { horizontalAlignment: 'CENTER' },
+        },
+        fields: 'userEnteredFormat.horizontalAlignment',
+      },
+    });
+  }
+
+  // Payments tab gets reasonable column widths too. Money columns
+  // narrower than free-form notes.
+  const paymentsSheetId = sheetIds[1];
+  if (paymentsSheetId !== undefined) {
+    // 6 columns: التاريخ | المبلغ | العملة | الفترة | طريقة الدفع | ملاحظات
+    const widths = [120, 110, 90, 140, 160, 280];
+    widths.forEach((px, idx) => {
+      formatRequests.push({
+        updateDimensionProperties: {
+          range: {
+            sheetId: paymentsSheetId,
             dimension: 'COLUMNS',
             startIndex: idx,
             endIndex: idx + 1,

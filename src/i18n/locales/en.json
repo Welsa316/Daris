@@ -584,6 +584,7 @@
     "cancelSeriesTitle": "Cancel this and all following?",
     "cancelSeriesConfirm": "This will delete {count} classes in this series from this date forward and remove them from your Google Calendar. Students are not auto-notified — let them know directly. This cannot be undone.",
     "cancelSeriesDone": "{count} classes cancelled",
+    "cancelSeriesNotSeries": "This class isn't part of a series",
     "balance": {
       "header": "Balance",
       "paid": "Paid this month",
