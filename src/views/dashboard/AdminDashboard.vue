@@ -80,11 +80,35 @@
                 ({{ cls.timezone }})
               </p>
               <p class="text-xs mt-1" :class="classTimeLabel(cls).color">{{ classTimeLabel(cls).text }}</p>
+              <!-- Per-class Meet link visible to staff at all times (even
+                   outside the 15-min join window) so the sheikh can grab
+                   it ahead of class to share via WhatsApp / verify the
+                   room. The 15-min gated Join button stays the primary
+                   CTA when the class is actually joinable. -->
+              <div v-if="cls.meetingLink && !isJoinable(cls)" class="mt-2 flex items-center gap-2">
+                <a
+                  :href="cls.meetingLink"
+                  target="_blank"
+                  rel="noopener"
+                  class="text-xs text-primary hover:text-primary-800 underline truncate max-w-[16rem]"
+                  :title="cls.meetingLink"
+                >
+                  {{ $t('admin.openMeetLink') }}
+                </a>
+                <button
+                  type="button"
+                  @click="copyMeetLink(cls.meetingLink)"
+                  class="text-xs text-slate-500 hover:text-slate-700"
+                  :aria-label="$t('admin.copyMeetLink')"
+                >
+                  {{ $t('admin.copyMeetLink') }}
+                </button>
+              </div>
             </div>
             <template v-if="cls.meetingLink || globalMeetingLink">
               <button v-if="isJoinable(cls)"
                 @click="joinClass(cls)"
-                class="w-full sm:w-auto bg-green-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-green-700 transition-colors sm:shrink-0 flex items-center justify-center gap-2">
+                class="w-full sm:w-auto bg-green-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-green-700 motion-safe:transition-colors sm:shrink-0 flex items-center justify-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                 {{ $t('admin.joinClass') }}
               </button>
@@ -2110,6 +2134,31 @@ async function joinClass(cls) {
     }
   } catch (e) {
     showToast(e, 'joinClass');
+  }
+}
+
+// Copy a per-class Meet link to clipboard so the sheikh can share via
+// WhatsApp / Telegram without going through the 15-min join gate.
+// Uses the modern Clipboard API; falls back to a temporary input
+// element for older Safari + non-HTTPS contexts.
+async function copyMeetLink(link) {
+  if (!link) return;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(link);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = link;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    showToast(t('admin.meetLinkCopied'));
+  } catch {
+    showToast(t('admin.meetLinkCopyFailed'));
   }
 }
 

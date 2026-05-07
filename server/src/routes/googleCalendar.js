@@ -24,6 +24,7 @@ import {
   isGoogleCalendarConfigured,
 } from '../services/googleCalendar.js';
 import { verifyAccessToken } from '../services/tokenService.js';
+import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 
 const router = Router();
@@ -42,7 +43,54 @@ router.get(
   async (req, res, next) => {
     try {
       const status = await getStatus(req.user.id);
+      // Count of dead sync ops (attemptCount >= MAX_ATTEMPTS, unresolved)
+      // for this admin's classes. Surfaced in the dashboard's connection
+      // card so the sheikh can see when classes are stuck rather than
+      // silently broken. Only counts ops attached to the user's own
+      // classes — other admins' problems aren't this user's banner.
+      if (status.status === 'active') {
+        const stuckOps = await prisma.googleCalendarSyncOp.count({
+          where: {
+            resolved: false,
+            attemptCount: { gte: 5 },
+            classSession: { createdByAdminId: req.user.id },
+          },
+        });
+        status.stuckSyncCount = stuckOps;
+      } else {
+        status.stuckSyncCount = 0;
+      }
       res.json(status);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Reset all dead sync ops for this admin so the next tick retries them.
+// The convergent sweep does this automatically every 5 minutes, but a
+// manual "Retry now" button on the dashboard banner gives the sheikh
+// an immediate-feedback option when they spot something stuck.
+router.post(
+  '/retry-failed',
+  authenticate,
+  verifyTokenVersion,
+  requireAdmin,
+  async (req, res, next) => {
+    try {
+      const result = await prisma.googleCalendarSyncOp.updateMany({
+        where: {
+          resolved: false,
+          attemptCount: { gte: 5 },
+          classSession: { createdByAdminId: req.user.id },
+        },
+        data: {
+          attemptCount: 0,
+          nextAttemptAt: new Date(),
+          errorMessage: null,
+        },
+      });
+      res.json({ revived: result.count });
     } catch (error) {
       next(error);
     }

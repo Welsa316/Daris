@@ -77,6 +77,22 @@ async function sendWindow({ label, offsetMin, sentField, sendToAdmin }) {
     },
   });
 
+  // Fall back to the global meeting link for classes that don't have a
+  // per-class one set yet (e.g., the GCal sync hasn't fired or it's a
+  // legacy row). Looked up once per tick — every email goes out with a
+  // working link instead of the "link will be sent" placeholder.
+  const needsFallback = classes.some((c) => !c.meetingLink);
+  let globalLink = null;
+  if (needsFallback) {
+    const setting = await prisma.siteSetting.findUnique({
+      where: { key: 'meetingLink' },
+    });
+    globalLink = setting?.value || null;
+  }
+  for (const cls of classes) {
+    if (!cls.meetingLink && globalLink) cls.meetingLink = globalLink;
+  }
+
   // Run each class in parallel up to EMAIL_CONCURRENCY. Within a class, we
   // still parallelize the per-student sends with Promise.all.
   await parallel(classes, EMAIL_CONCURRENCY, async (cls) => {

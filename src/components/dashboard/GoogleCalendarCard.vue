@@ -89,6 +89,29 @@
           <dd class="text-slate-600 tabular-nums">{{ formatDateTime(data.lastSyncedAt) }}</dd>
         </div>
       </dl>
+
+      <!-- Stuck-sync banner. Shows when one or more class events failed
+           to sync after 5 retry attempts. The convergent sweep auto-
+           resurrects them every 5 minutes, but this surfaces the count
+           so the sheikh isn't blind to silent failures. The Retry button
+           resets all dead ops for this admin and kicks the sync tick. -->
+      <div
+        v-if="data.stuckSyncCount > 0"
+        class="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200"
+      >
+        <p class="text-sm text-amber-800 mb-2">
+          {{ $t('admin.gcal.stuckSyncHint', { count: data.stuckSyncCount }) }}
+        </p>
+        <button
+          type="button"
+          @click="handleRetryFailed"
+          :disabled="busy"
+          class="bg-amber-600 text-white px-4 py-2 rounded-full text-xs font-medium hover:bg-amber-700 motion-safe:transition-colors disabled:opacity-50"
+        >
+          {{ busy ? $t('admin.saving') : $t('admin.gcal.retryFailedCta') }}
+        </button>
+      </div>
+
       <div class="mt-4 flex flex-wrap gap-2">
         <button
           type="button"
@@ -228,6 +251,22 @@ async function handleConnect() {
     busy.value = false;
   }
   // Don't reset busy on success — the navigation is in flight.
+}
+
+async function handleRetryFailed() {
+  busy.value = true;
+  try {
+    const res = await api.post('/api/admin/google-calendar/retry-failed');
+    const revived = res?.revived ?? 0;
+    emit('toast', t('admin.gcal.retryFailedToast', { count: revived }));
+    // Status refresh after a beat so the count updates as the sync
+    // job processes the resurrected ops.
+    setTimeout(() => loadStatus(), 1500);
+  } catch (err) {
+    emit('toast', err, 'gcalRetryFailed');
+  } finally {
+    busy.value = false;
+  }
 }
 
 async function handleDisconnect() {
