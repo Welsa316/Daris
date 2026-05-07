@@ -119,6 +119,33 @@
           <p class="text-slate-400 text-sm">{{ $t('dashboard.noUpcoming') }}</p>
         </div>
 
+        <!-- Notebook (view-only). The sheikh keeps lesson notes and
+             paid-cycle status in a Google Sheet; the URL is shared
+             read-only so the student can review without editing. -->
+        <a
+          v-if="dashboard?.notebookSheetUrl"
+          :href="dashboard.notebookSheetUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block bg-white rounded-2xl shadow-card p-5 mb-6 hover:bg-cream-50 motion-safe:transition-colors group"
+        >
+          <div class="flex items-center gap-4">
+            <span class="text-2xl shrink-0" aria-hidden="true">📓</span>
+            <div class="min-w-0 flex-1">
+              <h3 class="text-sm font-semibold text-primary text-balance">
+                {{ $t('dashboard.notebookTitle') }}
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5 text-pretty">
+                {{ $t('dashboard.notebookHint') }}
+              </p>
+            </div>
+            <span
+              class="text-primary shrink-0 ms-auto motion-safe:transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5"
+              aria-hidden="true"
+            >→</span>
+          </div>
+        </a>
+
         <!-- Past classes. collapsed, opt-in -->
         <details v-if="dashboard?.pastClasses?.length" class="bg-white rounded-2xl shadow-card p-6 mb-6">
           <summary class="cursor-pointer list-none flex items-center justify-between">

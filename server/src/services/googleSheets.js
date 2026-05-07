@@ -368,6 +368,33 @@ export async function createStudentNotebook(adminUserId, student) {
     });
   }
 
+  // Step 3: grant anyone-with-link Viewer access so the student can
+  // open their own notebook from the student dashboard. The URL is
+  // surfaced only to the student themselves (gated by Daris auth on
+  // /api/student/dashboard), so anyone-with-link is effectively
+  // "anyone the student chooses to share it with". Sheikh remains
+  // owner; assigned teachers get edit access via the folder share
+  // the sheikh sets up once. Non-fatal: if this fails, sheikh can
+  // share manually.
+  const shareRes = await fetch(
+    `${DRIVE_API}/files/${spreadsheetId}/permissions?fields=id`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ role: 'reader', type: 'anyone' }),
+    }
+  );
+  if (!shareRes.ok) {
+    const body = await shareRes.text().catch(() => '');
+    logger.warn('Sheet anyone-link share failed (continuing)', {
+      spreadsheetId,
+      error: body.slice(0, 200),
+    });
+  }
+
   auditLog('NOTEBOOK_CREATED', {
     studentId: student.id,
     adminId: adminUserId,

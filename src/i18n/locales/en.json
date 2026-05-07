@@ -399,7 +399,9 @@
     "showLess": "Show less",
     "classHistory": "Class history",
     "noPast": "No past classes yet.",
-    "profile": "Profile"
+    "profile": "Profile",
+    "notebookTitle": "Your notebook",
+    "notebookHint": "Lesson notes and payment cycles, kept by your teacher. View only."
   },
   "admin": {
     "title": "Admin Dashboard",

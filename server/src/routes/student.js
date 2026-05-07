@@ -94,6 +94,11 @@ router.get('/dashboard', requireEnrolled, async (req, res, next) => {
         firstName: true,
         lastName: true,
         enrolledAt: true,
+        // Notebook URL surfaced as a view-only link on the student
+        // dashboard. The sheet itself is shared with anyone-with-link
+        // as Reader at create time, so the student opens it and sees
+        // a read-only Google Sheets view.
+        notebookSheetUrl: true,
       },
     });
 
@@ -234,6 +239,7 @@ router.get('/dashboard', requireEnrolled, async (req, res, next) => {
         enrolledAt: user.enrolledAt,
         status: 'Active',
       },
+      notebookSheetUrl: user.notebookSheetUrl || null,
       teachers: teachers.map((t) => ({
         id: t.id,
         firstName: t.firstName,
