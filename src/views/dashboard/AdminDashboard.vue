@@ -228,7 +228,22 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="s in students" :key="s.id" class="border-b border-slate-50 hover:bg-slate-50/50">
+              <!-- Whole row is clickable. The chevron at the end of
+                   the row replaces the old text-button "View" — the
+                   button was small enough to miss; now anywhere on
+                   the row works. tabindex + role + keydown wire up
+                   keyboard accessibility (Enter / Space). -->
+              <tr
+                v-for="s in students"
+                :key="s.id"
+                role="button"
+                tabindex="0"
+                @click="viewStudent(s.id)"
+                @keydown.enter="viewStudent(s.id)"
+                @keydown.space.prevent="viewStudent(s.id)"
+                class="border-b border-slate-50 cursor-pointer hover:bg-cream-50/60 motion-safe:transition-colors focus:outline-none focus:bg-cream-100/60"
+                :aria-label="$t('admin.view') + ': ' + s.firstName + ' ' + s.lastName"
+              >
                 <td class="py-3 px-2 truncate max-w-[12rem]">
                   <span class="inline-flex items-center gap-1.5">
                     <span>{{ s.firstName }} {{ s.lastName }}</span>
@@ -249,8 +264,8 @@
                   <BalancePill :student="s" />
                 </td>
                 <td class="py-3 px-2 text-slate-400 text-xs">{{ s.enrolledAt ? new Date(s.enrolledAt).toLocaleDateString() : '-' }}</td>
-                <td class="py-3 px-2">
-                  <button @click="viewStudent(s.id)" class="text-primary hover:text-primary-800 text-xs font-medium">{{ $t('admin.view') }}</button>
+                <td class="py-3 px-2 text-slate-300 text-end">
+                  <span aria-hidden="true">›</span>
                 </td>
               </tr>
             </tbody>
