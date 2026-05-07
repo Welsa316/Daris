@@ -111,6 +111,10 @@ const messages = {
     en: 'Enrollment request rejected.',
     ar: 'تم رفض طلب التسجيل.',
   },
+  'enrollment.forceVerified': {
+    en: 'Marked as verified. They can now be approved or rejected.',
+    ar: 'تم تأكيد الحساب يدوياً. يمكن الآن قبول الطلب أو رفضه.',
+  },
 
   // Student
   'student.notFound': {

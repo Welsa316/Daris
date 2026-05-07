@@ -4,7 +4,7 @@ import { authenticate, verifyTokenVersion } from '../middleware/auth.js';
 import { requireAdmin, requireAdminOrTeacher } from '../middleware/rbac.js';
 import { validate } from '../middleware/validate.js';
 import { enrollmentDecisionSchema, adminNoteSchema, classSessionSchema, classSessionUpdateSchema, rescheduleClassSchema, rescheduleSeriesSchema, announcementSchema, paginationSchema, messageStudentSchema, availabilitySlotsSchema, availabilityOverrideSchema, batchClassSchema, meetingLinkSchema, checkConflictsSchema, classLogSchema, paymentSchema, paymentUpdateSchema, studentProfileSchema, studentTeachersSchema } from '../validators/adminSchemas.js';
-import { getPendingEnrollments, approveEnrollment, rejectEnrollment, getRejectedApplicants, suspendStudent, removeStudent } from '../services/enrollmentService.js';
+import { getPendingEnrollments, approveEnrollment, rejectEnrollment, getRejectedApplicants, suspendStudent, removeStudent, getUnverifiedRegistrations, forceVerifyEnrollment } from '../services/enrollmentService.js';
 import { prisma } from '../config/database.js';
 // Cancel + reschedule emails are intentionally NOT imported here.
 // The sheikh's product call: students should only receive ONE auto
@@ -106,6 +106,36 @@ router.get('/enrollments/pending', requireAdmin, validate(paginationSchema, 'que
   try {
     const result = await getPendingEnrollments(req.query);
     res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Registrations stuck at role='pending' — they signed up but never
+// clicked the verification link. Surfaced as a small section on the
+// Pending Enrollments tab so the sheikh has a clear path to either
+// nudge the student or force-verify them.
+router.get('/enrollments/unverified', requireAdmin, validate(paginationSchema, 'query'), async (req, res, next) => {
+  try {
+    const result = await getUnverifiedRegistrations(req.query);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Force a 'pending' user into 'pending_review', skipping the email-
+// verification step. The sheikh confirms the student is real (knows
+// them out-of-band, sees their registration message) and unblocks
+// them so they can be approved through the normal flow.
+router.post('/enrollments/:id/force-verify', requireAdmin, async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    const result = await forceVerifyEnrollment(req.params.id, req.user.id);
+    if (result.error) {
+      return res.status(404).json({ error: t(result.error, lang) });
+    }
+    res.json({ message: t('enrollment.forceVerified', lang) });
   } catch (error) {
     next(error);
   }

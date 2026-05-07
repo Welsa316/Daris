@@ -169,6 +169,60 @@
         </button>
       </div>
 
+      <!-- Unverified registrations. Users who registered but never
+           clicked the verification email. They DON'T appear in the
+           pending-review list (because role='pending' not
+           'pending_review'), so without this section the sheikh has
+           no way to know they exist. Sheikh can force-verify when
+           they confirm the student is real out-of-band (e.g. they
+           texted "I just signed up"). -->
+      <div
+        v-if="activeTab === 'enrollments' && isAdmin && unverifiedEnrollments.length"
+        class="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-6"
+      >
+        <div class="flex items-start gap-3 mb-4">
+          <span class="text-xl shrink-0" aria-hidden="true">⚠️</span>
+          <div class="min-w-0 flex-1">
+            <h2 class="text-base font-bold text-amber-900 text-balance">
+              {{ $t('admin.unverifiedRegistrations') }}
+              <span class="text-amber-700 font-semibold tabular-nums ms-1">({{ unverifiedEnrollments.length }})</span>
+            </h2>
+            <p class="text-xs text-amber-800 mt-1 text-pretty">
+              {{ $t('admin.unverifiedHint') }}
+            </p>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <div
+            v-for="req in unverifiedEnrollments"
+            :key="req.id"
+            class="bg-white border border-amber-200/60 rounded-xl p-4"
+          >
+            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <h3 class="font-semibold text-primary">{{ req.firstName }} {{ req.lastName }}</h3>
+                <p class="text-sm text-slate-500 break-all">{{ req.email }}</p>
+                <p class="text-xs text-slate-400 mt-1 tabular-nums">
+                  {{ req.country }} · {{ new Date(req.createdAt).toLocaleDateString() }}
+                </p>
+                <p
+                  v-if="req.enrollmentMessage"
+                  class="text-sm text-slate-600 mt-2 bg-slate-50 p-3 rounded-lg text-pretty"
+                >
+                  {{ req.enrollmentMessage }}
+                </p>
+              </div>
+              <button
+                @click="handleForceVerify(req.id)"
+                class="bg-amber-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-amber-700 motion-safe:transition-colors shrink-0"
+              >
+                {{ $t('admin.forceVerify') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Pending Enrollments. Sheikh-only: teachers don't review or
            approve enrollments, that's strictly site-owner territory. -->
       <div v-if="activeTab === 'enrollments' && isAdmin" class="bg-white rounded-2xl shadow-card p-6">
@@ -1373,6 +1427,7 @@ const activeTab = ref('enrollments');
 const stats = ref(null);
 const statsError = ref(false);
 const enrollments = ref([]);
+const unverifiedEnrollments = ref([]);
 const students = ref([]);
 const classes = ref([]);
 const studentSearch = ref('');
@@ -1958,6 +2013,35 @@ async function loadEnrollments() {
     const data = await api.get('/api/admin/enrollments/pending');
     enrollments.value = data.requests;
   } catch (e) { showToast(e, 'loadEnrollments'); }
+}
+
+// Registrations stuck at role='pending' (haven't clicked the
+// verification email). Loaded alongside the regular pending list so
+// the sheikh can see signups that haven't completed verification.
+async function loadUnverified() {
+  try {
+    const data = await api.get('/api/admin/enrollments/unverified');
+    unverifiedEnrollments.value = data.requests;
+  } catch (e) { showToast(e, 'loadUnverified'); }
+}
+
+async function handleForceVerify(id) {
+  const ok = await confirmDialog({
+    title: t('admin.forceVerifyConfirmTitle'),
+    message: t('admin.forceVerifyConfirmMessage'),
+    confirmLabel: t('admin.forceVerify'),
+    cancelLabel: t('admin.cancel'),
+    danger: false,
+  });
+  if (!ok) return;
+  try {
+    await api.post(`/api/admin/enrollments/${id}/force-verify`);
+    // Drop from the unverified list and reload the pending list so
+    // the row shows up in the approval queue.
+    unverifiedEnrollments.value = unverifiedEnrollments.value.filter((u) => u.id !== id);
+    await loadEnrollments();
+    showToast(t('admin.forceVerifyDone'));
+  } catch (e) { showToast(e, 'forceVerify'); }
 }
 
 async function loadStudents() {
@@ -2896,7 +2980,10 @@ watch(activeTab, (tab) => {
   // Per-tab refresh: re-fetch the relevant slice on each switch so the
   // dashboard reflects changes the user made elsewhere (or another tab
   // / device made). Sheikh-only loaders are gated to avoid 403 chatter.
-  if (tab === 'enrollments' && isAdmin.value) loadEnrollments();
+  if (tab === 'enrollments' && isAdmin.value) {
+    loadEnrollments();
+    loadUnverified();
+  }
   if (tab === 'students') loadStudents();
   if (tab === 'scheduling') {
     loadClasses();
@@ -2991,7 +3078,10 @@ onMounted(() => {
   loadStats();
   // Pending enrollments are sheikh-only; teachers don't have permission
   // for the endpoint and we don't render the tab for them either.
-  if (isAdmin.value) loadEnrollments();
+  if (isAdmin.value) {
+    loadEnrollments();
+    loadUnverified();
+  }
   loadClasses();
   // Preload the (scoped) student list so MyClassesTab's empty state
   // can distinguish "no students assigned yet" from "no classes booked

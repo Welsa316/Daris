@@ -4,6 +4,63 @@ import { sendEnrollmentApprovedEmail, sendEnrollmentRejectedEmail } from './emai
 import { auditLog } from '../utils/logger.js';
 
 /**
+ * Get registrations stuck at role='pending' — the user signed up but
+ * hasn't clicked the verification link yet. They DON'T appear in the
+ * normal pending-enrollments list (which only shows verified-but-
+ * unapproved 'pending_review'), so the sheikh has no built-in surface
+ * to nudge or override them. This function powers the small
+ * "Unverified registrations" section above the regular pending list.
+ */
+export async function getUnverifiedRegistrations({ page = 1, limit = 20 }) {
+  const skip = (page - 1) * limit;
+  const [requests, total] = await Promise.all([
+    prisma.user.findMany({
+      where: { role: 'pending', deletedAt: null },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        country: true,
+        phone: true,
+        whatsapp: true,
+        telegram: true,
+        enrollmentMessage: true,
+        createdAt: true,
+        emailVerified: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.user.count({ where: { role: 'pending', deletedAt: null } }),
+  ]);
+  return { requests, total, page, totalPages: Math.ceil(total / limit) };
+}
+
+/**
+ * Force a 'pending' (unverified) user into 'pending_review' so the
+ * sheikh can approve or reject them via the normal flow. Skips the
+ * email verification step entirely. Used when the student is real
+ * (sheikh knows them) but the verification email got lost / never
+ * clicked / etc. Logs the override in the audit trail.
+ */
+export async function forceVerifyEnrollment(studentId, adminId) {
+  const student = await prisma.user.findFirst({
+    where: { id: studentId, role: 'pending', deletedAt: null },
+  });
+  if (!student) {
+    return { error: 'student.notFound' };
+  }
+  await prisma.user.update({
+    where: { id: studentId },
+    data: { role: 'pending_review', emailVerified: true },
+  });
+  auditLog('ENROLLMENT_FORCE_VERIFIED', { studentId, adminId });
+  return { success: true };
+}
+
+/**
  * Get all pending enrollment requests
  */
 export async function getPendingEnrollments({ page = 1, limit = 20 }) {
