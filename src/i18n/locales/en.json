@@ -540,6 +540,7 @@
     "subject_quran": "Quran",
     "subject_fiqh": "Fiqh",
     "subject_arabic": "Arabic",
+    "subject_tarbiya": "Tarbiya",
     "splitSubject": {
       "label": "Teach two subjects back-to-back",
       "hint": "One sitting that switches subjects partway through. Single calendar event, single Meet link.",

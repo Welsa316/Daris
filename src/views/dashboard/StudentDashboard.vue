@@ -181,13 +181,17 @@ const laterClasses = computed(() => {
   return list.filter((c) => c.id !== nextClass.value?.id && !c.cancelled);
 });
 
-// First names of the student's teachers, joined for the header line.
-// One teacher: "Walid". Two: "Walid + Bob". Three+: "Walid, Bob + 1 more"
-// to keep the header from wrapping awkwardly.
+// Full names of the student's teachers, joined for the header line.
+// One teacher: "Sheikh Islam". Two: "Sheikh Islam + Bob Smith".
+// Three+: "Sheikh Islam, Bob Smith + 1 more" to keep the header from
+// wrapping. lastName is included so the sheikh shows up as the actual
+// honorific-first-name pairing he's known by, not a bare "Sheikh".
 const teacherNames = computed(() => {
   const list = dashboard.value?.teachers || [];
   if (list.length === 0) return '';
-  const names = list.map((t) => t.firstName).filter(Boolean);
+  const names = list
+    .map((t) => `${t.firstName || ''} ${t.lastName || ''}`.trim())
+    .filter(Boolean);
   if (names.length === 1) return names[0];
   if (names.length === 2) return `${names[0]} + ${names[1]}`;
   return `${names.slice(0, 2).join(', ')} + ${names.length - 2}`;

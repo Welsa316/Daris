@@ -1516,9 +1516,10 @@ async function loadTeachersList() {
 // these from a single source of truth means the dropdown, the calendar
 // block, and the legend never fall out of sync.
 const SUBJECTS = [
-  { key: 'quran',  bg: 'bg-amber-50',  text: 'text-amber-800', dot: 'bg-amber-500' },
-  { key: 'fiqh',   bg: 'bg-primary/10', text: 'text-primary',  dot: 'bg-primary' },
-  { key: 'arabic', bg: 'bg-blue-50',   text: 'text-blue-800',  dot: 'bg-blue-500' },
+  { key: 'quran',   bg: 'bg-amber-50',  text: 'text-amber-800', dot: 'bg-amber-500' },
+  { key: 'fiqh',    bg: 'bg-primary/10', text: 'text-primary',  dot: 'bg-primary' },
+  { key: 'arabic',  bg: 'bg-blue-50',   text: 'text-blue-800',  dot: 'bg-blue-500' },
+  { key: 'tarbiya', bg: 'bg-rose-50',   text: 'text-rose-800',  dot: 'bg-rose-500' },
 ];
 function subjectStyle(subject) {
   return SUBJECTS.find((s) => s.key === subject) || null;

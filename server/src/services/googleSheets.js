@@ -19,13 +19,13 @@ const SHEETS_API = 'https://sheets.googleapis.com/v4';
 
 const STUDENTS_FOLDER_NAME = 'Daris Students';
 
-// Subject options used for dropdown validation in both the Lesson Notes
-// and Payments sheets. Sheikh teaches three; if a fourth ever appears
-// the dropdown is non-strict so he can type a custom value, but the
-// Paid auto-match formula only flips ✓ when Lesson Notes and Payments
-// use the SAME subject text. Keep this list in sync with the class
-// scheduler's subject options on the admin dashboard.
-const SUBJECTS = ['قرآن', 'فقه', 'عربي'];
+// Subject options used for the Subject dropdown on the notebook tab.
+// Non-strict so the sheikh can type a custom value if a fifth subject
+// ever shows up. Keep this list in sync with the admin dashboard's
+// SUBJECTS array (src/views/dashboard/AdminDashboard.vue) — the keys
+// stored on each ClassSession (`quran` / `fiqh` / `arabic` / `tarbiya`)
+// map to these Arabic display labels here.
+const SUBJECTS = ['قرآن', 'فقه', 'لغة عربية', 'تربية إسلامية'];
 
 /**
  * Find or create the Daris Students folder at the root of the user's

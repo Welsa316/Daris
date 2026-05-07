@@ -540,6 +540,7 @@
     "subject_quran": "قرآن",
     "subject_fiqh": "فقه",
     "subject_arabic": "لغة عربية",
+    "subject_tarbiya": "تربية إسلامية",
     "splitSubject": {
       "label": "تدريس مادتين متتاليتين",
       "hint": "جلسة واحدة تنتقل بين مادتين في منتصفها. حدث واحد على التقويم ورابط Meet واحد.",
