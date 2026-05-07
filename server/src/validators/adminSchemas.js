@@ -103,6 +103,12 @@ export const batchClassSchema = z.object({
   // Null lets a scheduler skip picking one and drops into the neutral
   // calendar color. Keep the list open so we can add types later.
   subject: z.string().min(1).max(40).optional().nullable(),
+  // Mixed-subject classes: a single 2-hour session that switches from
+  // primary to secondary halfway through. Both fields must be set
+  // together. switchMin is offset in minutes from start; constraints
+  // enforced via superRefine below so we can reference duration.
+  subjectSecondary: z.string().min(1).max(40).optional().nullable(),
+  subjectSwitchMin: z.coerce.number().int().min(15).optional().nullable(),
   // IANA timezone the wall-clock times should be interpreted in. Persisted
   // on each ClassSession so reminder emails render in the right zone.
   timezone: z.string().min(1).max(64).default('Africa/Cairo'),
@@ -122,7 +128,62 @@ export const batchClassSchema = z.object({
   resolutions: z
     .record(z.string(), z.enum(['merge', 'create', 'force', 'skip']))
     .optional(),
-});
+})
+  .superRefine((data, ctx) => {
+    // Mixed-subject constraints. Both fields must be set together; when
+    // set, the secondary subject must differ from the primary; the
+    // switch point must leave at least 15 minutes on each side AND
+    // sit on a 5-minute boundary; the underlying duration must be at
+    // least 60 minutes (a 30-min split-subject class is silly).
+    const sec = data.subjectSecondary;
+    const switchMin = data.subjectSwitchMin;
+    if ((sec == null) !== (switchMin == null)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['subjectSecondary'],
+        message: 'subjectSecondary and subjectSwitchMin must be set together',
+      });
+      return;
+    }
+    if (sec == null) return; // single-subject; no further checks
+
+    if (sec === data.subject) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['subjectSecondary'],
+        message: 'Secondary subject must differ from the primary',
+      });
+    }
+    if (switchMin % 5 !== 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['subjectSwitchMin'],
+        message: 'Switch point must be on a 5-minute boundary',
+      });
+    }
+    // Compute duration from the first session (every session in a batch
+    // shares the same duration since the form drives it from one input).
+    const first = data.sessions?.[0];
+    if (first) {
+      const durationMin = Math.round(
+        (new Date(first.endTime).getTime() - new Date(first.startTime).getTime()) / 60000
+      );
+      if (durationMin < 60) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['subjectSecondary'],
+          message: 'Mixed-subject classes require duration >= 60 minutes',
+        });
+      }
+      if (switchMin < 15 || switchMin > durationMin - 15) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['subjectSwitchMin'],
+          message: 'Switch point must leave at least 15 minutes on each side',
+        });
+      }
+    }
+  });
 
 export const checkConflictsSchema = z.object({
   studentId: z.string().uuid(),

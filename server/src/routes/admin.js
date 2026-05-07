@@ -1266,7 +1266,19 @@ router.put('/settings/meeting-link', requireAdmin, validate(meetingLinkSchema), 
 router.post('/classes/batch', validate(batchClassSchema), async (req, res, next) => {
   try {
     const lang = getLang(req);
-    const { studentId, title, titleAr, subject, timezone, sessions, resolutions = {} } = req.body;
+    const {
+      studentId,
+      title,
+      titleAr,
+      subject,
+      // Mixed-subject (Phase D): when set, every session in the batch
+      // splits primary→secondary at subjectSwitchMin minutes from start.
+      subjectSecondary,
+      subjectSwitchMin,
+      timezone,
+      sessions,
+      resolutions = {},
+    } = req.body;
 
     // Teacher can only schedule for students assigned to them. Sheikh
     // bypasses this check and can schedule for any enrolled student.
@@ -1373,6 +1385,8 @@ router.post('/classes/batch', validate(batchClassSchema), async (req, res, next)
             title,
             titleAr: titleAr || null,
             subject: subject || null,
+            subjectSecondary: subjectSecondary || null,
+            subjectSwitchMin: subjectSwitchMin ?? null,
             startTime: new Date(session.startTime),
             endTime: new Date(session.endTime),
             meetingLink,

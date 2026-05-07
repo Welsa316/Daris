@@ -535,6 +535,13 @@
     "subject_quran": "قرآن",
     "subject_fiqh": "فقه",
     "subject_arabic": "لغة عربية",
+    "splitSubject": {
+      "label": "تدريس مادتين متتاليتين",
+      "hint": "جلسة واحدة تنتقل بين مادتين في منتصفها. حدث واحد على التقويم ورابط Meet واحد.",
+      "secondaryLabel": "ثم الانتقال إلى",
+      "switchAt": "نقطة الانتقال",
+      "switchAtValue": "{primary} دقيقة ثم {secondary} دقيقة"
+    },
     "legend": "المفتاح",
     "close": "إغلاق",
     "enterFullscreen": "توسيع التقويم",
@@ -748,6 +755,7 @@
       "attendeesNone": "لا يوجد طلاب",
       "attendeesNoneHint": "لم يُسنَد أي طالب لهذه الحصة. يمكنك إضافة الطلاب من نموذج الجدولة.",
       "openHint": "فتح",
+      "switchesAt": "ينتقل إلى {subject} عند {time}",
       "cancelledHint": "هذه الحصة ملغاة. السجلات السابقة تبقى مرئية للأرشيف."
     },
     "myStudents": "طلابي",

@@ -378,15 +378,30 @@
                     :key="cls.id"
                     type="button"
                     @click="selectedClass = cls"
-                    class="block w-full text-start mb-2 rounded-lg p-2.5 text-sm cursor-pointer hover:ring-2 hover:ring-primary/30 motion-safe:transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    class="block w-full text-start mb-2 rounded-lg p-2.5 text-sm cursor-pointer hover:ring-2 hover:ring-primary/30 motion-safe:transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 relative overflow-hidden"
                     :class="calendarBlockClass(cls)"
                     :aria-label="classBlockAriaLabel(cls)"
                   >
+                    <!-- Mixed-subject classes get a thin colored stripe
+                         along the start (or top in RTL) edge so the
+                         split nature reads at a glance even from a
+                         scrolled-out calendar view. -->
+                    <span
+                      v-if="cls.subjectSecondary"
+                      class="absolute top-0 bottom-0 start-0 w-1.5"
+                      :class="subjectStyle(cls.subjectSecondary)?.dot || 'bg-slate-400'"
+                      aria-hidden="true"
+                    ></span>
                     <p class="font-semibold truncate text-balance">{{ classDisplayName(cls) }}</p>
-                    <p class="text-xs opacity-75 mt-1 flex items-center gap-1.5 tabular-nums">
+                    <p class="text-xs opacity-75 mt-1 flex items-center gap-1.5 tabular-nums flex-wrap">
                       <span v-if="subjectStyle(cls.subject)"
                         class="text-[11px] uppercase tracking-wide font-semibold">
                         {{ $t('admin.subject_' + cls.subject) }}
+                      </span>
+                      <span v-if="cls.subjectSecondary" class="opacity-60">+</span>
+                      <span v-if="cls.subjectSecondary"
+                        class="text-[11px] uppercase tracking-wide font-semibold">
+                        {{ $t('admin.subject_' + cls.subjectSecondary) }}
                       </span>
                       <span v-if="subjectStyle(cls.subject)" class="opacity-60">·</span>
                       {{ formatClassTimeShort(cls.startTime) }}
@@ -944,6 +959,103 @@
               </select>
             </div>
 
+            <!-- Mixed-subject (Phase D). Lets the sheikh schedule a class
+                 like "Quran for the first 75 min, then Fiqh for the last
+                 45 min" as ONE event with one Meet link, instead of two
+                 back-to-back rows the student would have to switch rooms
+                 for. The toggle only renders when duration >= 60. -->
+            <div v-if="canSplitSubject" class="border border-cream-200 bg-cream-50 rounded-lg p-3">
+              <label class="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  v-model="scheduleForm.splitSubject"
+                  class="h-4 w-4 mt-0.5 rounded border-slate-300 text-primary focus:ring-primary"
+                />
+                <div class="min-w-0">
+                  <span class="text-sm font-medium text-primary">
+                    {{ $t('admin.splitSubject.label') }}
+                  </span>
+                  <span class="block text-xs text-slate-500 mt-0.5">
+                    {{ $t('admin.splitSubject.hint') }}
+                  </span>
+                </div>
+              </label>
+
+              <div v-if="scheduleForm.splitSubject" class="mt-3 space-y-3">
+                <!-- Secondary subject picker. Greys out the primary so
+                     it can't be selected as both. -->
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">
+                    {{ $t('admin.splitSubject.secondaryLabel') }}
+                  </label>
+                  <div class="flex gap-2">
+                    <label
+                      v-for="s in SUBJECTS"
+                      :key="s.key"
+                      class="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm flex-1 justify-center motion-safe:transition-colors"
+                      :class="[
+                        s.key === scheduleForm.subject
+                          ? 'opacity-30 cursor-not-allowed border-slate-200'
+                          : scheduleForm.subjectSecondary === s.key
+                          ? `${s.bg} ${s.text} border-current cursor-pointer`
+                          : 'border-slate-200 text-slate-500 hover:border-slate-300 cursor-pointer'
+                      ]"
+                    >
+                      <input
+                        type="radio"
+                        :value="s.key"
+                        v-model="scheduleForm.subjectSecondary"
+                        :disabled="s.key === scheduleForm.subject"
+                        class="sr-only"
+                      />
+                      <span class="w-2 h-2 rounded-full" :class="s.dot" aria-hidden="true"></span>
+                      {{ $t('admin.subject_' + s.key) }}
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Switch-point slider. Snaps to 5-min increments;
+                     constrained to 15..duration-15 so each side has
+                     at least 15 minutes. -->
+                <div>
+                  <div class="flex items-baseline justify-between mb-1">
+                    <label class="text-xs text-slate-500">
+                      {{ $t('admin.splitSubject.switchAt') }}
+                    </label>
+                    <span class="text-xs font-medium text-primary tabular-nums">
+                      {{ $t('admin.splitSubject.switchAtValue', {
+                        primary: scheduleForm.subjectSwitchMin,
+                        secondary: parseInt(scheduleForm.duration) - scheduleForm.subjectSwitchMin,
+                      }) }}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    :min="15"
+                    :max="parseInt(scheduleForm.duration) - 15"
+                    :step="5"
+                    v-model.number="scheduleForm.subjectSwitchMin"
+                    class="w-full"
+                  />
+                </div>
+
+                <!-- Live preview strip. Shows wall-clock boundaries so
+                     the sheikh can sanity-check before saving. -->
+                <div
+                  v-if="splitPreview"
+                  class="text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 tabular-nums"
+                >
+                  <span class="font-medium" :class="splitPreview.primaryClass">
+                    {{ splitPreview.startLabel }} → {{ $t('admin.subject_' + scheduleForm.subject) }} → {{ splitPreview.switchLabel }}
+                  </span>
+                  <span class="text-slate-300 mx-1">·</span>
+                  <span class="font-medium" :class="splitPreview.secondaryClass">
+                    {{ $t('admin.subject_' + scheduleForm.subjectSecondary) }} → {{ splitPreview.endLabel }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <!-- Weeks -->
             <div>
               <label class="block text-sm text-slate-500 mb-1">{{ $t('admin.repeatUntil') }}</label>
@@ -1262,6 +1374,12 @@ const scheduleForm = reactive({
   // is taught by. Pre-filled from the student's current assignments
   // when studentId changes; saved alongside the class on submit.
   teacherIds: [],
+  // Mixed-subject (Phase D). When splitSubject is true, the class
+  // becomes a single 2-hour event that switches from primary to
+  // secondary at subjectSwitchMin minutes from the start.
+  splitSubject: false,
+  subjectSecondary: 'fiqh',
+  subjectSwitchMin: 60,
 });
 
 // Cache of all active teachers, used for the schedule form's teacher
@@ -1299,6 +1417,64 @@ const SUBJECTS = [
 function subjectStyle(subject) {
   return SUBJECTS.find((s) => s.key === subject) || null;
 }
+
+// Mixed-subject visibility + preview. The toggle is only meaningful for
+// classes >= 60 minutes; below that, splitting is silly. Auto-disables
+// the toggle if the user shrinks the duration after enabling.
+const canSplitSubject = computed(() => parseInt(scheduleForm.duration) >= 60);
+watch(
+  () => scheduleForm.duration,
+  (newVal) => {
+    if (parseInt(newVal) < 60 && scheduleForm.splitSubject) {
+      scheduleForm.splitSubject = false;
+    }
+    // If duration shrinks below current switch + 15 buffer, clamp it.
+    const max = parseInt(newVal) - 15;
+    if (scheduleForm.subjectSwitchMin > max) {
+      scheduleForm.subjectSwitchMin = Math.max(15, max);
+    }
+  }
+);
+// Ensure secondary differs from primary if the user picks the same.
+watch(
+  () => scheduleForm.subject,
+  (newPrimary) => {
+    if (scheduleForm.subjectSecondary === newPrimary) {
+      const otherSubjects = SUBJECTS.filter((s) => s.key !== newPrimary);
+      scheduleForm.subjectSecondary = otherSubjects[0]?.key || 'fiqh';
+    }
+  }
+);
+
+// Render-ready preview of the split: wall-clock boundaries + the
+// styling for each segment. Returns null when the form isn't in a
+// state worth previewing (no time, split off, etc.) so the template
+// can guard with v-if.
+const splitPreview = computed(() => {
+  if (!scheduleForm.splitSubject) return null;
+  if (!scheduleForm.time) return null;
+  const switchMin = parseInt(scheduleForm.subjectSwitchMin) || 0;
+  const totalMin = parseInt(scheduleForm.duration) || 60;
+  const [hh, mm] = scheduleForm.time.split(':').map(Number);
+  if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+
+  const fmt = (totalMinutes) => {
+    const h = Math.floor(totalMinutes / 60) % 24;
+    const m = totalMinutes % 60;
+    const am = h < 12;
+    const h12 = ((h + 11) % 12) + 1;
+    return `${h12}:${String(m).padStart(2, '0')} ${am ? 'AM' : 'PM'}`;
+  };
+
+  const startMin = hh * 60 + mm;
+  return {
+    startLabel: fmt(startMin),
+    switchLabel: fmt(startMin + switchMin),
+    endLabel: fmt(startMin + totalMin),
+    primaryClass: subjectStyle(scheduleForm.subject)?.text || 'text-primary',
+    secondaryClass: subjectStyle(scheduleForm.subjectSecondary)?.text || 'text-primary',
+  };
+});
 
 // Color layers for a calendar block. Precedence:
 //   cancelled  > rescheduled (border accent) > subject color > neutral default
@@ -1988,12 +2164,19 @@ async function scheduleStudent() {
 
     // `timezone` is persisted on every ClassSession so the backend can
     // format reminder emails in the class's own zone (see Round 2 work).
+    // Mixed-subject fields go through only when the toggle is on.
     const payload = {
       studentId: scheduleForm.studentId,
       title,
       subject: scheduleForm.subject,
       sessions,
       timezone: tz,
+      ...(scheduleForm.splitSubject
+        ? {
+            subjectSecondary: scheduleForm.subjectSecondary,
+            subjectSwitchMin: parseInt(scheduleForm.subjectSwitchMin),
+          }
+        : {}),
     };
 
     if (conflicts?.length) {
@@ -2076,6 +2259,9 @@ function closeScheduleForm() {
   Object.assign(scheduleForm, {
     studentId: '', subject: 'quran', days: [], time: '17:00', timezone: 'Africa/Cairo', duration: '60', weeks: '12',
     teacherIds: [],
+    splitSubject: false,
+    subjectSecondary: 'fiqh',
+    subjectSwitchMin: 60,
   });
   conflictModal.conflicts = [];
   conflictModal.pendingPayload = null;

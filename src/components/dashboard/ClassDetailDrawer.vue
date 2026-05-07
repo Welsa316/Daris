@@ -51,6 +51,14 @@
               >
                 {{ $t('admin.subject_' + classInfo.subject) }}
               </span>
+              <!-- Secondary subject pill for mixed-subject classes. -->
+              <span
+                v-if="classInfo.subjectSecondary"
+                class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full"
+                :class="`${secondarySubj?.bg || 'bg-slate-100'} ${secondarySubj?.text || 'text-slate-600'}`"
+              >
+                + {{ $t('admin.subject_' + classInfo.subjectSecondary) }}
+              </span>
               <span
                 v-if="classInfo.cancelled"
                 class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-red-50 text-red-600"
@@ -92,6 +100,17 @@
             >
               {{ secondaryTime }}
               <span class="text-slate-500">({{ classInfo.timezone }})</span>
+            </p>
+            <!-- Mixed-subject: state the switch point so attendees know
+                 when the subject changes mid-session. -->
+            <p
+              v-if="classInfo.subjectSecondary && switchAtLabel"
+              class="text-xs text-slate-500 mt-1"
+            >
+              {{ $t('admin.classDrawer.switchesAt', {
+                subject: $t('admin.subject_' + classInfo.subjectSecondary),
+                time: switchAtLabel,
+              }) }}
             </p>
           </section>
 
@@ -227,6 +246,28 @@ const SUBJECTS = {
 const subj = computed(() =>
   props.classInfo ? SUBJECTS[props.classInfo.subject] || null : null
 );
+
+const secondarySubj = computed(() =>
+  props.classInfo?.subjectSecondary ? SUBJECTS[props.classInfo.subjectSecondary] || null : null
+);
+
+// Wall-clock label for the "switches at" line on mixed-subject classes.
+// Computed in the viewer's tz so the sheikh sees the switch at the
+// time it'll happen for them locally (rather than the class-tz time).
+const switchAtLabel = computed(() => {
+  const cls = props.classInfo;
+  if (!cls?.subjectSecondary || cls.subjectSwitchMin == null) return '';
+  const switchInstant = new Date(
+    new Date(cls.startTime).getTime() + cls.subjectSwitchMin * 60_000
+  );
+  const locale = props.isAr ? 'ar-EG' : 'en-GB';
+  return new Intl.DateTimeFormat(locale, {
+    timeZone: props.viewerTz,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(switchInstant);
+});
 
 const subjectBar = computed(() => {
   if (!props.classInfo) return 'bg-slate-200';

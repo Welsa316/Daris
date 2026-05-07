@@ -535,6 +535,13 @@
     "subject_quran": "Quran",
     "subject_fiqh": "Fiqh",
     "subject_arabic": "Arabic",
+    "splitSubject": {
+      "label": "Teach two subjects back-to-back",
+      "hint": "One sitting that switches subjects partway through. Single calendar event, single Meet link.",
+      "secondaryLabel": "Then switches to",
+      "switchAt": "Switch point",
+      "switchAtValue": "{primary} min then {secondary} min"
+    },
     "legend": "Legend",
     "close": "Close",
     "enterFullscreen": "Expand calendar",
@@ -748,6 +755,7 @@
       "attendeesNone": "No attendees",
       "attendeesNoneHint": "This class has no students assigned. Add students from the schedule form.",
       "openHint": "Open",
+      "switchesAt": "Switches to {subject} at {time}",
       "cancelledHint": "This class is cancelled. Past records stay visible for history."
     },
     "myStudents": "My students",
