@@ -88,8 +88,8 @@ export const contactConfig = {
   // Pre-filled WhatsApp message
   whatsappMessage: 'Assalamu alaikum, I would like to learn more about Daris programs.',
 
-  // Contact email address
-  contactEmail: 'contact@daris-example.com',
+  // Contact email address (must be a real, monitored inbox)
+  contactEmail: 'contact@daris.education',
 
   // Form endpoint — leave empty for mailto, or set to Formspree/similar URL
   formEndpoint: ''

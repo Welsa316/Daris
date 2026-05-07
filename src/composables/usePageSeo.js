@@ -117,7 +117,7 @@ const schemas = {
           '@type': 'ContactPoint',
           contactType: 'customer service',
           availableLanguage: ['English', 'Arabic'],
-          email: 'hello@daris.education',
+          email: 'contact@daris.education',
           url: 'https://wa.me/message/OCKC2UPLHGOOG1',
         },
       },
