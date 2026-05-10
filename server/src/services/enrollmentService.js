@@ -292,7 +292,7 @@ export async function getStudentCount() {
 }
 
 /**
- * Public-facing marketing stats: how many students enrolled, how many
+ * Public-facing marketing stats: how many students taught, how many
  * countries those students span. Used by the Why Daris row on the home
  * page. Both numbers come from the live student table — they grow as
  * the school grows, no manual update needed in the i18n file.
@@ -301,8 +301,17 @@ export async function getStudentCount() {
  * (non-deleted, enrolled) students. Empty / null countries are ignored
  * so a stray test account without a country doesn't inflate the count.
  */
+
+// Pre-Daris-platform baseline. The sheikh taught students for years
+// before this app existed, and those students should count toward the
+// "Students taught" stat on the marketing site. The number grows with
+// new enrollments — display value = baseline + current enrolled count.
+// Edit this constant if the baseline needs adjusting; the API and both
+// home-page stat components pick it up automatically.
+const STUDENTS_TAUGHT_BASELINE = 100;
+
 export async function getPublicStats() {
-  const studentsCount = await getStudentCount();
+  const enrolled = await getStudentCount();
   const rows = await prisma.user.findMany({
     where: {
       role: 'enrolled_student',
@@ -313,5 +322,8 @@ export async function getPublicStats() {
     distinct: ['country'],
   });
   const countriesCount = rows.filter((r) => (r.country || '').trim().length > 0).length;
-  return { studentsCount, countriesCount };
+  return {
+    studentsCount: STUDENTS_TAUGHT_BASELINE + enrolled,
+    countriesCount,
+  };
 }

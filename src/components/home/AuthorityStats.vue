@@ -132,7 +132,9 @@ onMounted(async () => {
   }
 });
 
-const STUDENTS_FALLBACK = '10+';
+// Fallbacks match the server-side baseline so the number doesn't
+// briefly flash a smaller value before the API response lands.
+const STUDENTS_FALLBACK = '100+';
 const COUNTRIES_FALLBACK = '9+';
 
 const stats = computed(() => [

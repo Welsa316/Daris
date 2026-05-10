@@ -43,9 +43,11 @@ onMounted(async () => {
 });
 
 // Fallbacks shown until /public-stats responds (and as the final value
-// if the API errors). 9 countries matches the country pill row that
-// already lists Egypt / USA / etc. by hand.
-const STUDENTS_FALLBACK = '10+';
+// if the API errors). Students fallback matches the server-side
+// STUDENTS_TAUGHT_BASELINE (the pre-Daris-platform number); the live
+// API adds today's enrolled count on top. Countries fallback matches
+// the country pill row already listed by hand.
+const STUDENTS_FALLBACK = '100+';
 const COUNTRIES_FALLBACK = '9+';
 
 const stats = computed(() => [
