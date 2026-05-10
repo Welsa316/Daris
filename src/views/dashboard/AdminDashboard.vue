@@ -10,9 +10,96 @@
         </div>
       </div>
 
+      <!-- Home tab "what do you want to do?" hero. Three (or four) big
+           task buttons in plain language, surfaced at the very top so
+           a non-technical user lands directly on actionable choices
+           instead of having to translate goals into tab names.
+           - Notebook button -> opens a slim student picker, one tap
+             per row to open that student's Google Sheets notebook.
+           - Schedule a class -> opens the existing schedule form modal.
+           - Review new students (sheikh) / My classes (teacher) -> jumps
+             to the relevant tab. Pending count badge gives the sheikh
+             an at-a-glance signal of work waiting. -->
+      <div v-if="activeTab === 'home'" class="bg-white rounded-2xl shadow-card p-6 mb-8">
+        <div class="mb-5">
+          <p class="text-xs font-semibold tracking-[0.15em] uppercase text-gold/80">
+            {{ $t('admin.homeEyebrow') }}
+          </p>
+          <h2 class="text-xl font-display font-bold text-primary mt-1 text-balance">
+            {{ $t('admin.homeGreeting', { name: user?.firstName || '' }) }}
+          </h2>
+          <p class="text-sm text-slate-500 mt-1 text-pretty">
+            {{ $t('admin.homeSubtitle') }}
+          </p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <button
+            type="button"
+            @click="openNotebookPicker"
+            class="bg-cream-50 hover:bg-cream-100 border border-cream-200 rounded-2xl p-5 text-start motion-safe:transition-colors flex flex-col gap-2 min-h-[140px]"
+          >
+            <span class="text-3xl" aria-hidden="true">📓</span>
+            <span class="font-display font-bold text-primary text-base text-balance">
+              {{ $t('admin.homeBtnNotebook') }}
+            </span>
+            <span class="text-xs text-slate-500 text-pretty">
+              {{ $t('admin.homeBtnNotebookHint') }}
+            </span>
+          </button>
+          <button
+            type="button"
+            @click="openScheduleFromHome"
+            class="bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-2xl p-5 text-start motion-safe:transition-colors flex flex-col gap-2 min-h-[140px]"
+          >
+            <span class="text-3xl" aria-hidden="true">📅</span>
+            <span class="font-display font-bold text-primary text-base text-balance">
+              {{ $t('admin.homeBtnSchedule') }}
+            </span>
+            <span class="text-xs text-slate-500 text-pretty">
+              {{ $t('admin.homeBtnScheduleHint') }}
+            </span>
+          </button>
+          <button
+            v-if="isAdmin"
+            type="button"
+            @click="activeTab = 'enrollments'"
+            class="bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-2xl p-5 text-start motion-safe:transition-colors flex flex-col gap-2 min-h-[140px]"
+          >
+            <span class="text-3xl" aria-hidden="true">✅</span>
+            <span class="font-display font-bold text-primary text-base text-balance">
+              {{ $t('admin.homeBtnReview') }}
+            </span>
+            <span class="text-xs text-amber-800 text-pretty tabular-nums">
+              <template v-if="(stats?.totalPending ?? 0) > 0">
+                {{ $t('admin.homeBtnReviewWaiting', { count: stats.totalPending }) }}
+              </template>
+              <template v-else>
+                {{ $t('admin.homeBtnReviewEmpty') }}
+              </template>
+            </span>
+          </button>
+          <button
+            v-else
+            type="button"
+            @click="activeTab = 'myClasses'"
+            class="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-2xl p-5 text-start motion-safe:transition-colors flex flex-col gap-2 min-h-[140px]"
+          >
+            <span class="text-3xl" aria-hidden="true">📅</span>
+            <span class="font-display font-bold text-primary text-base text-balance">
+              {{ $t('admin.homeBtnMyClasses') }}
+            </span>
+            <span class="text-xs text-slate-500 text-pretty">
+              {{ $t('admin.homeBtnMyClassesHint') }}
+            </span>
+          </button>
+        </div>
+      </div>
+
       <!-- Stats. Teachers see a 3-card variant (no Pending) since they
-           don't manage enrollments; the grid simply auto-fills. -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+           don't manage enrollments; the grid simply auto-fills.
+           Only on the Home tab — other tabs stay focused on their
+           own work surface. -->
+      <div v-if="activeTab === 'home'" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div class="bg-white rounded-2xl shadow-card p-5 text-center">
           <template v-if="statsError">
             <button @click="loadStats" class="text-xs text-red-600 hover:text-red-700 underline">
@@ -59,8 +146,8 @@
         </div>
       </div>
 
-      <!-- Upcoming Classes (always visible) -->
-      <div class="bg-white rounded-2xl shadow-card p-6 mb-8">
+      <!-- Upcoming Classes — Home tab only. -->
+      <div v-if="activeTab === 'home'" class="bg-white rounded-2xl shadow-card p-6 mb-8">
         <h2 class="text-lg font-bold text-primary mb-4">{{ $t('admin.upcomingClassesTitle') }}</h2>
         <div v-if="!upcomingClasses.length" class="text-slate-400 text-sm py-4 text-center">{{ $t('admin.noUpcomingClasses') }}</div>
         <div v-else class="space-y-3">
@@ -127,7 +214,7 @@
            a sheikh-only action (review enrollments, set the global meeting
            link, schedule the first class), so a teacher would see a useless
            grey-out otherwise. -->
-      <div v-if="showFirstRunChecklist && isAdmin" class="bg-primary/5 border border-primary/10 rounded-2xl p-6 mb-8">
+      <div v-if="showFirstRunChecklist && isAdmin && activeTab === 'home'" class="bg-primary/5 border border-primary/10 rounded-2xl p-6 mb-8">
         <h2 class="text-lg font-bold text-primary mb-1">{{ $t('admin.firstRun.title') }}</h2>
         <p class="text-sm text-slate-500 mb-5">{{ $t('admin.firstRun.subtitle') }}</p>
         <ol class="space-y-3">
@@ -993,6 +1080,79 @@
         </div>
       </div>
 
+      <!-- Notebook Picker Modal. Triggered by the home-tab 📓 hero
+           button. Lists every accessible student (sheikh: all,
+           teacher: assigned only) with a single big Open button per
+           row. Search filters the list in-memory. Skips the student
+           detail modal entirely so the path is "click 📓, click
+           student, see notebook" — three taps total. -->
+      <div
+        v-if="showNotebookPicker"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="notebookPickerTitle"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+        @click.self="showNotebookPicker = false"
+      >
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80dvh] overflow-hidden flex flex-col">
+          <div class="p-5 border-b border-slate-100 flex items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <h2 id="notebookPickerTitle" class="text-lg font-bold text-primary text-balance">
+                {{ $t('admin.notebookPicker.title') }}
+              </h2>
+              <p class="text-xs text-slate-500 mt-1 text-pretty">
+                {{ $t('admin.notebookPicker.hint') }}
+              </p>
+            </div>
+            <button
+              type="button"
+              @click="showNotebookPicker = false"
+              class="text-slate-400 hover:text-slate-700 motion-safe:transition-colors shrink-0"
+              :aria-label="$t('admin.cancel')"
+            >
+              <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="p-5 pb-3">
+            <input
+              v-model="notebookPickerSearch"
+              type="text"
+              :placeholder="$t('admin.notebookPicker.searchPlaceholder')"
+              class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-slate-400"
+            />
+          </div>
+          <div class="flex-1 overflow-y-auto px-5 pb-5">
+            <p
+              v-if="!notebookPickerStudents.length"
+              class="text-center text-sm text-slate-400 py-8"
+            >
+              {{ notebookPickerSearch ? $t('admin.notebookPicker.noMatch') : $t('admin.notebookPicker.empty') }}
+            </p>
+            <ul v-else class="space-y-2">
+              <li v-for="s in notebookPickerStudents" :key="s.id">
+                <button
+                  type="button"
+                  @click="pickerOpenNotebook(s)"
+                  :disabled="creatingNotebook"
+                  class="w-full text-start bg-cream-50 hover:bg-cream-100 border border-cream-200 rounded-xl p-4 motion-safe:transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span class="text-xl shrink-0" aria-hidden="true">📓</span>
+                  <div class="min-w-0 flex-1">
+                    <p class="font-semibold text-primary truncate">{{ s.firstName }} {{ s.lastName }}</p>
+                    <p class="text-xs text-slate-500 truncate">
+                      {{ s.notebookSheetUrl ? $t('admin.notebookPicker.openLabel') : $t('admin.notebookPicker.createLabel') }}
+                    </p>
+                  </div>
+                  <span class="text-primary shrink-0 motion-safe:transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" aria-hidden="true">→</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
       <!-- Schedule Student Modal -->
       <div v-if="showScheduleForm" role="dialog" aria-modal="true" aria-labelledby="scheduleFormTitle" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="closeScheduleForm">
         <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
@@ -1414,7 +1574,7 @@ import { queueUndoable } from '@/composables/useUndoToast.js';
 import { nextWeekdayInTz, TZ_OPTIONS, formatInTz } from '@/composables/useTimezone.js';
 
 const { locale, t } = useI18n();
-const { logout, isAdmin, isTeacher } = useAuth();
+const { user, logout, isAdmin, isTeacher } = useAuth();
 
 // Admin locale is controlled by the LanguageSwitcher in the header. We used
 // to force Arabic on mount, but that fought with the toggle the sheikh now
@@ -1423,7 +1583,7 @@ const { logout, isAdmin, isTeacher } = useAuth();
 
 const isAr = computed(() => locale.value === 'ar');
 
-const activeTab = ref('enrollments');
+const activeTab = ref('home');
 const stats = ref(null);
 const statsError = ref(false);
 const enrollments = ref([]);
@@ -1433,6 +1593,11 @@ const classes = ref([]);
 const studentSearch = ref('');
 const selectedStudent = ref(null);
 const showScheduleForm = ref(false);
+// Home-tab notebook picker. Slim modal listing each accessible
+// student with an Open / Create button. Bypasses the student detail
+// modal so non-tech-savvy users reach the notebook in one tap.
+const showNotebookPicker = ref(false);
+const notebookPickerSearch = ref('');
 const creatingClass = ref(false);
 const selectedClass = ref(null);
 const toast = ref('');
@@ -1943,10 +2108,16 @@ const showFirstRunChecklist = computed(() => {
 // isolation: teachers see only their own assigned students and their
 // own classes; nothing else.
 //
+// Both roles land on `home` first — a "what do you want to do?"
+// surface with three big task buttons. The other tabs are still
+// reachable below for everything else; the home tab is the runway
+// for users who don't yet know where things live.
+//
 // Computed so it reacts when `useAuth` rehydrates after login.
 const tabs = computed(() => {
   if (isAdmin.value) {
     return [
+      { key: 'home',        label: 'admin.home' },
       { key: 'enrollments', label: 'admin.enrollments' },
       { key: 'students',    label: 'admin.students' },
       { key: 'scheduling',  label: 'admin.scheduling' },
@@ -1954,10 +2125,8 @@ const tabs = computed(() => {
       { key: 'teachers',    label: 'admin.teachers.tab' },
     ];
   }
-  // Teacher view. "My classes" first since it's their primary surface
-  // (especially on a phone). Activity is scoped server-side; the same
-  // tab works for both roles.
   return [
+    { key: 'home',       label: 'admin.home' },
     { key: 'myClasses',  label: 'admin.myClasses.tab' },
     { key: 'students',   label: 'admin.students' },
     { key: 'scheduling', label: 'admin.scheduling' },
@@ -2138,6 +2307,71 @@ function openNotebook() {
   const url = selectedStudent.value?.notebookSheetUrl;
   if (!url) return;
   window.open(url, '_blank', 'noopener');
+}
+
+// Home-tab notebook picker. Loads the (scoped) student list if needed,
+// then surfaces the slim picker modal. Search input filters the list
+// in-memory.
+function openNotebookPicker() {
+  if (!students.value.length) loadStudents();
+  notebookPickerSearch.value = '';
+  showNotebookPicker.value = true;
+}
+
+const notebookPickerStudents = computed(() => {
+  const q = notebookPickerSearch.value.trim().toLowerCase();
+  if (!q) return students.value;
+  return students.value.filter((s) => {
+    const name = `${s.firstName || ''} ${s.lastName || ''}`.toLowerCase();
+    const email = (s.email || '').toLowerCase();
+    return name.includes(q) || email.includes(q);
+  });
+});
+
+// Click handler for a row in the picker. If the student already has a
+// notebook URL, open it directly. Otherwise lazy-create and then open.
+async function pickerOpenNotebook(student) {
+  if (student.notebookSheetUrl) {
+    window.open(student.notebookSheetUrl, '_blank', 'noopener');
+    return;
+  }
+  // Treat the picker row like the in-modal Create flow — lazy POST,
+  // store the URL, open the sheet. Mirrors createNotebook().
+  if (creatingNotebook.value) return;
+  creatingNotebook.value = true;
+  try {
+    const res = await api.post(`/api/admin/students/${student.id}/notebook`);
+    if (res?.sheetUrl) {
+      // Patch the local row so subsequent picker clicks short-circuit.
+      const idx = students.value.findIndex((s) => s.id === student.id);
+      if (idx !== -1) {
+        students.value[idx] = {
+          ...students.value[idx],
+          notebookSheetId: res.sheetId,
+          notebookSheetUrl: res.sheetUrl,
+        };
+      }
+      window.open(res.sheetUrl, '_blank', 'noopener');
+    }
+  } catch (err) {
+    const reason = err?.data?.reason;
+    if (reason === 'no_connection') {
+      showToast(t('admin.notebook.errNoConnection'));
+    } else if (reason === 'needs_scope_upgrade') {
+      showToast(t('admin.notebook.errNeedsScopeUpgrade'));
+    } else {
+      showToast(err, 'createNotebook');
+    }
+  } finally {
+    creatingNotebook.value = false;
+  }
+}
+
+// Home-tab "Schedule a class" button — opens the existing schedule
+// form modal. Tab stays on home so the user can return to other
+// quick actions after closing.
+function openScheduleFromHome() {
+  showScheduleForm.value = true;
 }
 
 async function createNotebook() {
@@ -3038,6 +3272,7 @@ watch(
 // handles its own escape. so we don't touch it here.
 function handleGlobalKeydown(e) {
   if (e.key !== 'Escape') return;
+  if (showNotebookPicker.value) { showNotebookPicker.value = false; return; }
   if (showScheduleForm.value) { closeScheduleForm(); return; }
   if (showRescheduleModal.value) { showRescheduleModal.value = false; return; }
   if (showPaymentForm.value) { showPaymentForm.value = false; return; }
