@@ -91,8 +91,8 @@
                   ]"
                   aria-hidden="true"
                 ></div>
-                <p class="heading-display text-xl sm:text-2xl md:text-3xl text-cream font-bold leading-none mb-1.5 text-balance">
-                  {{ $t(stat.valueKey) }}
+                <p class="heading-display text-xl sm:text-2xl md:text-3xl text-cream font-bold leading-none mb-1.5 text-balance tabular-nums">
+                  {{ stat.value }}
                 </p>
                 <p class="text-[10px] text-cream/35 tracking-[0.2em] uppercase">
                   {{ $t(stat.labelKey) }}
@@ -110,10 +110,41 @@
 </template>
 
 <script setup>
-const stats = [
-  { valueKey: 'home.stat1Value', labelKey: 'home.stat1Label' },
-  { valueKey: 'home.stat2Value', labelKey: 'home.stat2Label' },
-  { valueKey: 'home.stat3Value', labelKey: 'home.stat3Label' },
-  { valueKey: 'home.stat4Value', labelKey: 'home.stat4Label' }
-];
+import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { api } from '@/config/api.js';
+
+const { t } = useI18n();
+
+// Live counts from /api/public-stats. See StatsRow.vue for the same
+// pattern — the two components share the source of truth so the home
+// page can't accidentally drift.
+const studentsCount = ref(null);
+const countriesCount = ref(null);
+
+onMounted(async () => {
+  try {
+    const data = await api.get('/api/public-stats');
+    if (typeof data.studentsCount === 'number') studentsCount.value = data.studentsCount;
+    if (typeof data.countriesCount === 'number') countriesCount.value = data.countriesCount;
+  } catch {
+    // Fall back to the static numbers below.
+  }
+});
+
+const STUDENTS_FALLBACK = '10+';
+const COUNTRIES_FALLBACK = '9+';
+
+const stats = computed(() => [
+  { labelKey: 'home.stat1Label', value: t('home.stat1Value') },
+  { labelKey: 'home.stat2Label', value: t('home.stat2Value') },
+  {
+    labelKey: 'home.stat3Label',
+    value: studentsCount.value !== null ? `${studentsCount.value}+` : STUDENTS_FALLBACK,
+  },
+  {
+    labelKey: 'home.stat4Label',
+    value: countriesCount.value !== null ? `${countriesCount.value}+` : COUNTRIES_FALLBACK,
+  },
+]);
 </script>

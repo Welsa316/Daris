@@ -108,10 +108,8 @@
     "stat1Label": "Years teaching",
     "stat2Value": "Al-Azhar",
     "stat2Label": "Cairo graduate",
-    "stat3Value": "Hanafi",
-    "stat3Label": "Fiqh lineage",
-    "stat4Value": "EN · AR",
-    "stat4Label": "Bilingual",
+    "stat3Label": "Students taught",
+    "stat4Label": "Countries reached",
 
     "countriesLabel": "Our students come from",
     "countriesList": "Egypt, Poland, Uzbekistan, Pakistan, Saudi Arabia, Qatar, Netherlands, England, USA",

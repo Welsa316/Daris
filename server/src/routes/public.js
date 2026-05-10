@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { getStudentCount } from '../services/enrollmentService.js';
+import { getStudentCount, getPublicStats } from '../services/enrollmentService.js';
 import { verifyEmailConnection, sendContactFormEmail } from '../services/emailService.js';
 import { contactFormLimiter } from '../middleware/rateLimiter.js';
 import { logger, auditLog } from '../utils/logger.js';
@@ -25,6 +25,29 @@ router.get('/student-count', async (req, res, next) => {
     cacheTimestamp = now;
 
     res.json({ count });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// --- Public stats for the Why Daris row on the home page (cached) ---
+// Returns { studentsCount, countriesCount } so marketing copy can display
+// "live" figures that grow with the school instead of hardcoded values
+// the user has to update by hand. Cached at the same TTL as
+// /student-count so a Lighthouse-friendly home page render doesn't hit
+// the DB on every refresh.
+let cachedPublicStats = null;
+let cachedPublicStatsAt = 0;
+router.get('/public-stats', async (req, res, next) => {
+  try {
+    const now = Date.now();
+    if (cachedPublicStats && now - cachedPublicStatsAt < CACHE_TTL_MS) {
+      return res.json(cachedPublicStats);
+    }
+    const data = await getPublicStats();
+    cachedPublicStats = data;
+    cachedPublicStatsAt = now;
+    res.json(data);
   } catch (error) {
     next(error);
   }

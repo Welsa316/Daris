@@ -290,3 +290,28 @@ export async function getStudentCount() {
   // Cache miss. compute and store
   return updateStudentCountCache();
 }
+
+/**
+ * Public-facing marketing stats: how many students enrolled, how many
+ * countries those students span. Used by the Why Daris row on the home
+ * page. Both numbers come from the live student table — they grow as
+ * the school grows, no manual update needed in the i18n file.
+ *
+ * Country count counts distinct non-null country values across active
+ * (non-deleted, enrolled) students. Empty / null countries are ignored
+ * so a stray test account without a country doesn't inflate the count.
+ */
+export async function getPublicStats() {
+  const studentsCount = await getStudentCount();
+  const rows = await prisma.user.findMany({
+    where: {
+      role: 'enrolled_student',
+      deletedAt: null,
+      country: { not: null },
+    },
+    select: { country: true },
+    distinct: ['country'],
+  });
+  const countriesCount = rows.filter((r) => (r.country || '').trim().length > 0).length;
+  return { studentsCount, countriesCount };
+}

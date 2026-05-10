@@ -73,7 +73,7 @@
                 <div class="h-px flex-grow bg-gradient-to-l from-transparent via-gold/40 to-gold/60"></div>
               </div>
               <blockquote class="font-display text-2xl md:text-3xl lg:text-4xl text-gold !leading-[1.6] tracking-wide">
-                &#xFD3F;{{ $t('home.quranVerseTranslation') }}&#xFD3E;
+                &ldquo;{{ $t('home.quranVerseTranslation') }}&rdquo;
               </blockquote>
               <figcaption class="text-[10px] font-semibold uppercase tracking-[0.3em] text-gold/70 mt-4">
                 {{ $t('home.quranVerseRef') }}
