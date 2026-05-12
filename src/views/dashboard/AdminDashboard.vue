@@ -2,11 +2,16 @@
   <div class="min-h-screen bg-cream pt-24 pb-12 px-4">
     <div class="max-w-screen-2xl mx-auto">
       <!-- Header -->
-      <div class="flex items-center justify-between mb-8">
-        <h1 class="text-2xl font-display font-bold text-primary text-balance">{{ $t('admin.title') }}</h1>
-        <div class="flex items-center gap-3">
+      <div class="flex items-center justify-between gap-3 mb-8">
+        <h1 class="text-xl sm:text-2xl font-display font-bold text-primary text-balance">{{ $t('admin.title') }}</h1>
+        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
           <LanguageSwitcher />
-          <button @click="handleLogout" class="text-sm text-slate-400 hover:text-primary transition-colors">{{ $t('auth.logout') }}</button>
+          <button
+            @click="handleLogout"
+            class="text-sm text-slate-400 hover:text-primary transition-colors whitespace-nowrap"
+          >
+            {{ $t('auth.logout') }}
+          </button>
         </div>
       </div>
 
@@ -99,7 +104,13 @@
            don't manage enrollments; the grid simply auto-fills.
            Only on the Home tab — other tabs stay focused on their
            own work surface. -->
-      <div v-if="activeTab === 'home'" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div
+        v-if="activeTab === 'home'"
+        :class="[
+          'grid grid-cols-2 gap-4 mb-8',
+          isAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
+        ]"
+      >
         <div class="bg-white rounded-2xl shadow-card p-5 text-center">
           <template v-if="statsError">
             <button @click="loadStats" class="text-xs text-red-600 hover:text-red-700 underline">
@@ -247,11 +258,21 @@
         </ol>
       </div>
 
-      <!-- Tabs -->
-      <div class="flex gap-2 mb-6 overflow-x-auto">
-        <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
-          class="px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
-          :class="activeTab === tab.key ? 'bg-primary text-cream' : 'bg-white text-slate-600 hover:bg-primary/5'">
+      <!-- Tabs. Horizontally scrollable on narrow screens so the full
+           tab list stays reachable on a phone. The active tab is
+           ref'd by `data-active-tab` so the watcher in script can
+           scroll it into view when activeTab changes — without this
+           the active pill can sit off-screen after a tab switch and
+           the user has no visual confirmation which tab they're on. -->
+      <div ref="tabsContainer" class="flex gap-2 mb-6 overflow-x-auto scroll-smooth">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          :data-tab-key="tab.key"
+          @click="activeTab = tab.key"
+          class="px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap shrink-0"
+          :class="activeTab === tab.key ? 'bg-primary text-cream' : 'bg-white text-slate-600 hover:bg-primary/5'"
+        >
           {{ $t(tab.label) }}
         </button>
       </div>
@@ -356,15 +377,20 @@
             {{ $t('admin.noStudentsCta') }}
           </button>
         </div>
+        <!-- Students list. On mobile the table layout overflows; we
+             collapse non-essential columns at < md (email, country,
+             enrolled date) so the row fits the viewport. Name and
+             balance stay visible at every breakpoint; the chevron
+             always sits at the end so the row reads as tappable. -->
         <div v-else class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-slate-100">
                 <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('auth.firstName') }}</th>
-                <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('auth.email') }}</th>
-                <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('auth.country') }}</th>
+                <th class="text-start py-3 px-2 text-slate-500 font-medium hidden md:table-cell">{{ $t('auth.email') }}</th>
+                <th class="text-start py-3 px-2 text-slate-500 font-medium hidden md:table-cell">{{ $t('auth.country') }}</th>
                 <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('admin.balance.header') }}</th>
-                <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('admin.enrolled') }}</th>
+                <th class="text-start py-3 px-2 text-slate-500 font-medium hidden lg:table-cell">{{ $t('admin.enrolled') }}</th>
                 <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('admin.actions') }}</th>
               </tr>
             </thead>
@@ -398,13 +424,19 @@
                       aria-hidden="true"
                     >📓</span>
                   </span>
+                  <!-- Mobile-only secondary line: email + country
+                       collapse under the name so the row stays
+                       informative even when the table columns hide. -->
+                  <span class="block md:hidden text-xs text-slate-400 truncate mt-0.5">
+                    {{ s.email }}<span v-if="s.country"> · {{ s.country }}</span>
+                  </span>
                 </td>
-                <td class="py-3 px-2 text-slate-500 truncate max-w-[16rem]">{{ s.email }}</td>
-                <td class="py-3 px-2 text-slate-500 truncate max-w-[10rem]">{{ s.country }}</td>
+                <td class="py-3 px-2 text-slate-500 truncate max-w-[16rem] hidden md:table-cell">{{ s.email }}</td>
+                <td class="py-3 px-2 text-slate-500 truncate max-w-[10rem] hidden md:table-cell">{{ s.country }}</td>
                 <td class="py-3 px-2">
                   <BalancePill :student="s" />
                 </td>
-                <td class="py-3 px-2 text-slate-400 text-xs">{{ s.enrolledAt ? new Date(s.enrolledAt).toLocaleDateString() : '-' }}</td>
+                <td class="py-3 px-2 text-slate-400 text-xs hidden lg:table-cell">{{ s.enrolledAt ? new Date(s.enrolledAt).toLocaleDateString() : '-' }}</td>
                 <td class="py-3 px-2 text-slate-300 text-end">
                   <span aria-hidden="true">›</span>
                 </td>
@@ -1584,6 +1616,11 @@ const { user, logout, isAdmin, isTeacher } = useAuth();
 const isAr = computed(() => locale.value === 'ar');
 
 const activeTab = ref('home');
+// Tabs row container ref. Used by the watcher below to scroll the
+// active tab into view on narrow screens — without this the active
+// pill can land off-screen after a tab change and the user has no
+// confirmation which tab they're on.
+const tabsContainer = ref(null);
 const stats = ref(null);
 const statsError = ref(false);
 const enrollments = ref([]);
@@ -3224,6 +3261,17 @@ watch(activeTab, (tab) => {
     loadSettings();
   }
   if (tab === 'myClasses') loadClasses();
+
+  // Scroll the active tab into view on narrow screens. Without this
+  // the active pill can sit off-screen after a tab change (the row
+  // is horizontally scrollable when tabs don't fit) and the user
+  // gets no visual confirmation which tab they're on.
+  nextTick(() => {
+    const el = tabsContainer.value?.querySelector?.(`[data-tab-key="${tab}"]`);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  });
 });
 
 watch(studentSearch, () => { loadStudents(); });
