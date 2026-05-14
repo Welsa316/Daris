@@ -18,6 +18,14 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+      },
+      // Socket.IO uses the /socket.io path for both the HTTP handshake
+      // and the WebSocket upgrade. `ws: true` flips on protocol switching
+      // so dev-mode live chat works the same as production behind Railway.
+      '/socket.io': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        ws: true,
       }
     }
   }

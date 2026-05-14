@@ -28,6 +28,10 @@ import { prisma } from '../config/database.js';
 import { t, getLang } from '../utils/i18n.js';
 import { auditLog, logger } from '../utils/logger.js';
 import { notifyNewMessage } from '../services/messageNotificationService.js';
+import {
+  broadcastNewMessage,
+  broadcastConversationUpdated,
+} from '../services/socketService.js';
 
 const router = Router();
 
@@ -387,6 +391,17 @@ router.get('/conversations/:studentId', async (req, res, next) => {
       create: { conversationId: conv.id, userId: req.user.id },
     });
 
+    // Pull every participant's lastReadAt so the client can render read
+    // receipts on initial paint without waiting for a live socket event.
+    // After this point the conversation:read socket events keep the map
+    // current; the REST response is just the cold-start snapshot.
+    const readRows = await prisma.conversationRead.findMany({
+      where: { conversationId: conv.id },
+      select: { userId: true, lastReadAt: true },
+    });
+    const reads = {};
+    for (const r of readRows) reads[r.userId] = r.lastReadAt;
+
     res.json({
       conversation: {
         id: conv.id,
@@ -395,6 +410,7 @@ router.get('/conversations/:studentId', async (req, res, next) => {
         createdAt: conv.createdAt,
       },
       participants,
+      reads,
       messages: messagesRaw.map((m) => ({
         id: m.id,
         body: m.body,
@@ -471,6 +487,53 @@ router.post(
         bytes: req.body.body.length,
       });
 
+      // Build the serialized message shape once — both the HTTP response,
+      // the socket broadcast, and the sidebar update all need the same
+      // payload. Keeps the live view, the polled view, and the optimistic
+      // local insert byte-for-byte identical.
+      const senderRole =
+        message.sender?.role === 'admin'
+          ? 'sheikh'
+          : message.sender?.id === studentId
+          ? 'student'
+          : 'teacher';
+      const messagePayload = {
+        id: message.id,
+        body: message.body,
+        senderId: message.senderId,
+        senderName: message.sender
+          ? `${message.sender.firstName || ''} ${message.sender.lastName || ''}`.trim()
+          : '',
+        senderRole,
+        createdAt: message.createdAt,
+      };
+
+      // Live broadcast: everyone currently in the conversation room
+      // (the thread view) gets the message instantly. `fromSelf` is
+      // recipient-specific so we can't bake it in; the client compares
+      // senderId against its own user id to decide bubble alignment.
+      try {
+        broadcastNewMessage({
+          conversation: { ...conv, lastMessageAt: new Date() },
+          message: messagePayload,
+        });
+        // Sidebar/inbox hint for participants NOT currently inside the
+        // thread (e.g. sheikh on the Home tab). Best-effort: errors
+        // bubble up into the catch below and never block the response.
+        const recipientIds = await readerIdsForStudent(studentId);
+        recipientIds.delete(req.user.id);
+        broadcastConversationUpdated({
+          conversation: { ...conv, lastMessageAt: new Date() },
+          message: messagePayload,
+          recipientIds: Array.from(recipientIds),
+        });
+      } catch (err) {
+        logger.error('messages: socket broadcast failed', {
+          conversationId: conv.id,
+          error: err.message,
+        });
+      }
+
       // Fire-and-forget: the API response goes out immediately and every
       // error is caught inside the service. A Resend outage must never
       // block the message POST.
@@ -491,22 +554,7 @@ router.post(
       );
 
       res.status(201).json({
-        message: {
-          id: message.id,
-          body: message.body,
-          senderId: message.senderId,
-          senderName: message.sender
-            ? `${message.sender.firstName || ''} ${message.sender.lastName || ''}`.trim()
-            : '',
-          senderRole:
-            message.sender?.role === 'admin'
-              ? 'sheikh'
-              : message.sender?.id === studentId
-              ? 'student'
-              : 'teacher',
-          createdAt: message.createdAt,
-          fromSelf: true,
-        },
+        message: { ...messagePayload, fromSelf: true },
       });
     } catch (error) {
       next(error);

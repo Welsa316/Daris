@@ -439,7 +439,13 @@
     "noMatch": "No conversations match that name.",
     "emptyList": "No conversations yet.",
     "youPrefix": "You:",
-    "noMessagesYet": "No messages yet"
+    "noMessagesYet": "No messages yet",
+    "online": "Online",
+    "onlineNowTitle": "{n} online now",
+    "typingOne": "{name} is typing",
+    "typingMany": "Several people are typing",
+    "someone": "Someone",
+    "read": "Read"
   },
   "admin": {
     "title": "Admin Dashboard",

@@ -5,8 +5,18 @@
          wouldn't say in front of him. -->
     <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 shrink-0">
       <div class="min-w-0">
-        <h3 class="text-sm font-display font-bold text-primary truncate">
-          {{ title || $t('messages.threadTitle') }}
+        <h3 class="text-sm font-display font-bold text-primary truncate flex items-center gap-2">
+          <span class="truncate">{{ title || $t('messages.threadTitle') }}</span>
+          <!-- Green dot when at least one other participant is online.
+               Quiet signal that a live reply is possible right now. -->
+          <span
+            v-if="onlineOthers.length > 0"
+            class="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 shrink-0"
+            :title="$t('messages.onlineNowTitle', { n: onlineOthers.length })"
+          >
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 motion-safe:animate-pulse" aria-hidden="true"></span>
+            {{ $t('messages.online') }}
+          </span>
         </h3>
         <p class="text-xs text-slate-500 mt-0.5 truncate">
           {{ participantSummary }}
@@ -85,8 +95,35 @@
               </p>
             </div>
           </div>
+          <!-- Read receipt — only on MY last sent message, only when
+               at least one other participant's lastReadAt is past it.
+               Keeps the thread visually quiet while still surfacing the
+               signal that matters most. -->
+          <div
+            v-if="m.id === lastSentMessageId && isReadByOthers(m)"
+            class="flex justify-end mt-0.5 pe-1"
+          >
+            <span class="text-[10px] text-slate-400">{{ $t('messages.read') }}</span>
+          </div>
         </div>
       </template>
+
+      <!-- Typing indicator. Pinned below the last bubble so it sits
+           right above the composer where the reply will land. -->
+      <div
+        v-if="typingLabel"
+        class="flex justify-start"
+        aria-live="polite"
+      >
+        <div class="bg-white border border-slate-100 rounded-2xl px-3.5 py-1.5 text-xs text-slate-500 italic shadow-sm">
+          {{ typingLabel }}
+          <span class="inline-flex gap-0.5 align-baseline ms-1">
+            <span class="w-1 h-1 rounded-full bg-slate-400 motion-safe:animate-bounce" style="animation-delay: 0ms" aria-hidden="true"></span>
+            <span class="w-1 h-1 rounded-full bg-slate-400 motion-safe:animate-bounce" style="animation-delay: 150ms" aria-hidden="true"></span>
+            <span class="w-1 h-1 rounded-full bg-slate-400 motion-safe:animate-bounce" style="animation-delay: 300ms" aria-hidden="true"></span>
+          </span>
+        </div>
+      </div>
     </div>
 
     <!-- Composer. Plain textarea + send button. Enter sends, Shift+Enter
@@ -102,7 +139,7 @@
           :placeholder="$t('messages.composerPlaceholder')"
           :maxlength="MAX_BODY"
           @keydown.enter.exact.prevent="onSend"
-          @input="autosize"
+          @input="onComposerInput"
           class="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary resize-none max-h-32"
         ></textarea>
         <button
@@ -124,9 +161,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick, toRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { api } from '@/config/api.js';
+import { useAuth } from '@/composables/useAuth.js';
+import { useConversationSocket } from '@/composables/useConversationSocket.js';
 
 const props = defineProps({
   // The student-anchored conversation to load. Required.
@@ -143,12 +182,14 @@ const props = defineProps({
 const emit = defineEmits(['sent', 'loaded']);
 
 const { locale, t } = useI18n();
+const { user } = useAuth();
 const isAr = computed(() => locale.value === 'ar');
 
 const MAX_BODY = 4000;
 
 const messages = ref([]);
 const participants = ref({ student: null, teachers: [], sheikhs: [] });
+const reads = ref({});
 const loading = ref(false);
 const draft = ref('');
 const sending = ref(false);
@@ -158,6 +199,120 @@ const composerRef = ref(null);
 const composerId = `msg-composer-${Math.random().toString(36).slice(2, 8)}`;
 
 const canSend = computed(() => !sending.value && draft.value.trim().length > 0);
+
+// Live socket binding: real-time message delivery, typing indicators,
+// presence dots, and read-receipt updates. Polling stays on as a
+// fallback so a transient disconnect doesn't drop messages.
+const studentIdRef = toRef(props, 'studentId');
+const {
+  incomingMessages,
+  typingUsers,
+  readByUser,
+  onlineUserIds,
+  signalTyping,
+  signalRead,
+} = useConversationSocket(studentIdRef);
+
+// Drain incoming-message queue into the visible list, de-duping by id
+// so the sender's own REST-returned message isn't double-rendered when
+// the socket echoes it back.
+watch(
+  incomingMessages,
+  async (queue) => {
+    if (!queue.length) return;
+    let appended = false;
+    while (queue.length) {
+      const m = queue.shift();
+      if (messages.value.some((existing) => existing.id === m.id)) continue;
+      messages.value.push({
+        ...m,
+        fromSelf: m.senderId === user.value?.id,
+      });
+      appended = true;
+    }
+    if (appended) {
+      await scrollToBottom();
+      // Live message arriving while we're in the thread = it's been
+      // seen. The REST GET already bumped lastReadAt on mount; this
+      // emit just tells the sender's UI to flip the read indicator.
+      signalRead();
+      emit('loaded', { unreadCleared: true });
+    }
+  },
+  { deep: true }
+);
+
+// Mirror incoming read events into the local reads map so receipts
+// update live (e.g. a teacher reading my message flips "Delivered" to
+// "Read" without a page refresh).
+watch(
+  readByUser,
+  (map) => {
+    const next = { ...reads.value };
+    for (const [uid, ts] of map) next[uid] = ts;
+    reads.value = next;
+  },
+  { deep: true }
+);
+
+// Typing indicator: bottom-of-thread "{name} is typing…" string built
+// from the live typingUsers map, with the current viewer excluded.
+const typingLabel = computed(() => {
+  if (!typingUsers.value || typingUsers.value.size === 0) return '';
+  const others = Array.from(typingUsers.value.values()).filter(
+    (entry, _, all) => all // entry exists; userId filter happens below
+  );
+  const otherEntries = [];
+  for (const [uid, info] of typingUsers.value) {
+    if (uid === user.value?.id) continue;
+    otherEntries.push(info);
+  }
+  if (otherEntries.length === 0) return '';
+  if (otherEntries.length === 1) {
+    return t('messages.typingOne', { name: otherEntries[0].name || t('messages.someone') });
+  }
+  return t('messages.typingMany');
+});
+
+// Compute the last message I sent, then check whether any OTHER
+// participant has lastReadAt > that message's createdAt. If yes,
+// surface a "Read" indicator below my last sent bubble. Showing it
+// only on the last message keeps the visual quiet — same pattern as
+// WhatsApp / iMessage.
+const lastSentMessageId = computed(() => {
+  for (let i = messages.value.length - 1; i >= 0; i--) {
+    if (messages.value[i].fromSelf) return messages.value[i].id;
+  }
+  return null;
+});
+
+function isReadByOthers(message) {
+  if (!message.fromSelf) return false;
+  const createdAt = new Date(message.createdAt).getTime();
+  for (const [uid, ts] of Object.entries(reads.value)) {
+    if (uid === user.value?.id) continue;
+    if (new Date(ts).getTime() > createdAt) return true;
+  }
+  return false;
+}
+
+// Presence: any participant other than the viewer who is currently
+// online. Drives the green dot in the header.
+const onlineOthers = computed(() => {
+  const ids = onlineUserIds.value;
+  if (!ids || ids.size === 0) return [];
+  const out = [];
+  const everyone = [
+    participants.value.student,
+    ...(participants.value.teachers || []),
+    ...(participants.value.sheikhs || []),
+  ].filter(Boolean);
+  for (const p of everyone) {
+    if (p.id === user.value?.id) continue;
+    if (ids.has(p.id)) out.push(p);
+  }
+  return out;
+});
 
 // Header subtitle: a short, plain-language list of who else is in the
 // thread. Sheikh is always present, so we always mention him.
@@ -248,7 +403,12 @@ async function load() {
     const data = await api.get(`/api/messages/conversations/${props.studentId}`);
     messages.value = data.messages || [];
     participants.value = data.participants || { student: null, teachers: [], sheikhs: [] };
+    reads.value = data.reads || {};
     emit('loaded', { unreadCleared: true });
+    // Tell other participants we just opened the thread so their "Read"
+    // indicators light up. The REST GET already bumped lastReadAt
+    // server-side; this is just the live ping.
+    signalRead();
     await scrollToBottom();
   } catch (e) {
     error.value = e?.data?.error || e.message || t('messages.loadFailed');
@@ -272,7 +432,11 @@ async function onSend() {
       `/api/messages/conversations/${props.studentId}/messages`,
       { body }
     );
-    messages.value.push(data.message);
+    // Skip the local append if the socket already delivered it (race
+    // possible on a fast loopback connection). Dedupe by id.
+    if (!messages.value.some((m) => m.id === data.message.id)) {
+      messages.value.push(data.message);
+    }
     draft.value = '';
     await nextTick();
     autosize();
@@ -284,6 +448,13 @@ async function onSend() {
     sending.value = false;
     composerRef.value?.focus?.();
   }
+}
+
+// Typing emit: called on every composer input. The composable
+// throttles to once-per-3s so this is safe to wire to @input directly.
+function onComposerInput() {
+  autosize();
+  if (draft.value.trim().length > 0) signalTyping();
 }
 
 async function scrollToBottom() {

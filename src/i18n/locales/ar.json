@@ -439,7 +439,13 @@
     "noMatch": "لا توجد محادثات تطابق هذا الاسم.",
     "emptyList": "لا توجد محادثات بعد.",
     "youPrefix": "أنت:",
-    "noMessagesYet": "لا توجد رسائل بعد"
+    "noMessagesYet": "لا توجد رسائل بعد",
+    "online": "متصل الآن",
+    "onlineNowTitle": "{n} متصل الآن",
+    "typingOne": "{name} يكتب",
+    "typingMany": "عدة أشخاص يكتبون",
+    "someone": "شخص ما",
+    "read": "مقروءة"
   },
   "admin": {
     "title": "لوحة الإدارة",

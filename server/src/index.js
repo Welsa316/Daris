@@ -1,8 +1,10 @@
 import express from 'express';
+import http from 'node:http';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { env, isProd } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
+import { initSocketServer } from './services/socketService.js';
 import { securityHeaders, parameterPollution, removePoweredBy, forceHttps } from './middleware/security.js';
 import { generalLimiter } from './middleware/rateLimiter.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -215,7 +217,13 @@ runGCalSweep().catch((err) =>
 async function start() {
   await connectDatabase();
 
-  app.listen(env.PORT, () => {
+  // Socket.IO needs to attach to a raw http.Server so it can intercept
+  // the WebSocket upgrade alongside normal HTTP traffic. Express keeps
+  // serving REST as before; Socket.IO answers on /socket.io.
+  const httpServer = http.createServer(app);
+  initSocketServer(httpServer);
+
+  httpServer.listen(env.PORT, () => {
     logger.info(`Daris server running on port ${env.PORT} [${env.NODE_ENV}]`);
   });
 }

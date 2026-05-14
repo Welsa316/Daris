@@ -114,9 +114,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { api } from '@/config/api.js';
+import { useConversationListSocket } from '@/composables/useConversationSocket.js';
+import { useAuth } from '@/composables/useAuth.js';
 import MessageThread from './MessageThread.vue';
 
 defineProps({
@@ -128,6 +130,7 @@ defineProps({
 const emit = defineEmits(['unread-changed']);
 
 const { locale } = useI18n();
+const { user } = useAuth();
 
 const conversations = ref([]);
 const search = ref('');
@@ -135,6 +138,55 @@ const loading = ref(false);
 const selectedStudentId = ref(null);
 const threadAnchor = ref(null);
 const searchId = `msg-list-search-${Math.random().toString(36).slice(2, 8)}`;
+
+// Live sidebar updates: server pushes conversation:updated whenever a
+// message lands in any conversation this user can read. We splice the
+// update into the existing list and bump unread (unless the bumped
+// conversation is the one currently selected, in which case the thread
+// view already handled it).
+const { updates: liveListUpdates } = useConversationListSocket();
+watch(
+  liveListUpdates,
+  (queue) => {
+    if (!queue.length) return;
+    while (queue.length) {
+      const ev = queue.shift();
+      applySidebarUpdate(ev);
+    }
+    emit('unread-changed', totalUnread.value);
+  },
+  { deep: true }
+);
+
+function applySidebarUpdate(ev) {
+  const idx = conversations.value.findIndex((c) => c.studentId === ev.studentId);
+  // We can't know the student's display name from the event alone, so
+  // if the row isn't in the list yet (e.g. a brand-new conversation),
+  // fall back to a full refetch. Cheap and rare.
+  if (idx === -1) {
+    load();
+    return;
+  }
+  const row = conversations.value[idx];
+  row.conversationId = ev.conversationId;
+  row.lastMessage = {
+    id: ev.lastMessage.id,
+    body: ev.lastMessage.body,
+    senderId: ev.lastMessage.senderId,
+    createdAt: ev.lastMessage.createdAt,
+    fromSelf: ev.lastMessage.senderId === user.value?.id,
+  };
+  row.lastMessageAt = ev.lastMessageAt;
+  // Don't bump unread when the recipient is already viewing the thread
+  // — they're actively reading it, the badge would be misleading.
+  if (selectedStudentId.value !== ev.studentId && ev.lastMessage.senderId !== user.value?.id) {
+    row.unreadCount = (row.unreadCount || 0) + 1;
+  }
+  // Move the freshly-updated row to the top so the sidebar always
+  // shows the most active conversation first.
+  conversations.value.splice(idx, 1);
+  conversations.value.unshift(row);
+}
 
 const totalUnread = computed(() =>
   conversations.value.reduce((sum, c) => sum + (c.unreadCount || 0), 0)

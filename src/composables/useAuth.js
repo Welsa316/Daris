@@ -1,6 +1,7 @@
 import { ref, computed, readonly } from 'vue';
 import { router } from '@/router/index.js';
 import { api } from '@/config/api.js';
+import { disconnectSocket } from '@/lib/socket.js';
 
 const user = ref(null);
 const loading = ref(true);
@@ -62,12 +63,16 @@ export function useAuth() {
       // Proceed even if server call fails
     }
     user.value = null;
+    // Tear down the live socket so it doesn't keep auto-reconnecting
+    // against an invalidated session cookie.
+    disconnectSocket();
     router.push('/login');
   }
 
   async function logoutAll() {
     await api.post('/api/auth/logout-all');
     user.value = null;
+    disconnectSocket();
     router.push('/login');
   }
 
