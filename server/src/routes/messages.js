@@ -26,7 +26,8 @@ import { requireRole } from '../middleware/rbac.js';
 import { validate } from '../middleware/validate.js';
 import { prisma } from '../config/database.js';
 import { t, getLang } from '../utils/i18n.js';
-import { auditLog } from '../utils/logger.js';
+import { auditLog, logger } from '../utils/logger.js';
+import { notifyNewMessage } from '../services/messageNotificationService.js';
 
 const router = Router();
 
@@ -469,6 +470,25 @@ router.post(
         studentId,
         bytes: req.body.body.length,
       });
+
+      // Fire-and-forget: the API response goes out immediately and every
+      // error is caught inside the service. A Resend outage must never
+      // block the message POST.
+      notifyNewMessage({
+        conversation: conv,
+        sender: {
+          id: req.user.id,
+          firstName: message.sender?.firstName || '',
+          lastName: message.sender?.lastName || '',
+        },
+        body: req.body.body,
+      }).catch((err) =>
+        logger.error('messages: notifyNewMessage dispatch failed', {
+          conversationId: conv.id,
+          senderId: req.user.id,
+          error: err.message,
+        })
+      );
 
       res.status(201).json({
         message: {

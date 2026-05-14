@@ -480,10 +480,14 @@ model Message {
 // unread badge cheaply: unread = messages.count where createdAt > lastReadAt
 // AND senderId != userId. Lazy upsert on first read.
 model ConversationRead {
-  id             String   @id @default(uuid()) @db.Uuid
-  conversationId String   @map("conversation_id") @db.Uuid
-  userId         String   @map("user_id") @db.Uuid
-  lastReadAt     DateTime @default(now()) @map("last_read_at")
+  id             String    @id @default(uuid()) @db.Uuid
+  conversationId String    @map("conversation_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  lastReadAt     DateTime  @default(now()) @map("last_read_at")
+  // When this user was last emailed about a new message in this
+  // conversation. Used to debounce notifications so a fast back-and-forth
+  // doesn't spam each recipient's inbox. Null = never notified.
+  lastNotifiedAt DateTime? @map("last_notified_at")
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user         User         @relation("ConversationReadUser", fields: [userId], references: [id], onDelete: Cascade)
