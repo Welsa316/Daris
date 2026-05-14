@@ -36,32 +36,32 @@
     >
       <div
         v-if="open"
-        class="absolute bottom-16 end-0 w-[22rem] max-w-[calc(100vw-2rem)] h-[34rem] max-h-[calc(100vh-6rem)] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col origin-bottom-end max-md:fixed max-md:inset-2 max-md:w-auto max-md:h-auto max-md:max-w-none max-md:max-h-none"
+        class="absolute bottom-20 end-0 w-[35rem] max-w-[calc(100vw-2rem)] h-[54rem] max-h-[calc(100vh-7rem)] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col origin-bottom-end max-md:fixed max-md:inset-2 max-md:w-auto max-md:h-auto max-md:max-w-none max-md:max-h-none"
       >
         <!-- Header. Different content depending on whether we're in the
              list view or inside a thread. -->
-        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2 shrink-0 bg-cream/40">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between gap-3 shrink-0 bg-cream/40">
           <button
             v-if="staffInThread"
             type="button"
             @click="backToList"
-            class="text-slate-500 hover:text-primary motion-safe:transition-colors text-sm shrink-0"
+            class="text-slate-500 hover:text-primary motion-safe:transition-colors text-xl shrink-0"
             :aria-label="$t('messages.widgetBack')"
           >
             ←
           </button>
           <div class="min-w-0 flex-1">
-            <h3 class="text-sm font-display font-bold text-primary truncate">
+            <h3 class="text-lg font-display font-bold text-primary truncate">
               {{ headerTitle }}
             </h3>
-            <p v-if="headerSubtitle" class="text-[11px] text-slate-500 truncate mt-0.5">
+            <p v-if="headerSubtitle" class="text-xs text-slate-500 truncate mt-1">
               {{ headerSubtitle }}
             </p>
           </div>
           <button
             type="button"
             @click="close"
-            class="text-slate-400 hover:text-primary motion-safe:transition-colors text-base shrink-0 leading-none"
+            class="text-slate-400 hover:text-primary motion-safe:transition-colors text-xl shrink-0 leading-none"
             :aria-label="$t('messages.widgetClose')"
           >
             ✕
@@ -81,17 +81,17 @@
               <button
                 type="button"
                 @click="openThread(row.studentId)"
-                class="w-full text-start px-4 py-3 hover:bg-cream-50 motion-safe:transition-colors"
+                class="w-full text-start px-6 py-4 hover:bg-cream-50 motion-safe:transition-colors"
               >
                 <div class="flex items-center justify-between gap-2">
                   <p
-                    class="text-sm font-medium truncate flex items-center gap-1.5"
+                    class="text-base font-medium truncate flex items-center gap-2"
                     :class="row.unreadCount > 0 ? 'text-primary font-semibold' : 'text-slate-700'"
                   >
                     <span class="truncate">{{ row.studentName || $t('messages.unnamedStudent') }}</span>
                     <span
                       v-if="row.canWrite === false"
-                      class="shrink-0 text-[9px] uppercase tracking-wider text-slate-400 border border-slate-200 rounded-sm px-1 py-px font-medium"
+                      class="shrink-0 text-[10px] uppercase tracking-wider text-slate-400 border border-slate-200 rounded-sm px-1.5 py-px font-medium"
                       :title="$t('messages.readOnlyHint')"
                     >
                       {{ $t('messages.readOnlyBadge') }}
@@ -99,18 +99,18 @@
                   </p>
                   <span
                     v-if="row.unreadCount > 0"
-                    class="shrink-0 text-[10px] font-semibold tabular-nums text-cream bg-primary rounded-full px-1.5 py-0.5"
+                    class="shrink-0 text-xs font-semibold tabular-nums text-cream bg-primary rounded-full px-2 py-0.5"
                   >
                     {{ row.unreadCount }}
                   </span>
                 </div>
                 <p
                   v-if="row.lastMessage"
-                  class="text-xs text-slate-500 mt-0.5 truncate"
+                  class="text-sm text-slate-500 mt-1 truncate"
                 >
                   <span v-if="row.lastMessage.fromSelf" class="text-slate-400">{{ $t('messages.youPrefix') }} </span>{{ row.lastMessage.body }}
                 </p>
-                <p v-else class="text-xs text-slate-400 mt-0.5 italic">
+                <p v-else class="text-sm text-slate-400 mt-1 italic">
                   {{ $t('messages.noMessagesYet') }}
                 </p>
               </button>
@@ -143,16 +143,16 @@
     <button
       type="button"
       @click="toggle"
-      class="group inline-flex items-center gap-2 bg-primary text-cream rounded-full ps-4 pe-5 py-3 shadow-2xl hover:bg-primary-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold motion-safe:transition-all"
+      class="group inline-flex items-center gap-3 bg-primary text-cream rounded-full ps-6 pe-7 py-4 shadow-2xl hover:bg-primary-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold motion-safe:transition-all"
       :class="open ? 'scale-95' : ''"
       :aria-label="open ? $t('messages.widgetClose') : $t('messages.widgetOpen')"
       :aria-expanded="open"
     >
-      <span class="text-lg leading-none" aria-hidden="true">💬</span>
-      <span class="text-sm font-semibold">{{ $t('messages.widgetLabel') }}</span>
+      <span class="text-2xl leading-none" aria-hidden="true">💬</span>
+      <span class="text-base font-semibold">{{ $t('messages.widgetLabel') }}</span>
       <span
         v-if="unreadCount > 0"
-        class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-gold text-primary text-[11px] font-bold tabular-nums"
+        class="inline-flex items-center justify-center min-w-[1.75rem] h-7 px-2 rounded-full bg-gold text-primary text-sm font-bold tabular-nums"
         :aria-label="$t('messages.unreadAria', { n: unreadCount })"
       >
         {{ unreadCount > 99 ? '99+' : unreadCount }}
