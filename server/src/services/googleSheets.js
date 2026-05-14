@@ -113,26 +113,57 @@ export async function createStudentNotebook(adminUserId, student) {
   // Arabic, so headers + tab name are in Arabic and the sheet is
   // marked rightToLeft so the column order reads naturally for him.
   //
-  // One row per CYCLE (a 4-session run of one subject). The four
-  // session columns hold free-form notes for sessions 1 through 4.
-  // The مدفوع checkbox is per-cycle and manually ticked by the
-  // sheikh — one tick covers the whole cycle, no per-session
-  // bookkeeping. Payments/Profile-notes tabs were dropped: a single
-  // table is the entire surface.
+  // Layout: ONE ROW PER SESSION, four rows per cycle.
   //
-  // Cycles don't align with calendar months (e.g. a cycle that starts
-  // May 10 ends around June 7), so col 0 is the **actual start date**
-  // of the cycle — sheikh enters the day the cycle began and the cell
-  // renders day + month + year.
+  // Previously the sheet collapsed a whole 4-session cycle into a
+  // single row with four "session X" columns + a "for next session"
+  // column. That broke down the moment the sheikh wrote a planning
+  // note like "next time we'll finish Ta-Ha" — which "next" did it
+  // mean? Session 2? Session 3? Now each session gets its own row, so
+  // a note on row N is unambiguously about row N+1.
   //
-  // Columns (7):
-  //   0 بدأ في          (Started on — date the cycle began, e.g. "10 May 2026")
-  //   1 المادة          (Subject — dropdown: قرآن / فقه / لغة عربية / تربية إسلامية)
-  //   2 الجلسة الأولى  (Session 1 — date + free-form notes)
-  //   3 الجلسة الثانية (Session 2)
-  //   4 الجلسة الثالثة (Session 3)
-  //   5 الجلسة الرابعة (Session 4)
-  //   6 مدفوع           (Paid — manual checkbox per cycle)
+  // Columns (6):
+  //   0 التاريخ           (Date — when this session happened)
+  //   1 المادة            (Subject — dropdown, repeated per row)
+  //   2 #                 (Session number 1–4 within the cycle —
+  //                        pre-filled by the template so the sheikh
+  //                        doesn't have to count)
+  //   3 ملاحظات الجلسة    (Notes for THIS session)
+  //   4 للحصة القادمة     (For next session — planning notes that
+  //                        apply to the next row down)
+  //   5 مدفوع             (Paid checkbox — only on every 4th row,
+  //                        i.e. the last session of each cycle)
+  //
+  // Cycle grouping: every 4 rows are visually one cycle. Alternating
+  // background colour (cream / white) draws the eye to each block; a
+  // thicker bottom border under every 4th row reinforces the seam.
+  //
+  // Pre-allocation: 25 cycles (rows 2..101 in 1-indexed Sheets terms;
+  // 100 rows of data + 1 header row).
+  const CYCLES = 25;
+  const ROWS_PER_CYCLE = 4;
+  const TOTAL_DATA_ROWS = CYCLES * ROWS_PER_CYCLE; // 100
+
+  // Pre-build the session-number column so each cycle reads 1, 2, 3, 4.
+  // The sheikh can still overwrite if a session is skipped, but the
+  // default removes the most error-prone cell to fill in by hand.
+  const sessionNumberRows = [];
+  for (let i = 0; i < TOTAL_DATA_ROWS; i++) {
+    const sessionNumber = (i % ROWS_PER_CYCLE) + 1;
+    sessionNumberRows.push({
+      values: [
+        // Cols 0,1 left blank (date + subject — sheikh fills).
+        { userEnteredValue: {} },
+        { userEnteredValue: {} },
+        { userEnteredValue: { numberValue: sessionNumber } },
+        // Cols 3,4,5 left blank.
+        { userEnteredValue: {} },
+        { userEnteredValue: {} },
+        { userEnteredValue: {} },
+      ],
+    });
+  }
+
   const createBody = {
     properties: { title: studentName, locale: 'ar' },
     sheets: [
@@ -141,7 +172,11 @@ export async function createStudentNotebook(adminUserId, student) {
           title: 'الدفتر',
           index: 0,
           rightToLeft: true,
-          gridProperties: { rowCount: 100, columnCount: 7, frozenRowCount: 1 },
+          gridProperties: {
+            rowCount: TOTAL_DATA_ROWS + 1,
+            columnCount: 6,
+            frozenRowCount: 1,
+          },
         },
         data: [
           {
@@ -150,15 +185,16 @@ export async function createStudentNotebook(adminUserId, student) {
             rowData: [
               {
                 values: [
-                  { userEnteredValue: { stringValue: 'بدأ في' } },
+                  { userEnteredValue: { stringValue: 'التاريخ' } },
                   { userEnteredValue: { stringValue: 'المادة' } },
-                  { userEnteredValue: { stringValue: 'الجلسة الأولى' } },
-                  { userEnteredValue: { stringValue: 'الجلسة الثانية' } },
-                  { userEnteredValue: { stringValue: 'الجلسة الثالثة' } },
-                  { userEnteredValue: { stringValue: 'الجلسة الرابعة' } },
+                  { userEnteredValue: { stringValue: '#' } },
+                  { userEnteredValue: { stringValue: 'ملاحظات الجلسة' } },
+                  { userEnteredValue: { stringValue: 'للحصة القادمة' } },
                   { userEnteredValue: { stringValue: 'مدفوع' } },
                 ],
               },
+              // Pre-filled session numbers immediately after the header.
+              ...sessionNumberRows,
             ],
           },
         ],
@@ -207,16 +243,15 @@ export async function createStudentNotebook(adminUserId, student) {
     });
   }
 
-  // Single-tab formatting. One row per cycle (subject × month). Column
-  // indices, in order:
-  //   0 الشهر | 1 المادة | 2 الجلسة الأولى | 3 الجلسة الثانية |
-  //   4 الجلسة الثالثة | 5 الجلسة الرابعة | 6 مدفوع
+  // One-row-per-session formatting. Column indices, in order:
+  //   0 التاريخ | 1 المادة | 2 # | 3 ملاحظات الجلسة |
+  //   4 للحصة القادمة | 5 مدفوع
   const notebookSheetId = sheetIds[0];
   if (notebookSheetId !== undefined) {
-    // Started-on date + subject pills on the left, four equally-wide
-    // prose columns for session notes, a narrow centered checkbox at
-    // the end. Col 0 widened to fit "10 May 2026" without truncation.
-    const widths = [140, 130, 280, 280, 280, 280, 90];
+    // Date column slim, session-# column narrowest, the two prose
+    // columns (notes + next-session planning) get the most width
+    // because that's where the sheikh actually types.
+    const widths = [130, 130, 50, 360, 300, 90];
     widths.forEach((px, idx) => {
       formatRequests.push({
         updateDimensionProperties: {
@@ -232,17 +267,15 @@ export async function createStudentNotebook(adminUserId, student) {
       });
     });
 
-    // Full date display format on column 0 (بدأ في), rows 1..99.
-    // Sheikh enters the cycle's actual start date (e.g. 5/10/2026)
-    // and the cell renders as "10 May 2026" — day + month + year so
-    // cross-month cycles read truthfully (no forcing into a single
-    // calendar month).
+    // Full date display format on column 0 (التاريخ), every data row.
+    // Sheikh enters the session date and the cell renders as
+    // "10 May 2026" so cross-month entries stay legible.
     formatRequests.push({
       repeatCell: {
         range: {
           sheetId: notebookSheetId,
           startRowIndex: 1,
-          endRowIndex: 100,
+          endRowIndex: TOTAL_DATA_ROWS + 1,
           startColumnIndex: 0,
           endColumnIndex: 1,
         },
@@ -255,14 +288,16 @@ export async function createStudentNotebook(adminUserId, student) {
       },
     });
 
-    // Subject dropdown on column 1 (المادة), rows 1..99. Non-strict so
-    // a future fourth subject can be typed in directly.
+    // Subject dropdown on column 1 (المادة). Non-strict so a future
+    // fifth subject can be typed in directly. Applied per row so the
+    // sheikh fills the subject on the first row of a cycle and can
+    // repeat for sessions 2–4 (most cycles stay in one subject).
     formatRequests.push({
       setDataValidation: {
         range: {
           sheetId: notebookSheetId,
           startRowIndex: 1,
-          endRowIndex: 100,
+          endRowIndex: TOTAL_DATA_ROWS + 1,
           startColumnIndex: 1,
           endColumnIndex: 2,
         },
@@ -277,16 +312,38 @@ export async function createStudentNotebook(adminUserId, student) {
       },
     });
 
-    // Wrap + top-align on the four session columns (cols 2..5) so
-    // paragraph notes expand the row height instead of overflowing.
+    // Session-# column (col 2): center-aligned, no wrap — these are
+    // single-digit numbers and shouldn't expand the row height.
     formatRequests.push({
       repeatCell: {
         range: {
           sheetId: notebookSheetId,
           startRowIndex: 1,
-          endRowIndex: 100,
+          endRowIndex: TOTAL_DATA_ROWS + 1,
           startColumnIndex: 2,
-          endColumnIndex: 6,
+          endColumnIndex: 3,
+        },
+        cell: {
+          userEnteredFormat: {
+            horizontalAlignment: 'CENTER',
+            verticalAlignment: 'MIDDLE',
+            textFormat: { bold: true },
+          },
+        },
+        fields: 'userEnteredFormat(horizontalAlignment,verticalAlignment,textFormat)',
+      },
+    });
+
+    // Wrap + top-align on the two prose columns (notes, next-session)
+    // so paragraph notes expand the row height instead of overflowing.
+    formatRequests.push({
+      repeatCell: {
+        range: {
+          sheetId: notebookSheetId,
+          startRowIndex: 1,
+          endRowIndex: TOTAL_DATA_ROWS + 1,
+          startColumnIndex: 3,
+          endColumnIndex: 5,
         },
         cell: {
           userEnteredFormat: {
@@ -298,26 +355,35 @@ export async function createStudentNotebook(adminUserId, student) {
       },
     });
 
-    // Manual paid checkbox on column 6 (مدفوع), rows 1..99. BOOLEAN
-    // data validation makes the cell render as a real checkbox the
-    // sheikh can click; no formula, no auto-derive — one tick per
-    // cycle is the entire payment-tracking surface.
-    formatRequests.push({
-      setDataValidation: {
-        range: {
-          sheetId: notebookSheetId,
-          startRowIndex: 1,
-          endRowIndex: 100,
-          startColumnIndex: 6,
-          endColumnIndex: 7,
+    // Paid checkbox on column 5 — but ONLY on every 4th data row
+    // (the last session of each cycle). A cycle is "paid" as a unit,
+    // not per session, so showing the checkbox on sessions 1–3 would
+    // just invite the wrong row to be ticked. Other rows in this
+    // column stay plain cells.
+    //
+    // Data rows are 1..TOTAL_DATA_ROWS (0-indexed sheets terms with
+    // row 0 = header). The 4th session of cycle c is at row index
+    // 1 + (c*4 - 1) = 4*c. We push one BOOLEAN validation request per
+    // cycle so the checkbox only appears where it makes sense.
+    for (let cycle = 1; cycle <= CYCLES; cycle++) {
+      const row4 = cycle * ROWS_PER_CYCLE; // 0-indexed row of last session
+      formatRequests.push({
+        setDataValidation: {
+          range: {
+            sheetId: notebookSheetId,
+            startRowIndex: row4,
+            endRowIndex: row4 + 1,
+            startColumnIndex: 5,
+            endColumnIndex: 6,
+          },
+          rule: {
+            condition: { type: 'BOOLEAN' },
+            showCustomUi: true,
+            strict: false,
+          },
         },
-        rule: {
-          condition: { type: 'BOOLEAN' },
-          showCustomUi: true,
-          strict: false,
-        },
-      },
-    });
+      });
+    }
 
     // Center the checkbox column for tidiness.
     formatRequests.push({
@@ -325,9 +391,9 @@ export async function createStudentNotebook(adminUserId, student) {
         range: {
           sheetId: notebookSheetId,
           startRowIndex: 1,
-          endRowIndex: 100,
-          startColumnIndex: 6,
-          endColumnIndex: 7,
+          endRowIndex: TOTAL_DATA_ROWS + 1,
+          startColumnIndex: 5,
+          endColumnIndex: 6,
         },
         cell: {
           userEnteredFormat: { horizontalAlignment: 'CENTER' },
@@ -335,6 +401,57 @@ export async function createStudentNotebook(adminUserId, student) {
         fields: 'userEnteredFormat.horizontalAlignment',
       },
     });
+
+    // Visual cycle grouping. Every cycle gets one background colour;
+    // alternating between cream and white draws the eye to where one
+    // cycle ends and the next begins. Then a thicker bottom border
+    // under each 4th row reinforces the seam.
+    // White first so cycle 1 contrasts with the cream header above
+    // it — otherwise the freeze line + cycle 1 would be the same
+    // tint and the seam between header and data would muddle.
+    const CYCLE_TINTS = [
+      { red: 1, green: 1, blue: 1 },              // plain white
+      { red: 0.96, green: 0.94, blue: 0.88 },     // cream
+    ];
+    for (let cycle = 0; cycle < CYCLES; cycle++) {
+      const startRow = 1 + cycle * ROWS_PER_CYCLE;
+      const endRow = startRow + ROWS_PER_CYCLE;
+      const tint = CYCLE_TINTS[cycle % CYCLE_TINTS.length];
+      formatRequests.push({
+        repeatCell: {
+          range: {
+            sheetId: notebookSheetId,
+            startRowIndex: startRow,
+            endRowIndex: endRow,
+            startColumnIndex: 0,
+            endColumnIndex: 6,
+          },
+          cell: {
+            userEnteredFormat: { backgroundColor: tint },
+          },
+          fields: 'userEnteredFormat.backgroundColor',
+        },
+      });
+      // Heavier bottom border on the last row of the cycle so the
+      // separator is visible even when two cycles share a tint
+      // (every 4-row block ends with a defined line, not just a
+      // colour shift).
+      formatRequests.push({
+        updateBorders: {
+          range: {
+            sheetId: notebookSheetId,
+            startRowIndex: endRow - 1,
+            endRowIndex: endRow,
+            startColumnIndex: 0,
+            endColumnIndex: 6,
+          },
+          bottom: {
+            style: 'SOLID_MEDIUM',
+            color: { red: 0.65, green: 0.55, blue: 0.25 }, // gold-ish
+          },
+        },
+      });
+    }
   }
 
   if (formatRequests.length > 0) {
