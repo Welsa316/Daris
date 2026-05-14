@@ -23,73 +23,81 @@ enum UserRole {
 }
 
 model User {
-  id                String    @id @default(uuid()) @db.Uuid
-  email             String    @unique
-  passwordHash      String    @map("password_hash")
-  firstName         String    @map("first_name")
-  lastName          String    @map("last_name")
-  country           String
-  phone             String?
-  whatsapp          String?
-  telegram          String?
-  enrollmentMessage String?   @map("enrollment_message") @db.VarChar(500)
-  preferredLanguage String    @default("ar") @map("preferred_language")
+  id                      String    @id @default(uuid()) @db.Uuid
+  email                   String    @unique
+  passwordHash            String    @map("password_hash")
+  firstName               String    @map("first_name")
+  lastName                String    @map("last_name")
+  country                 String
+  phone                   String?
+  whatsapp                String?
+  telegram                String?
+  enrollmentMessage       String?   @map("enrollment_message") @db.VarChar(500)
+  preferredLanguage       String    @default("ar") @map("preferred_language")
   // How much is expected from this student per calendar month. Minor units
   // (piastres / cents) to match Payment.amount. Null = no expectation set
   // and no balance pill will render.
-  expectedMonthlyAmount   Int?    @map("expected_monthly_amount")
-  expectedMonthlyCurrency String? @map("expected_monthly_currency")
-  role              UserRole  @default(pending)
+  expectedMonthlyAmount   Int?      @map("expected_monthly_amount")
+  expectedMonthlyCurrency String?   @map("expected_monthly_currency")
+  role                    UserRole  @default(pending)
   // Student capability flag. True for anyone who attends classes as a
   // student. Defaults to true on signup (the normal enrollment path
   // creates an enrolled student). The sheikh can toggle it off when
   // promoting a "pure teacher" who shouldn't appear in the students
   // list. Demoting a pure teacher auto-restores it so they can never
   // become orphaned (no isTeacher, no isStudent, invisible).
-  isStudent         Boolean   @default(true) @map("is_student")
+  isStudent               Boolean   @default(true) @map("is_student")
   // Teacher capability flag. Independent of `role` so a senior
   // enrolled_student can also teach. Anyone with isTeacher=true (or
   // role=admin) gains scoped access to /admin and the assigned-students
   // surfaces. Sheikh-toggled from the dashboard; defaults to false.
-  isTeacher         Boolean   @default(false) @map("is_teacher")
+  isTeacher               Boolean   @default(false) @map("is_teacher")
   // Per-student Google Sheets notebook. The sheikh edits notes /
   // payments / lesson reports in this Sheet directly; Daris just
   // stores the URL + ID and surfaces an "Open notebook" button.
   // Lazy-created on first click for the student. Sheet lives in
   // the sheikh's Drive at Daris/Students/.
-  notebookSheetId   String?   @map("notebook_sheet_id")
-  notebookSheetUrl  String?   @map("notebook_sheet_url") @db.Text
-  emailVerified     Boolean   @default(false) @map("email_verified")
-  tokenVersion      Int       @default(0) @map("token_version")
-  failedLoginAttempts Int     @default(0) @map("failed_login_attempts")
-  lockedUntil       DateTime? @map("locked_until")
-  lastLoginAt       DateTime? @map("last_login_at")
-  lastLoginIp       String?   @map("last_login_ip")
-  rejectedAt        DateTime? @map("rejected_at")
-  rejectionMessage  String?   @map("rejection_message")
-  enrolledAt        DateTime? @map("enrolled_at")
-  deletedAt         DateTime? @map("deleted_at")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  notebookSheetId         String?   @map("notebook_sheet_id")
+  notebookSheetUrl        String?   @map("notebook_sheet_url") @db.Text
+  emailVerified           Boolean   @default(false) @map("email_verified")
+  tokenVersion            Int       @default(0) @map("token_version")
+  failedLoginAttempts     Int       @default(0) @map("failed_login_attempts")
+  lockedUntil             DateTime? @map("locked_until")
+  lastLoginAt             DateTime? @map("last_login_at")
+  lastLoginIp             String?   @map("last_login_ip")
+  rejectedAt              DateTime? @map("rejected_at")
+  rejectionMessage        String?   @map("rejection_message")
+  enrolledAt              DateTime? @map("enrolled_at")
+  deletedAt               DateTime? @map("deleted_at")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
 
-  sessions          Session[]
-  adminNotes        AdminNote[]    @relation("StudentNotes")
-  authoredNotes     AdminNote[]    @relation("AuthorNotes")
-  classAssignments  ClassAssignment[]
-  createdClasses    ClassSession[]     @relation("AdminClasses")
-  emailTokens       EmailToken[]
-  auditLogs         AuditLog[]
-  classLogs         ClassLog[]     @relation("ClassLogStudent")
-  classLogsAuthored ClassLog[]     @relation("ClassLogAuthor")
-  payments          Payment[]      @relation("PaymentStudent")
-  paymentsAuthored  Payment[]      @relation("PaymentAuthor")
+  sessions                 Session[]
+  adminNotes               AdminNote[]               @relation("StudentNotes")
+  authoredNotes            AdminNote[]               @relation("AuthorNotes")
+  classAssignments         ClassAssignment[]
+  createdClasses           ClassSession[]            @relation("AdminClasses")
+  emailTokens              EmailToken[]
+  auditLogs                AuditLog[]
+  classLogs                ClassLog[]                @relation("ClassLogStudent")
+  classLogsAuthored        ClassLog[]                @relation("ClassLogAuthor")
+  payments                 Payment[]                 @relation("PaymentStudent")
+  paymentsAuthored         Payment[]                 @relation("PaymentAuthor")
   googleCalendarConnection GoogleCalendarConnection?
   // Multi-teacher: which students this user (as a teacher) is assigned to.
-  taughtStudents       TeacherStudent[] @relation("TeacherToStudents")
+  taughtStudents           TeacherStudent[]          @relation("TeacherToStudents")
   // Multi-teacher: which teachers this user (as a student) reports to.
-  teachers             TeacherStudent[] @relation("StudentToTeachers")
+  teachers                 TeacherStudent[]          @relation("StudentToTeachers")
   // Multi-teacher: TeacherStudent rows this user (as an admin) assigned.
-  assignedTeacherLinks TeacherStudent[] @relation("TeacherStudentAssigner")
+  assignedTeacherLinks     TeacherStudent[]          @relation("TeacherStudentAssigner")
+  // Messaging: one conversation per student (anchored by studentId).
+  // Anyone with class-side access to the student (assigned teachers +
+  // any sheikh) can read and reply. studentConversation = the thread
+  // anchored on this user as a student; messages = rows authored by
+  // this user across any conversation.
+  studentConversation      Conversation?             @relation("ConversationStudent")
+  authoredMessages         Message[]                 @relation("MessageAuthor")
+  conversationReads        ConversationRead[]        @relation("ConversationReadUser")
 
   @@index([role])
   @@index([isTeacher])
@@ -100,17 +108,17 @@ model User {
 }
 
 model Session {
-  id            String   @id @default(uuid()) @db.Uuid
-  userId        String   @map("user_id") @db.Uuid
-  refreshToken  String   @unique @map("refresh_token")
-  deviceInfo    String?  @map("device_info")
-  ipAddress     String?  @map("ip_address")
-  lastActiveAt  DateTime @default(now()) @map("last_active_at")
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  refreshToken   String   @unique @map("refresh_token")
+  deviceInfo     String?  @map("device_info")
+  ipAddress      String?  @map("ip_address")
+  lastActiveAt   DateTime @default(now()) @map("last_active_at")
   absoluteExpiry DateTime @map("absolute_expiry")
-  expiresAt     DateTime @map("expires_at")
-  createdAt     DateTime @default(now()) @map("created_at")
+  expiresAt      DateTime @map("expires_at")
+  createdAt      DateTime @default(now()) @map("created_at")
 
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
@@ -121,12 +129,12 @@ model EmailToken {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   tokenHash String   @map("token_hash")
-  type      String   // "verification" | "password_reset"
+  type      String // "verification" | "password_reset"
   used      Boolean  @default(false)
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tokenHash])
   @@index([userId, type])
@@ -134,53 +142,53 @@ model EmailToken {
 }
 
 model ClassSession {
-  id              String   @id @default(uuid()) @db.Uuid
-  title           String
-  titleAr         String?  @map("title_ar")
-  description     String?  @db.Text
-  descriptionAr   String?  @map("description_ar") @db.Text
+  id                  String    @id @default(uuid()) @db.Uuid
+  title               String
+  titleAr             String?   @map("title_ar")
+  description         String?   @db.Text
+  descriptionAr       String?   @map("description_ar") @db.Text
   // Subject area being taught. Drives the color-coding + legend in the
   // admin calendar. Free-form string rather than an enum so we can add
   // new subjects (e.g. "seerah", "tafseer") without a migration.
   // Null for classes scheduled before this field existed.
-  subject         String?
+  subject             String?
   // Mixed-subject sessions (e.g. "Quran for the first hour, Fiqh for the
   // second"). When subjectSecondary is set, subjectSwitchMin must be set
   // too. Validated in Zod at the API layer. See the Google Calendar
   // integration plan for the full constraint set.
-  subjectSecondary String?  @map("subject_secondary")
-  subjectSwitchMin Int?     @map("subject_switch_min")
-  startTime       DateTime @map("start_time")
-  endTime         DateTime @map("end_time")
-  timezone        String   @default("UTC")
-  meetingLink     String?  @map("meeting_link")
+  subjectSecondary    String?   @map("subject_secondary")
+  subjectSwitchMin    Int?      @map("subject_switch_min")
+  startTime           DateTime  @map("start_time")
+  endTime             DateTime  @map("end_time")
+  timezone            String    @default("UTC")
+  meetingLink         String?   @map("meeting_link")
   // Google Calendar sync — populated once the Calendar API has created the
   // event. Null before sync, or while disconnected / migrating. The
   // `meetingLink` above is updated to the Meet URL when this is set.
   googleEventId       String?   @map("google_event_id")
   googleEventSyncedAt DateTime? @map("google_event_synced_at")
-  recurrence      String?  // "weekly" | "biweekly" | "custom" | null (one-off)
-  recurrenceEnd   DateTime? @map("recurrence_end")
-  cancelled       Boolean  @default(false)
-  cancelledAt     DateTime? @map("cancelled_at")
-  rescheduled       Boolean   @default(false)
-  rescheduledAt     DateTime? @map("rescheduled_at")
-  originalStartTime DateTime? @map("original_start_time")
-  originalEndTime   DateTime? @map("original_end_time")
-  reminder30SentAt  DateTime? @map("reminder_30_sent_at")
-  reminder24SentAt  DateTime? @map("reminder_24_sent_at")
+  recurrence          String? // "weekly" | "biweekly" | "custom" | null (one-off)
+  recurrenceEnd       DateTime? @map("recurrence_end")
+  cancelled           Boolean   @default(false)
+  cancelledAt         DateTime? @map("cancelled_at")
+  rescheduled         Boolean   @default(false)
+  rescheduledAt       DateTime? @map("rescheduled_at")
+  originalStartTime   DateTime? @map("original_start_time")
+  originalEndTime     DateTime? @map("original_end_time")
+  reminder30SentAt    DateTime? @map("reminder_30_sent_at")
+  reminder24SentAt    DateTime? @map("reminder_24_sent_at")
   // Groups all ClassSession rows created together via /classes/batch so
   // admin actions can act on "this occurrence" vs "this and following".
   // Null for legacy or one-off classes.
-  seriesId          String?   @map("series_id") @db.Uuid
-  createdByAdminId String? @map("created_by_admin_id") @db.Uuid
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  seriesId            String?   @map("series_id") @db.Uuid
+  createdByAdminId    String?   @map("created_by_admin_id") @db.Uuid
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
 
-  createdByAdmin  User?    @relation("AdminClasses", fields: [createdByAdminId], references: [id], onDelete: SetNull)
-  assignments     ClassAssignment[]
-  classLogs       ClassLog[]
-  googleSyncOps   GoogleCalendarSyncOp[]
+  createdByAdmin User?                  @relation("AdminClasses", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  assignments    ClassAssignment[]
+  classLogs      ClassLog[]
+  googleSyncOps  GoogleCalendarSyncOp[]
 
   @@index([startTime])
   @@index([cancelled])
@@ -196,29 +204,29 @@ model ClassSession {
 // If the connection is disconnected the tokens are wiped and the row is
 // kept with status='disconnected' for audit; reconnecting updates in place.
 model GoogleCalendarConnection {
-  id                      String    @id @default(uuid()) @db.Uuid
-  userId                  String    @unique @map("user_id") @db.Uuid
-  googleAccountEmail      String    @map("google_account_email")
-  googleCalendarId        String    @default("primary") @map("google_calendar_id")
-  encryptedRefreshToken   String?   @map("encrypted_refresh_token") @db.Text
-  encryptedAccessToken    String?   @map("encrypted_access_token") @db.Text
-  accessTokenExpiresAt    DateTime? @map("access_token_expires_at")
+  id                    String    @id @default(uuid()) @db.Uuid
+  userId                String    @unique @map("user_id") @db.Uuid
+  googleAccountEmail    String    @map("google_account_email")
+  googleCalendarId      String    @default("primary") @map("google_calendar_id")
+  encryptedRefreshToken String?   @map("encrypted_refresh_token") @db.Text
+  encryptedAccessToken  String?   @map("encrypted_access_token") @db.Text
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
   // "active" | "needs_reconnect" | "disconnected"
-  status                  String    @default("active")
+  status                String    @default("active")
   // Space-separated list of scopes granted by the user. Used on reconnect
   // to detect scope changes and re-prompt if needed.
-  scopes                  String    @default("")
+  scopes                String    @default("")
   // Reserved for a future opt-in feature: adding students as attendees on
   // the Google Calendar event. Out of scope for the initial integration.
-  inviteStudents          Boolean   @default(false) @map("invite_students")
-  connectedAt             DateTime  @default(now()) @map("connected_at")
-  lastSyncedAt            DateTime? @map("last_synced_at")
-  lastErrorAt             DateTime? @map("last_error_at")
-  lastErrorMessage        String?   @map("last_error_message") @db.Text
-  createdAt               DateTime  @default(now()) @map("created_at")
-  updatedAt               DateTime  @updatedAt @map("updated_at")
+  inviteStudents        Boolean   @default(false) @map("invite_students")
+  connectedAt           DateTime  @default(now()) @map("connected_at")
+  lastSyncedAt          DateTime? @map("last_synced_at")
+  lastErrorAt           DateTime? @map("last_error_at")
+  lastErrorMessage      String?   @map("last_error_message") @db.Text
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
 
-  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("google_calendar_connections")
 }
@@ -229,19 +237,19 @@ model GoogleCalendarConnection {
 // exponential-backoff retries. See the integration plan for the full retry
 // semantics. Uses atomic claim on update to survive rolling deploys.
 model GoogleCalendarSyncOp {
-  id             String       @id @default(uuid()) @db.Uuid
-  classSessionId String       @map("class_session_id") @db.Uuid
+  id             String    @id @default(uuid()) @db.Uuid
+  classSessionId String    @map("class_session_id") @db.Uuid
   // "create" | "update" | "cancel"
   op             String
-  attemptCount   Int          @default(0) @map("attempt_count")
-  lastAttemptAt  DateTime?    @map("last_attempt_at")
-  nextAttemptAt  DateTime     @default(now()) @map("next_attempt_at")
-  errorMessage   String?      @map("error_message") @db.Text
-  resolved       Boolean      @default(false)
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
+  attemptCount   Int       @default(0) @map("attempt_count")
+  lastAttemptAt  DateTime? @map("last_attempt_at")
+  nextAttemptAt  DateTime  @default(now()) @map("next_attempt_at")
+  errorMessage   String?   @map("error_message") @db.Text
+  resolved       Boolean   @default(false)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  classSession   ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+  classSession ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
 
   @@index([resolved, nextAttemptAt])
   @@index([classSessionId])
@@ -249,13 +257,13 @@ model GoogleCalendarSyncOp {
 }
 
 model ClassAssignment {
-  id             String       @id @default(uuid()) @db.Uuid
-  classSessionId String       @map("class_session_id") @db.Uuid
-  studentId      String       @map("student_id") @db.Uuid
-  createdAt      DateTime     @default(now()) @map("created_at")
+  id             String   @id @default(uuid()) @db.Uuid
+  classSessionId String   @map("class_session_id") @db.Uuid
+  studentId      String   @map("student_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
 
-  classSession   ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
-  student        User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classSession ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+  student      User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([classSessionId, studentId])
   @@index([studentId])
@@ -279,9 +287,9 @@ model TeacherStudent {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  teacher           User     @relation("TeacherToStudents", fields: [teacherId], references: [id], onDelete: Cascade)
-  student           User     @relation("StudentToTeachers", fields: [studentId], references: [id], onDelete: Cascade)
-  assignedByAdmin   User?    @relation("TeacherStudentAssigner", fields: [assignedByAdminId], references: [id], onDelete: SetNull)
+  teacher         User  @relation("TeacherToStudents", fields: [teacherId], references: [id], onDelete: Cascade)
+  student         User  @relation("StudentToTeachers", fields: [studentId], references: [id], onDelete: Cascade)
+  assignedByAdmin User? @relation("TeacherStudentAssigner", fields: [assignedByAdminId], references: [id], onDelete: SetNull)
 
   @@unique([teacherId, studentId])
   @@index([teacherId])
@@ -297,8 +305,8 @@ model AdminNote {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  student   User     @relation("StudentNotes", fields: [studentId], references: [id], onDelete: Cascade)
-  author    User     @relation("AuthorNotes", fields: [authorId], references: [id], onDelete: Cascade)
+  student User @relation("StudentNotes", fields: [studentId], references: [id], onDelete: Cascade)
+  author  User @relation("AuthorNotes", fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
   @@map("admin_notes")
@@ -308,23 +316,23 @@ model AdminNote {
 // Upsert on edit. `summary` / `homework` / `nextSteps` are student-visible
 // when `visibility='student'`. `adminNotes` is always admin-only.
 model ClassLog {
-  id             String       @id @default(uuid()) @db.Uuid
-  classSessionId String       @map("class_session_id") @db.Uuid
-  studentId      String       @map("student_id") @db.Uuid
-  authorId       String       @map("author_id") @db.Uuid
-  summary        String       @default("") @db.Text
-  homework       String       @default("") @db.Text
-  nextSteps      String       @default("") @map("next_steps") @db.Text
-  adminNotes     String       @default("") @map("admin_notes") @db.Text
+  id             String   @id @default(uuid()) @db.Uuid
+  classSessionId String   @map("class_session_id") @db.Uuid
+  studentId      String   @map("student_id") @db.Uuid
+  authorId       String   @map("author_id") @db.Uuid
+  summary        String   @default("") @db.Text
+  homework       String   @default("") @db.Text
+  nextSteps      String   @default("") @map("next_steps") @db.Text
+  adminNotes     String   @default("") @map("admin_notes") @db.Text
   // 'private' (admin only) or 'student' (student sees summary/homework/next,
   // never adminNotes). Default private so nothing leaks accidentally.
-  visibility     String       @default("private")
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
+  visibility     String   @default("private")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
-  classSession   ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
-  student        User         @relation("ClassLogStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  author         User         @relation("ClassLogAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  classSession ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+  student      User         @relation("ClassLogStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  author       User         @relation("ClassLogAuthor", fields: [authorId], references: [id], onDelete: Cascade)
 
   @@unique([classSessionId, studentId])
   @@index([studentId, createdAt])
@@ -336,16 +344,16 @@ model Payment {
   id        String   @id @default(uuid()) @db.Uuid
   studentId String   @map("student_id") @db.Uuid
   authorId  String   @map("author_id") @db.Uuid
-  amount    Int      // minor units (e.g. piastres for EGP, cents for USD)
+  amount    Int // minor units (e.g. piastres for EGP, cents for USD)
   currency  String   @default("EGP")
-  period    String   // free-form: "April 2026", "4-week package", etc.
+  period    String // free-form: "April 2026", "4-week package", etc.
   paidAt    DateTime @map("paid_at")
   notes     String?  @db.Text
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  student   User     @relation("PaymentStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  author    User     @relation("PaymentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  student User @relation("PaymentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  author  User @relation("PaymentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([studentId, paidAt])
   @@map("payments")
@@ -372,7 +380,7 @@ model AuditLog {
   ipAddress String?  @map("ip_address")
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([action])
@@ -399,10 +407,10 @@ model SiteSetting {
 model AvailabilitySlot {
   id        String   @id @default(uuid()) @db.Uuid
   dayOfWeek Int      @map("day_of_week") // 0=Sunday, 1=Monday ... 6=Saturday
-  startHour Int      @map("start_hour")  // 0-23
+  startHour Int      @map("start_hour") // 0-23
   startMin  Int      @default(0) @map("start_min") // 0-59
-  endHour   Int      @map("end_hour")    // 0-23
-  endMin    Int      @default(0) @map("end_min")    // 0-59
+  endHour   Int      @map("end_hour") // 0-23
+  endMin    Int      @default(0) @map("end_min") // 0-59
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -424,4 +432,63 @@ model AvailabilityOverride {
 
   @@unique([date])
   @@map("availability_overrides")
+}
+
+// Messaging: one Conversation per student. Lazy-created on the first
+// message sent by anyone in the thread. Participants are derived at
+// query time from the student's TeacherStudent rows (their explicitly
+// assigned teachers, with the sheikh implicitly added as the fallback
+// teacher and always allowed to read+write). This avoids a participants
+// table that drifts when assignments change — the conversation is just
+// anchored on the student and "who can see it" is recomputed live.
+//
+// Sheikh sees every conversation across the whole platform. Teachers see
+// only their assigned students' conversations. The student sees their own.
+model Conversation {
+  id            String   @id @default(uuid()) @db.Uuid
+  studentId     String   @unique @map("student_id") @db.Uuid
+  lastMessageAt DateTime @default(now()) @map("last_message_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  student  User               @relation("ConversationStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  messages Message[]
+  reads    ConversationRead[]
+
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+// One row per chat bubble. `senderId` always points at the User who
+// wrote the message (student, teacher, or sheikh). Body capped at 4000
+// chars at the validator layer; stored as TEXT so we can grow later.
+model Message {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  senderId       String   @map("sender_id") @db.Uuid
+  body           String   @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("MessageAuthor", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+// Per-user "last seen" pointer into a conversation. Used to compute the
+// unread badge cheaply: unread = messages.count where createdAt > lastReadAt
+// AND senderId != userId. Lazy upsert on first read.
+model ConversationRead {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  lastReadAt     DateTime @default(now()) @map("last_read_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation("ConversationReadUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@map("conversation_reads")
 }

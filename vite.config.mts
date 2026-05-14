@@ -10,7 +10,10 @@ export default defineConfig({
     }
   },
   server: {
-    port: 5173,
+    // Vite defaults to 5173. When PORT is set by the preview harness
+    // (claude --preview) we honor it so the harness can route a free
+    // port; otherwise fall back to the project default.
+    port: Number(process.env.PORT) || 5173,
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

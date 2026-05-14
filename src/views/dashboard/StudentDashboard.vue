@@ -44,7 +44,11 @@
           </div>
         </div>
 
-        <!-- Hero card: the very next class. Big, prominent, no clutter. -->
+        <!-- Hero card: the very next class. Big, prominent, no clutter.
+             The Join button activates live (no manual refresh needed)
+             when the class enters its 15-min join window. The countdown
+             below the title ticks every second so the student can see
+             exactly how long until they can join. -->
         <div v-if="nextClass" class="bg-white rounded-2xl shadow-card p-6 mb-6 border-l-4 border-gold">
           <p class="text-xs font-semibold tracking-[0.15em] uppercase text-gold/80 mb-3">
             {{ $t('dashboard.nextClass') }}
@@ -54,7 +58,7 @@
             <span v-if="nextClass.rescheduled" class="text-amber-600 text-xs font-medium">({{ $t('admin.rescheduled') }})</span>
           </h2>
           <p class="text-slate-600 mt-1">
-            {{ relativeWhen(nextClass) }}
+            {{ liveRelativeWhen(nextClass) }}
           </p>
           <p class="text-xs text-slate-400 mt-0.5">
             {{ formatClassTime(nextClass) }}
@@ -65,15 +69,21 @@
 
           <div class="mt-5">
             <button
-              v-if="nextClass.canJoin"
+              v-if="isJoinableLive(nextClass)"
               @click="joinClass(nextClass.id)"
-              class="bg-primary text-cream text-sm font-semibold px-6 py-2.5 rounded-full hover:bg-primary-800 transition"
+              class="bg-primary text-cream text-sm font-semibold px-6 py-2.5 rounded-full hover:bg-primary-800 transition inline-flex items-center gap-2"
             >
+              <span class="w-2 h-2 rounded-full bg-cream/90 animate-pulse" aria-hidden="true"></span>
               {{ $t('dashboard.joinClass') }}
             </button>
-            <p v-else class="text-xs text-slate-400">
-              {{ $t('dashboard.linkOpensBefore') }}
-            </p>
+            <div v-else class="space-y-1.5">
+              <p class="text-xs text-slate-500 tabular-nums">
+                {{ joinCountdownLabel(nextClass) }}
+              </p>
+              <p class="text-[11px] text-slate-400">
+                {{ $t('dashboard.linkOpensBefore') }}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -104,7 +114,7 @@
                 <p class="text-xs text-slate-400 mt-0.5">{{ formatClassTime(cls) }}</p>
               </div>
               <button
-                v-if="cls.canJoin"
+                v-if="isJoinableLive(cls)"
                 @click="joinClass(cls.id)"
                 class="shrink-0 bg-primary text-cream text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-primary-800 transition"
               >
@@ -114,6 +124,35 @@
           </ul>
         </div>
 
+        <!-- Messages with your teacher.
+             One thread per student. The sheikh and every assigned
+             teacher see it; everything you write is visible to them.
+             Useful when the power's out, you're running late, or you
+             need to ask a quick question between classes. -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-3 px-1">
+            <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">
+              {{ $t('messages.studentSectionTitle') }}
+            </h2>
+            <span
+              v-if="unreadCount > 0"
+              class="text-[10px] font-semibold tabular-nums text-cream bg-primary rounded-full px-2 py-0.5"
+              :aria-label="$t('messages.unreadAria', { n: unreadCount })"
+            >
+              {{ unreadCount }}
+            </span>
+          </div>
+          <MessageThread
+            v-if="user?.id"
+            :student-id="user.id"
+            :title="$t('messages.studentThreadTitle')"
+            :empty-title="$t('messages.studentEmptyTitle')"
+            :empty-hint="$t('messages.studentEmptyHint')"
+            @loaded="handleThreadLoaded"
+            @sent="loadUnreadCount"
+          />
+        </div>
+
         <!-- Nothing on the schedule at all -->
         <div v-if="!nextClass && !laterClasses.length" class="bg-white rounded-2xl shadow-card p-10 text-center mb-6">
           <p class="text-slate-400 text-sm">{{ $t('dashboard.noUpcoming') }}</p>
@@ -121,7 +160,10 @@
 
         <!-- Notebook (view-only). The sheikh keeps lesson notes and
              paid-cycle status in a Google Sheet; the URL is shared
-             read-only so the student can review without editing. -->
+             read-only so the student can review without editing.
+             When the sheikh hasn't set one up yet we still show the
+             card with a quiet placeholder so the student knows what
+             it's for — better than the card silently disappearing. -->
         <a
           v-if="dashboard?.notebookSheetUrl"
           :href="dashboard.notebookSheetUrl"
@@ -145,6 +187,23 @@
             >→</span>
           </div>
         </a>
+        <div
+          v-else
+          class="bg-white/70 border border-dashed border-slate-200 rounded-2xl p-5 mb-6"
+          role="note"
+        >
+          <div class="flex items-start gap-4">
+            <span class="text-2xl shrink-0 opacity-60" aria-hidden="true">📓</span>
+            <div class="min-w-0 flex-1">
+              <h3 class="text-sm font-semibold text-primary/80 text-balance">
+                {{ $t('dashboard.notebookTitle') }}
+              </h3>
+              <p class="text-xs text-slate-500 mt-1 text-pretty">
+                {{ $t('dashboard.notebookEmptyHint') }}
+              </p>
+            </div>
+          </div>
+        </div>
 
         <!-- Past classes. collapsed, opt-in -->
         <details v-if="dashboard?.pastClasses?.length" class="bg-white rounded-2xl shadow-card p-6 mb-6">
@@ -184,10 +243,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth.js';
 import { api } from '@/config/api.js';
+import MessageThread from '@/components/dashboard/MessageThread.vue';
 
 const { locale, t } = useI18n();
 const { user, logout } = useAuth();
@@ -196,6 +256,19 @@ const isAr = computed(() => locale.value === 'ar');
 const dashboard = ref(null);
 const loading = ref(true);
 const showAllUpcoming = ref(false);
+const unreadCount = ref(0);
+
+// Reactive ticking clock so the "starts in N min" countdown + the
+// live join-button activation update without the student needing to
+// refresh the page. 1s is fine — this is one student's dashboard, not
+// a busy admin grid.
+const now = ref(Date.now());
+let clockTimer = null;
+
+// 15-min join window matches the server-side gate in
+// server/src/routes/meeting.js. Keep this constant aligned with that
+// file: if the server window changes, change this too.
+const JOIN_WINDOW_MS = 15 * 60 * 1000;
 
 // The first non-cancelled upcoming class gets the hero slot. Everything
 // after it gets collapsed into the compact list below.
@@ -312,6 +385,63 @@ async function joinClass(classId) {
   }
 }
 
+// Live join check: re-derive from `now` (which ticks every second) so the
+// button switches on at exactly the 15-min mark without a refresh. The
+// server-side gate in meeting.js is still authoritative — this is just a
+// best-effort UI hint.
+function isJoinableLive(cls) {
+  if (!cls) return false;
+  const start = new Date(cls.startTime).getTime();
+  const end = new Date(cls.endTime).getTime();
+  const t = now.value;
+  return !cls.cancelled && t >= start - JOIN_WINDOW_MS && t <= end;
+}
+
+// "Opens in N min" / "Opens in N sec" — drives the student-visible
+// countdown right above the disabled join button. Switches to "Live now"
+// once the window opens (covered by `liveRelativeWhen` for the title row).
+function joinCountdownLabel(cls) {
+  if (!cls) return '';
+  const opens = new Date(cls.startTime).getTime() - JOIN_WINDOW_MS;
+  const msLeft = opens - now.value;
+  if (msLeft <= 0) return t('dashboard.openingNow');
+  const totalSec = Math.ceil(msLeft / 1000);
+  const hours = Math.floor(totalSec / 3600);
+  const minutes = Math.floor((totalSec % 3600) / 60);
+  const seconds = totalSec % 60;
+  if (hours > 0) {
+    return t('dashboard.opensInHours', { h: hours, m: minutes });
+  }
+  if (minutes > 0) {
+    return t('dashboard.opensInMin', { n: minutes });
+  }
+  return t('dashboard.opensInSec', { n: seconds });
+}
+
+// Live wrapper around relativeWhen so the "Starts in N min" line ticks
+// down without a refresh.
+function liveRelativeWhen(cls) {
+  // `now.value` is referenced so the computed text re-renders each tick.
+  void now.value;
+  return relativeWhen(cls);
+}
+
+async function loadUnreadCount() {
+  try {
+    const data = await api.get('/api/messages/unread-count');
+    unreadCount.value = data.unreadCount || 0;
+  } catch {
+    // Best-effort. Leaving the previous value avoids flicker on a
+    // transient network blip.
+  }
+}
+
+function handleThreadLoaded() {
+  // Opening the thread on /api/messages/conversations/:studentId
+  // server-side bumps lastReadAt, so the unread count drops to zero.
+  unreadCount.value = 0;
+}
+
 onMounted(async () => {
   try {
     dashboard.value = await api.get('/api/student/dashboard');
@@ -320,5 +450,13 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+  loadUnreadCount();
+  clockTimer = window.setInterval(() => {
+    now.value = Date.now();
+  }, 1000);
+});
+
+onBeforeUnmount(() => {
+  if (clockTimer) { clearInterval(clockTimer); clockTimer = null; }
 });
 </script>

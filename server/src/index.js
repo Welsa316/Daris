@@ -19,6 +19,7 @@ import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
 import studentRoutes from './routes/student.js';
 import meetingRoutes from './routes/meeting.js';
+import messagesRoutes from './routes/messages.js';
 import publicRoutes from './routes/public.js';
 import teachersRoutes from './routes/teachers.js';
 import googleCalendarRoutes from './routes/googleCalendar.js';
@@ -61,6 +62,7 @@ app.use('/api/admin/google-calendar', googleCalendarRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/meeting', meetingRoutes);
+app.use('/api/messages', messagesRoutes);
 app.use('/api', publicRoutes);
 
 // --- Serve Vue frontend in production ---

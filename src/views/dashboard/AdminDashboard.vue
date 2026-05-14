@@ -270,10 +270,18 @@
           :key="tab.key"
           :data-tab-key="tab.key"
           @click="activeTab = tab.key"
-          class="px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap shrink-0"
+          class="px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap shrink-0 inline-flex items-center gap-2"
           :class="activeTab === tab.key ? 'bg-primary text-cream' : 'bg-white text-slate-600 hover:bg-primary/5'"
         >
-          {{ $t(tab.label) }}
+          <span>{{ $t(tab.label) }}</span>
+          <span
+            v-if="tab.key === 'messages' && messagesUnreadCount > 0"
+            class="text-[10px] font-semibold tabular-nums rounded-full px-1.5 py-0.5"
+            :class="activeTab === tab.key ? 'bg-cream text-primary' : 'bg-primary text-cream'"
+            :aria-label="$t('messages.unreadAria', { n: messagesUnreadCount })"
+          >
+            {{ messagesUnreadCount }}
+          </span>
         </button>
       </div>
 
@@ -697,6 +705,18 @@
         v-if="activeTab === 'teachers'"
         @toast="(err, action) => showToast(err, action)"
         @changed="onTeachersChanged"
+      />
+
+      <!-- Messages tab. Sheikh sees every student conversation in the
+           system; a teacher sees only their assigned students. The
+           student-side equivalent lives on /dashboard. The student
+           always types into one thread anchored on them, and everyone
+           authorised to read it (their teachers + every sheikh) sees
+           and can reply. -->
+      <MessagesTab
+        v-if="activeTab === 'messages'"
+        :is-sheikh="isAdmin"
+        @unread-changed="(n) => (messagesUnreadCount = n)"
       />
 
       <!-- Single drawer drives both calendar-block and list-row clicks.
@@ -1598,6 +1618,7 @@ import { api } from '@/config/api.js';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 import BalancePill from '@/components/dashboard/BalancePill.vue';
 import TeachersTab from '@/components/dashboard/TeachersTab.vue';
+import MessagesTab from '@/components/dashboard/MessagesTab.vue';
 import MyClassesTab from '@/components/dashboard/MyClassesTab.vue';
 import ClassDetailDrawer from '@/components/dashboard/ClassDetailDrawer.vue';
 import GoogleCalendarCard from '@/components/dashboard/GoogleCalendarCard.vue';
@@ -1640,6 +1661,10 @@ const selectedClass = ref(null);
 const toast = ref('');
 const globalMeetingLink = ref('');
 const savingLink = ref(false);
+// Total unread messages across all conversations the staff member can
+// see. Bubbled up by MessagesTab via `unread-changed` so the parent can
+// surface it on the Messages tab pill below.
+const messagesUnreadCount = ref(0);
 const showRescheduleModal = ref(false);
 const rescheduleTarget = ref(null);
 const rescheduleDate = ref('');
@@ -2158,6 +2183,7 @@ const tabs = computed(() => {
       { key: 'enrollments', label: 'admin.enrollments' },
       { key: 'students',    label: 'admin.students' },
       { key: 'scheduling',  label: 'admin.scheduling' },
+      { key: 'messages',    label: 'admin.messages' },
       { key: 'activity',    label: 'admin.activity' },
       { key: 'teachers',    label: 'admin.teachers.tab' },
     ];
@@ -2167,6 +2193,7 @@ const tabs = computed(() => {
     { key: 'myClasses',  label: 'admin.myClasses.tab' },
     { key: 'students',   label: 'admin.students' },
     { key: 'scheduling', label: 'admin.scheduling' },
+    { key: 'messages',   label: 'admin.messages' },
     { key: 'activity',   label: 'admin.activity' },
   ];
 });
@@ -3261,6 +3288,7 @@ watch(activeTab, (tab) => {
     loadSettings();
   }
   if (tab === 'myClasses') loadClasses();
+  if (tab === 'messages') loadMessagesUnreadCount();
 
   // Scroll the active tab into view on narrow screens. Without this
   // the active pill can sit off-screen after a tab change (the row
@@ -3373,12 +3401,31 @@ onMounted(() => {
   // Both roles need the global meeting link to render the join button
   // in the upcoming-classes widget. The PUT remains sheikh-only.
   loadSettings();
+  // Unread badge on the Messages tab. Loaded up front + refreshed on
+  // every 60s tick so the sheikh / teacher sees a new-message indicator
+  // without sitting on the Messages tab. The MessagesTab itself
+  // overrides this with a fresher number when it's open.
+  loadMessagesUnreadCount();
+  messagesUnreadTimer = window.setInterval(() => {
+    if (document.visibilityState === 'visible') loadMessagesUnreadCount();
+  }, 60_000);
   window.addEventListener('keydown', handleGlobalKeydown);
 
   // OAuth post-redirect handling. Sheikh-only path; teachers never
   // see the card so the params do nothing for them.
   if (isAdmin.value) handleGCalCallbackParams();
 });
+
+let messagesUnreadTimer = null;
+async function loadMessagesUnreadCount() {
+  try {
+    const data = await api.get('/api/messages/unread-count');
+    messagesUnreadCount.value = data.unreadCount || 0;
+  } catch {
+    // Quiet. The badge stays stale rather than throwing a toast every
+    // minute when the network blips.
+  }
+}
 
 // Used by MyClassesTab's "Schedule" CTA to flip the active tab over to
 // the scheduling surface and pop the form open in one click.
@@ -3389,6 +3436,7 @@ function goToScheduling() {
 
 onBeforeUnmount(() => {
   clearInterval(nowTick);
+  if (messagesUnreadTimer) { clearInterval(messagesUnreadTimer); messagesUnreadTimer = null; }
   window.removeEventListener('keydown', handleGlobalKeydown);
 });
 </script>
