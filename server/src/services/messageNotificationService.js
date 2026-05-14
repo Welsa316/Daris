@@ -10,8 +10,11 @@ import { sendEmail } from './emailService.js';
  * student's message just sits unread until someone happens to log in.
  *
  * Recipient rules:
- *   - Student sends → notify every assigned teacher + every active sheikh
- *     (minus the sender, minus deleted/unverified accounts).
+ *   - Student sends → notify every assigned teacher (which includes any
+ *     sheikh assigned to them as a teacher). Sheikhs NOT assigned to
+ *     this student are intentionally excluded — they observe the thread
+ *     in-app for oversight but don't need an email for every message
+ *     across the whole platform.
  *   - Teacher or sheikh sends → notify just the student. v1 keeps staff
  *     out of each other's inboxes; back-and-forth between a teacher and
  *     a sheikh doesn't need to page everyone.
@@ -78,20 +81,15 @@ async function pickRecipientIds(conversation, sender) {
   const senderIsStudent = sender.id === conversation.studentId;
 
   if (senderIsStudent) {
-    const [assigned, sheikhs] = await Promise.all([
-      prisma.teacherStudent.findMany({
-        where: { studentId: conversation.studentId },
-        select: { teacherId: true },
-      }),
-      prisma.user.findMany({
-        where: { role: 'admin', deletedAt: null },
-        select: { id: true },
-      }),
-    ]);
-    const ids = new Set([
-      ...assigned.map((a) => a.teacherId),
-      ...sheikhs.map((s) => s.id),
-    ]);
+    // Only the assigned teachers (which can include a sheikh-as-teacher
+    // row). A sheikh observing the platform for oversight doesn't get
+    // an email for every student's message — that would be unusable.
+    // They still see the message live in their Messages tab.
+    const assigned = await prisma.teacherStudent.findMany({
+      where: { studentId: conversation.studentId },
+      select: { teacherId: true },
+    });
+    const ids = new Set(assigned.map((a) => a.teacherId));
     ids.delete(sender.id);
     return Array.from(ids);
   }

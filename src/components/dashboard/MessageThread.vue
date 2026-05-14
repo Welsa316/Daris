@@ -126,9 +126,14 @@
       </div>
     </div>
 
-    <!-- Composer. Plain textarea + send button. Enter sends, Shift+Enter
-         newlines so a non-tech-savvy user types like any normal chat box. -->
-    <form @submit.prevent="onSend" class="px-4 py-3 border-t border-slate-100 bg-white shrink-0">
+    <!-- Composer when this viewer can write. Plain textarea + send.
+         Enter sends, Shift+Enter newlines so a non-tech-savvy user
+         types like any normal chat box. -->
+    <form
+      v-if="!readOnly"
+      @submit.prevent="onSend"
+      class="px-4 py-3 border-t border-slate-100 bg-white shrink-0"
+    >
       <div class="flex items-end gap-2">
         <label class="sr-only" :for="composerId">{{ $t('messages.composerLabel') }}</label>
         <textarea
@@ -157,6 +162,19 @@
         {{ $t('messages.sheikhSeesAll') }}
       </p>
     </form>
+
+    <!-- Read-only footer for sheikh oversight: full thread is visible,
+         but the composer is absent so they can't accidentally insert
+         themselves into a thread the assigned teacher is running. -->
+    <div
+      v-else
+      class="px-4 py-3 border-t border-slate-100 bg-slate-50 shrink-0"
+    >
+      <p class="text-[11px] text-slate-500 flex items-center gap-2">
+        <span class="inline-flex w-1.5 h-1.5 rounded-full bg-slate-400" aria-hidden="true"></span>
+        {{ $t('messages.readOnlyHint') }}
+      </p>
+    </div>
   </div>
 </template>
 
@@ -178,6 +196,10 @@ const props = defineProps({
   // vs student view) it can override here.
   emptyTitle: { type: String, default: '' },
   emptyHint: { type: String, default: '' },
+  // Force the composer hidden — used by the parent for sheikh-observing
+  // threads (read-only oversight). Server canWrite is the source of
+  // truth; this is just a hint so the UI matches before that resolves.
+  forceReadOnly: { type: Boolean, default: false },
 });
 const emit = defineEmits(['sent', 'loaded']);
 
@@ -190,15 +212,23 @@ const MAX_BODY = 4000;
 const messages = ref([]);
 const participants = ref({ student: null, teachers: [], sheikhs: [] });
 const reads = ref({});
+const canWrite = ref(true); // optimistic; corrected by server response
 const loading = ref(false);
 const draft = ref('');
 const sending = ref(false);
 const error = ref('');
+
+// Read-only iff the server says we can't write OR the parent forced it.
+// Either flag locks the composer out so a sheikh on an unassigned
+// thread literally cannot type a reply.
+const readOnly = computed(() => props.forceReadOnly || !canWrite.value);
 const scrollRef = ref(null);
 const composerRef = ref(null);
 const composerId = `msg-composer-${Math.random().toString(36).slice(2, 8)}`;
 
-const canSend = computed(() => !sending.value && draft.value.trim().length > 0);
+const canSend = computed(
+  () => !readOnly.value && !sending.value && draft.value.trim().length > 0
+);
 
 // Live socket binding: real-time message delivery, typing indicators,
 // presence dots, and read-receipt updates. Polling stays on as a
@@ -404,6 +434,11 @@ async function load() {
     messages.value = data.messages || [];
     participants.value = data.participants || { student: null, teachers: [], sheikhs: [] };
     reads.value = data.reads || {};
+    // Server is the source of truth on whether THIS viewer is allowed
+    // to write here (sheikhs are read-only on threads where they're
+    // not the assigned teacher). Default optimistically to true so the
+    // composer doesn't flicker for the common case.
+    canWrite.value = data.canWrite !== false;
     emit('loaded', { unreadCleared: true });
     // Tell other participants we just opened the thread so their "Read"
     // indicators light up. The REST GET already bumped lastReadAt

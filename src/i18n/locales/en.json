@@ -445,7 +445,15 @@
     "typingOne": "{name} is typing",
     "typingMany": "Several people are typing",
     "someone": "Someone",
-    "read": "Read"
+    "read": "Read",
+    "readOnlyBadge": "View",
+    "readOnlyHint": "You can read this conversation but only the assigned teacher can reply.",
+    "widgetOpen": "Open messages",
+    "widgetClose": "Close messages",
+    "widgetLabel": "Messages",
+    "widgetBack": "Back to list",
+    "widgetListTitle": "Conversations",
+    "widgetStudentTitle": "Your teacher"
   },
   "admin": {
     "title": "Admin Dashboard",

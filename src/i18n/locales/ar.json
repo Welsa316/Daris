@@ -445,7 +445,15 @@
     "typingOne": "{name} يكتب",
     "typingMany": "عدة أشخاص يكتبون",
     "someone": "شخص ما",
-    "read": "مقروءة"
+    "read": "مقروءة",
+    "readOnlyBadge": "عرض",
+    "readOnlyHint": "يمكنك قراءة هذه المحادثة، والمعلّم المختص هو من يستطيع الرد.",
+    "widgetOpen": "فتح الرسائل",
+    "widgetClose": "إغلاق الرسائل",
+    "widgetLabel": "الرسائل",
+    "widgetBack": "العودة للقائمة",
+    "widgetListTitle": "المحادثات",
+    "widgetStudentTitle": "معلّمك"
   },
   "admin": {
     "title": "لوحة الإدارة",

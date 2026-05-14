@@ -50,10 +50,20 @@
               >
                 <div class="flex items-center justify-between gap-2">
                   <p
-                    class="text-sm font-medium truncate"
+                    class="text-sm font-medium truncate flex items-center gap-1.5"
                     :class="row.unreadCount > 0 ? 'text-primary font-semibold' : 'text-slate-700'"
                   >
-                    {{ row.studentName || $t('messages.unnamedStudent') }}
+                    <span class="truncate">{{ row.studentName || $t('messages.unnamedStudent') }}</span>
+                    <!-- Read-only badge: only meaningful for the sheikh,
+                         who can see every conversation but only reply in
+                         the ones where they're the assigned teacher. -->
+                    <span
+                      v-if="row.canWrite === false"
+                      class="shrink-0 text-[9px] uppercase tracking-wider text-slate-400 border border-slate-200 rounded-sm px-1 py-px font-medium"
+                      :title="$t('messages.readOnlyHint')"
+                    >
+                      {{ $t('messages.readOnlyBadge') }}
+                    </span>
                   </p>
                   <span
                     v-if="row.unreadCount > 0"
@@ -95,6 +105,7 @@
           :title="selectedTitle"
           :empty-title="$t('messages.adminThreadEmptyTitle')"
           :empty-hint="$t('messages.adminThreadEmptyHint')"
+          :force-read-only="selectedRowCanWrite === false"
           compact
           @loaded="onThreadLoaded"
           @sent="onThreadSent"
@@ -203,6 +214,14 @@ const filteredConversations = computed(() => {
 const selectedTitle = computed(() => {
   const row = conversations.value.find((c) => c.studentId === selectedStudentId.value);
   return row?.studentName || '';
+});
+
+// Whether the viewer can write into the currently-selected thread.
+// Falls back to true so we don't briefly disable the composer for a
+// freshly-selected row before the list refreshes.
+const selectedRowCanWrite = computed(() => {
+  const row = conversations.value.find((c) => c.studentId === selectedStudentId.value);
+  return row?.canWrite !== false;
 });
 
 async function load() {

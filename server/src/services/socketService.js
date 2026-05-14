@@ -97,7 +97,7 @@ export function initSocketServer(httpServer) {
       try {
         const studentId = String(payload?.studentId || '');
         if (!studentId) return ack?.({ ok: false, error: 'BAD_REQUEST' });
-        if (!(await canAccessStudentConversation(user, studentId))) {
+        if (!(await canReadStudentConversation(user, studentId))) {
           return ack?.({ ok: false, error: 'FORBIDDEN' });
         }
         const conv = await ensureConversation(studentId);
@@ -108,7 +108,8 @@ export function initSocketServer(httpServer) {
         const onlineIds = Array.from(participantIds).filter((id) =>
           onlineSockets.has(id)
         );
-        ack?.({ ok: true, conversationId: conv.id, onlineUserIds: onlineIds });
+        const canWrite = await canWriteStudentConversation(user, studentId);
+        ack?.({ ok: true, conversationId: conv.id, canWrite, onlineUserIds: onlineIds });
       } catch (err) {
         logger.error('socket conversation:join failed', {
           userId: user.id,
@@ -132,10 +133,12 @@ export function initSocketServer(httpServer) {
     // Typing indicators are ephemeral — they never hit the DB. Broadcast
     // to everyone else in the room and let them render "X is typing…".
     // The sender's own client never receives its own typing event.
+    // Only WRITERS get to signal typing: a sheikh silently observing
+    // shouldn't appear as "typing…" to the student.
     socket.on('typing:start', async (payload) => {
       const studentId = String(payload?.studentId || '');
       if (!studentId) return;
-      if (!(await canAccessStudentConversation(user, studentId))) return;
+      if (!(await canWriteStudentConversation(user, studentId))) return;
       const conv = await prisma.conversation.findUnique({
         where: { studentId },
         select: { id: true },
@@ -152,7 +155,7 @@ export function initSocketServer(httpServer) {
     socket.on('typing:stop', async (payload) => {
       const studentId = String(payload?.studentId || '');
       if (!studentId) return;
-      if (!(await canAccessStudentConversation(user, studentId))) return;
+      if (!(await canWriteStudentConversation(user, studentId))) return;
       const conv = await prisma.conversation.findUnique({
         where: { studentId },
         select: { id: true },
@@ -168,7 +171,7 @@ export function initSocketServer(httpServer) {
     socket.on('conversation:read', async (payload) => {
       const studentId = String(payload?.studentId || '');
       if (!studentId) return;
-      if (!(await canAccessStudentConversation(user, studentId))) return;
+      if (!(await canReadStudentConversation(user, studentId))) return;
       const conv = await prisma.conversation.findUnique({
         where: { studentId },
         select: { id: true },
@@ -287,10 +290,27 @@ function markOffline(userId, socketId) {
 // Access policy — duplicated from routes/messages.js so the socket
 // layer doesn't have to import an Express route. Kept in lockstep with
 // it; any change to who can read a conversation must update both.
-async function canAccessStudentConversation(user, studentId) {
+//
+// READ: sheikh sees everything; student sees their own; teachers see
+// students they're assigned to via TeacherStudent.
+//
+// WRITE: student themselves OR anyone (teacher or sheikh) with a
+// TeacherStudent row pointing at this student. The sheikh's "watch
+// everything" privilege does not grant write — a sheikh observing a
+// thread but not assigned to that student can only read.
+async function canReadStudentConversation(user, studentId) {
   if (user.role === 'admin') return true;
   if (user.id === studentId) return true;
   if (!user.isTeacher) return false;
+  const row = await prisma.teacherStudent.findUnique({
+    where: { teacherId_studentId: { teacherId: user.id, studentId } },
+    select: { id: true },
+  });
+  return !!row;
+}
+
+async function canWriteStudentConversation(user, studentId) {
+  if (user.id === studentId) return true;
   const row = await prisma.teacherStudent.findUnique({
     where: { teacherId_studentId: { teacherId: user.id, studentId } },
     select: { id: true },

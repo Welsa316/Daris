@@ -91,18 +91,41 @@ async function readerIdsForStudent(studentId) {
   ]);
 }
 
-// Can `user` (the request actor) read+write the conversation anchored on
-// `studentId`? Sheikh always yes. The student themselves yes. A teacher
-// yes iff they have a TeacherStudent row for this student. Anyone else
-// no.
-async function canAccessStudentConversation(user, studentId) {
+// Read vs. write are deliberately separate checks now.
+//
+// READ: the student, every active sheikh (for oversight), and any
+// teacher with a TeacherStudent row for this student. The sheikh's
+// "watch everything" privilege is the whole point of the messaging
+// surface — they must be able to see every back-and-forth between
+// any student and any teacher.
+//
+// WRITE: the student themselves, OR anyone (teacher or sheikh) who
+// has a TeacherStudent row for this student. The TeacherStudent
+// table IS the source of truth for "I teach this student" — a
+// sheikh-as-teacher row counts. A sheikh who is NOT assigned to a
+// student can read their thread for oversight but cannot speak into
+// it (those conversations belong to the assigned teacher, who is the
+// student's direct point of contact). This stops the sheikh from
+// accidentally inserting himself mid-conversation in a thread he
+// isn't running.
+async function canReadStudentConversation(user, studentId) {
   if (isSheikh(user)) return true;
   if (user.id === studentId) return true;
   if (!user.isTeacher) return false;
   const row = await prisma.teacherStudent.findUnique({
-    where: {
-      teacherId_studentId: { teacherId: user.id, studentId },
-    },
+    where: { teacherId_studentId: { teacherId: user.id, studentId } },
+    select: { id: true },
+  });
+  return !!row;
+}
+
+async function canWriteStudentConversation(user, studentId) {
+  if (user.id === studentId) return true;
+  // No isTeacher/role gating: TeacherStudent is the only source of
+  // truth for "you teach this student." A sheikh with a row qualifies;
+  // a non-teacher with no row does not.
+  const row = await prisma.teacherStudent.findUnique({
+    where: { teacherId_studentId: { teacherId: user.id, studentId } },
     select: { id: true },
   });
   return !!row;
@@ -259,6 +282,25 @@ router.get('/conversations', async (req, res, next) => {
       conversations.map((c, i) => [c.id, unreadCounts[i]])
     );
 
+    // Bulk-fetch this caller's TeacherStudent assignments so we can mark
+    // each row writable vs. read-only without a per-row roundtrip. A
+    // sheikh seeing every student gets a mix: writable for ones they
+    // teach, read-only for the rest. A teacher's list is necessarily
+    // all-writable because the query above only included their assigned
+    // students in the first place.
+    const writableStudentIds = new Set();
+    if (isSheikh(user)) {
+      const assigned = await prisma.teacherStudent.findMany({
+        where: { teacherId: user.id, studentId: { in: studentIds } },
+        select: { studentId: true },
+      });
+      for (const a of assigned) writableStudentIds.add(a.studentId);
+    } else {
+      // Teacher / student: studentIds is already filtered to ones they
+      // can write to (their own id or their TeacherStudent set).
+      for (const sid of studentIds) writableStudentIds.add(sid);
+    }
+
     // Build the response. Each row is per-student (so a sheikh seeing
     // every student gets every row; a teacher gets their assigned
     // students; a student gets exactly one). Threads without messages
@@ -270,10 +312,12 @@ router.get('/conversations', async (req, res, next) => {
         if (!student) return null;
         const conv = convByStudent.get(sid) || null;
         const last = conv?.messages?.[0] || null;
+        const canWriteRow = sid === user.id || writableStudentIds.has(sid);
         return {
           studentId: sid,
           studentName: `${student.firstName || ''} ${student.lastName || ''}`.trim(),
           conversationId: conv?.id || null,
+          canWrite: canWriteRow,
           lastMessage: last
             ? {
                 id: last.id,
@@ -358,9 +402,13 @@ router.get('/conversations/:studentId', async (req, res, next) => {
     const lang = getLang(req);
     const { studentId } = req.params;
 
-    if (!(await canAccessStudentConversation(req.user, studentId))) {
+    if (!(await canReadStudentConversation(req.user, studentId))) {
       return res.status(403).json({ error: t('auth.forbidden', lang) });
     }
+
+    // Compute write permission so the client can show / hide the
+    // composer accordingly. Cheap (one indexed point-lookup).
+    const canWrite = await canWriteStudentConversation(req.user, studentId);
 
     const conv = await ensureConversation(studentId);
     const [messagesRaw, participants] = await Promise.all([
@@ -409,6 +457,7 @@ router.get('/conversations/:studentId', async (req, res, next) => {
         lastMessageAt: conv.lastMessageAt,
         createdAt: conv.createdAt,
       },
+      canWrite,
       participants,
       reads,
       messages: messagesRaw.map((m) => ({
@@ -445,7 +494,11 @@ router.post(
       const lang = getLang(req);
       const { studentId } = req.params;
 
-      if (!(await canAccessStudentConversation(req.user, studentId))) {
+      // Write requires an explicit TeacherStudent row (or being the
+      // student themselves). A sheikh observing the thread for
+      // oversight cannot reply unless they're also the assigned
+      // teacher.
+      if (!(await canWriteStudentConversation(req.user, studentId))) {
         return res.status(403).json({ error: t('auth.forbidden', lang) });
       }
 
