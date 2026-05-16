@@ -20,7 +20,7 @@
            a non-technical user lands directly on actionable choices
            instead of having to translate goals into tab names.
            - Notebook button -> opens a slim student picker, one tap
-             per row to open that student's Google Sheets notebook.
+             per row to open that student's on-site notebook page.
            - Schedule a class -> opens the existing schedule form modal.
            - Review new students (sheikh) / My classes (teacher) -> jumps
              to the relevant tab. Pending count badge gives the sheikh
@@ -422,15 +422,6 @@
                 <td class="py-3 px-2 truncate max-w-[12rem]">
                   <span class="inline-flex items-center gap-1.5">
                     <span>{{ s.firstName }} {{ s.lastName }}</span>
-                    <!-- Notebook indicator. Tiny 📓 next to the name
-                         tells the sheikh at a glance which students
-                         have notebooks set up. -->
-                    <span
-                      v-if="s.notebookSheetUrl"
-                      class="text-xs"
-                      :title="$t('admin.notebook.indicatorTooltip')"
-                      aria-hidden="true"
-                    >📓</span>
                   </span>
                   <!-- Mobile-only secondary line: email + country
                        collapse under the name so the row stays
@@ -813,58 +804,25 @@
             </div>
           </details>
 
-          <!-- Per-student Google Sheets notebook. Primary action for
-               managing notes / payments / lesson reports. Sheikh edits
-               in Sheets directly; Daris just stores the link. -->
+          <!-- Notebook — opens the dedicated on-site notebook page
+               (lesson notes per class + payments). -->
           <div class="mt-6 p-4 rounded-xl bg-cream-50 border border-cream-200">
-            <div class="flex items-start gap-3">
+            <div class="flex items-center gap-3">
               <span class="text-2xl" aria-hidden="true">📓</span>
               <div class="min-w-0 flex-1">
                 <h3 class="text-sm font-semibold text-primary">
                   {{ $t('admin.notebook.title') }}
                 </h3>
                 <p class="text-xs text-slate-500 mt-0.5">
-                  {{ selectedStudent.notebookSheetUrl
-                    ? $t('admin.notebook.openHint')
-                    : $t('admin.notebook.createHint') }}
+                  {{ $t('admin.notebook.openHint') }}
                 </p>
               </div>
               <button
-                v-if="selectedStudent.notebookSheetUrl"
                 type="button"
-                @click="openNotebook"
+                @click="router.push('/admin/notebook/' + selectedStudent.id)"
                 class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-800 motion-safe:transition-colors shrink-0"
               >
                 {{ $t('admin.notebook.openCta') }}
-              </button>
-              <button
-                v-else
-                type="button"
-                @click="createNotebook"
-                :disabled="creatingNotebook"
-                class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-800 motion-safe:transition-colors shrink-0 disabled:opacity-50"
-              >
-                {{ creatingNotebook ? $t('admin.notebook.creating') : $t('admin.notebook.createCta') }}
-              </button>
-            </div>
-            <!-- Recreate option for notebooks created on an older
-                 template. Only surfaced once a notebook exists.
-                 Confirms before unlinking the old sheet (which stays
-                 in Drive for manual data recovery). -->
-            <div
-              v-if="selectedStudent.notebookSheetUrl"
-              class="mt-3 pt-3 border-t border-cream-200/70 flex items-center justify-between gap-3"
-            >
-              <p class="text-xs text-slate-500 leading-relaxed text-pretty">
-                {{ $t('admin.notebook.recreateHint') }}
-              </p>
-              <button
-                type="button"
-                @click="recreateNotebook"
-                :disabled="creatingNotebook"
-                class="text-xs font-semibold text-primary hover:text-primary-800 underline-offset-2 hover:underline disabled:opacity-50 shrink-0"
-              >
-                {{ creatingNotebook ? $t('admin.notebook.recreating') : $t('admin.notebook.recreateCta') }}
               </button>
             </div>
           </div>
@@ -1187,14 +1145,13 @@
                 <button
                   type="button"
                   @click="pickerOpenNotebook(s)"
-                  :disabled="creatingNotebook"
-                  class="w-full text-start bg-cream-50 hover:bg-cream-100 border border-cream-200 rounded-xl p-4 motion-safe:transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="w-full text-start bg-cream-50 hover:bg-cream-100 border border-cream-200 rounded-xl p-4 motion-safe:transition-colors flex items-center gap-3"
                 >
                   <span class="text-xl shrink-0" aria-hidden="true">📓</span>
                   <div class="min-w-0 flex-1">
                     <p class="font-semibold text-primary truncate">{{ s.firstName }} {{ s.lastName }}</p>
                     <p class="text-xs text-slate-500 truncate">
-                      {{ s.notebookSheetUrl ? $t('admin.notebookPicker.openLabel') : $t('admin.notebookPicker.createLabel') }}
+                      {{ $t('admin.notebookPicker.openLabel') }}
                     </p>
                   </div>
                   <span class="text-primary shrink-0 motion-safe:transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" aria-hidden="true">→</span>
@@ -1612,6 +1569,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth.js';
 import { api } from '@/config/api.js';
@@ -1628,6 +1586,7 @@ import { nextWeekdayInTz, TZ_OPTIONS, formatInTz } from '@/composables/useTimezo
 
 const { locale, t } = useI18n();
 const { user, logout, isAdmin, isTeacher } = useAuth();
+const router = useRouter();
 
 // Admin locale is controlled by the LanguageSwitcher in the header. We used
 // to force Arabic on mount, but that fought with the toggle the sheikh now
@@ -1693,9 +1652,6 @@ watch(rescheduleSeriesMode, async () => {
 const studentDetailTab = ref('classes');
 const studentDetailLoading = ref(false);
 const studentClassLogs = ref([]);
-// Notebook creation state. Disables the button + shows "Creating…"
-// while the lazy POST /students/:id/notebook is in flight.
-const creatingNotebook = ref(false);
 const studentPayments = ref([]);
 const studentPaymentTotals = ref({});
 
@@ -2363,16 +2319,6 @@ async function viewStudent(id) {
 // Legacy AdminNote textbox was replaced by the Classes / Payments tabs.
 // Keeping the endpoints but no longer calling them from the UI.
 
-// Notebook handlers. createNotebook lazy-creates a Google Sheet for the
-// student via POST /students/:id/notebook, persists the URL on the
-// student row, and opens the Sheet in a new tab. openNotebook is the
-// short-circuit when a URL already exists.
-function openNotebook() {
-  const url = selectedStudent.value?.notebookSheetUrl;
-  if (!url) return;
-  window.open(url, '_blank', 'noopener');
-}
-
 // Home-tab notebook picker. Loads the (scoped) student list if needed,
 // then surfaces the slim picker modal. Search input filters the list
 // in-memory.
@@ -2392,43 +2338,11 @@ const notebookPickerStudents = computed(() => {
   });
 });
 
-// Click handler for a row in the picker. If the student already has a
-// notebook URL, open it directly. Otherwise lazy-create and then open.
-async function pickerOpenNotebook(student) {
-  if (student.notebookSheetUrl) {
-    window.open(student.notebookSheetUrl, '_blank', 'noopener');
-    return;
-  }
-  // Treat the picker row like the in-modal Create flow — lazy POST,
-  // store the URL, open the sheet. Mirrors createNotebook().
-  if (creatingNotebook.value) return;
-  creatingNotebook.value = true;
-  try {
-    const res = await api.post(`/api/admin/students/${student.id}/notebook`);
-    if (res?.sheetUrl) {
-      // Patch the local row so subsequent picker clicks short-circuit.
-      const idx = students.value.findIndex((s) => s.id === student.id);
-      if (idx !== -1) {
-        students.value[idx] = {
-          ...students.value[idx],
-          notebookSheetId: res.sheetId,
-          notebookSheetUrl: res.sheetUrl,
-        };
-      }
-      window.open(res.sheetUrl, '_blank', 'noopener');
-    }
-  } catch (err) {
-    const reason = err?.data?.reason;
-    if (reason === 'no_connection') {
-      showToast(t('admin.notebook.errNoConnection'));
-    } else if (reason === 'needs_scope_upgrade') {
-      showToast(t('admin.notebook.errNeedsScopeUpgrade'));
-    } else {
-      showToast(err, 'createNotebook');
-    }
-  } finally {
-    creatingNotebook.value = false;
-  }
+// Click handler for a picker row — navigate to that student's on-site
+// notebook page.
+function pickerOpenNotebook(student) {
+  showNotebookPicker.value = false;
+  router.push(`/admin/notebook/${student.id}`);
 }
 
 // Home-tab "Schedule a class" button — opens the existing schedule
@@ -2436,86 +2350,6 @@ async function pickerOpenNotebook(student) {
 // quick actions after closing.
 function openScheduleFromHome() {
   showScheduleForm.value = true;
-}
-
-async function createNotebook() {
-  if (!selectedStudent.value || creatingNotebook.value) return;
-  creatingNotebook.value = true;
-  try {
-    const res = await api.post(`/api/admin/students/${selectedStudent.value.id}/notebook`);
-    if (res?.sheetUrl) {
-      // Mutate the local copy so the button switches from
-      // "Create" to "Open" without a full reload of the student.
-      selectedStudent.value = {
-        ...selectedStudent.value,
-        notebookSheetId: res.sheetId,
-        notebookSheetUrl: res.sheetUrl,
-      };
-      window.open(res.sheetUrl, '_blank', 'noopener');
-      // Refresh the students list so the 📓 indicator appears next
-      // to this student's row.
-      loadStudents();
-    }
-  } catch (err) {
-    // Two known error reasons surface separately in the toast so the
-    // sheikh knows whether to (a) connect Google or (b) reconnect to
-    // upgrade scopes.
-    const reason = err?.data?.reason;
-    if (reason === 'no_connection') {
-      showToast(t('admin.notebook.errNoConnection'));
-    } else if (reason === 'needs_scope_upgrade') {
-      showToast(t('admin.notebook.errNeedsScopeUpgrade'));
-    } else {
-      showToast(err, 'createNotebook');
-    }
-  } finally {
-    creatingNotebook.value = false;
-  }
-}
-
-// Force a fresh notebook with the current template. Used when a
-// student's existing notebook was created under an older layout
-// (English headers, missing Subject/Session# columns, etc.). The
-// old sheet is NOT deleted from Drive — sheikh can manually copy
-// data over before removing the old file.
-async function recreateNotebook() {
-  if (!selectedStudent.value || creatingNotebook.value) return;
-  const ok = await confirmDialog({
-    title: t('admin.notebook.recreateConfirmTitle'),
-    message: t('admin.notebook.recreateConfirmMessage'),
-    confirmLabel: t('admin.notebook.recreateCta'),
-    cancelLabel: t('admin.cancel'),
-    danger: false,
-  });
-  if (!ok) return;
-
-  creatingNotebook.value = true;
-  try {
-    const res = await api.post(
-      `/api/admin/students/${selectedStudent.value.id}/notebook?recreate=true`
-    );
-    if (res?.sheetUrl) {
-      selectedStudent.value = {
-        ...selectedStudent.value,
-        notebookSheetId: res.sheetId,
-        notebookSheetUrl: res.sheetUrl,
-      };
-      window.open(res.sheetUrl, '_blank', 'noopener');
-      loadStudents();
-      showToast(t('admin.notebook.recreated'));
-    }
-  } catch (err) {
-    const reason = err?.data?.reason;
-    if (reason === 'no_connection') {
-      showToast(t('admin.notebook.errNoConnection'));
-    } else if (reason === 'needs_scope_upgrade') {
-      showToast(t('admin.notebook.errNeedsScopeUpgrade'));
-    } else {
-      showToast(err, 'recreateNotebook');
-    }
-  } finally {
-    creatingNotebook.value = false;
-  }
 }
 
 async function handleSuspend(id) {

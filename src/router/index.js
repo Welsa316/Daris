@@ -141,6 +141,16 @@ const routes = [
     // student-side view.
     meta: { auth: true, staff: true },
   },
+  {
+    // On-site student notebook — lesson notes + payments for one
+    // student. `staff` gate keeps it admin/teacher-only; the backend's
+    // requireStudentAccess 403s a teacher who opens a student they
+    // aren't assigned to (the page shows a friendly "not available").
+    path: '/admin/notebook/:studentId',
+    name: 'student-notebook',
+    component: () => import('../views/dashboard/StudentNotebook.vue'),
+    meta: { auth: true, staff: true },
+  },
 
   // Catch-all. redirect unknown paths to the current-locale home.
   { path: '/:pathMatch(.*)*', redirect: () => `/${i18n.global.locale.value === 'ar' ? 'ar' : 'en'}` },

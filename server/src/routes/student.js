@@ -94,11 +94,6 @@ router.get('/dashboard', requireEnrolled, async (req, res, next) => {
         firstName: true,
         lastName: true,
         enrolledAt: true,
-        // Notebook URL surfaced as a view-only link on the student
-        // dashboard. The sheet itself is shared with anyone-with-link
-        // as Reader at create time, so the student opens it and sees
-        // a read-only Google Sheets view.
-        notebookSheetUrl: true,
       },
     });
 
@@ -193,6 +188,25 @@ router.get('/dashboard', requireEnrolled, async (req, res, next) => {
       take: 20,
     });
 
+    // Notebook entries the student is allowed to see. Only logs the
+    // teacher marked visibility='student' — adminNotes is NEVER
+    // selected here, it's the teacher's private field. Each log carries
+    // its class session so the read-only notebook card on the dashboard
+    // is self-contained (no join against the capped class lists above).
+    const classLogs = await prisma.classLog.findMany({
+      where: { studentId: req.user.id, visibility: 'student' },
+      select: {
+        classSessionId: true,
+        summary: true,
+        nextSteps: true,
+        updatedAt: true,
+        classSession: {
+          select: { id: true, title: true, titleAr: true, subject: true, startTime: true },
+        },
+      },
+      orderBy: { classSession: { startTime: 'desc' } },
+    });
+
     // Active announcements
     const announcements = await prisma.announcement.findMany({
       where: { active: true },
@@ -239,7 +253,7 @@ router.get('/dashboard', requireEnrolled, async (req, res, next) => {
         enrolledAt: user.enrolledAt,
         status: 'Active',
       },
-      notebookSheetUrl: user.notebookSheetUrl || null,
+      classLogs,
       teachers: teachers.map((t) => ({
         id: t.id,
         firstName: t.firstName,

@@ -250,10 +250,6 @@ router.get('/students', validate(paginationSchema, 'query'), async (req, res, ne
           // the students table and lets the promote-teachers modal
           // filter out existing teachers from the candidate list.
           isTeacher: true,
-          // notebookSheetUrl drives the small 📓 indicator next to
-          // student names in the list — at-a-glance "this one has notes
-          // set up". Full URL not needed for the list, just truthiness.
-          notebookSheetUrl: true,
           expectedMonthlyAmount: true,
           expectedMonthlyCurrency: true,
         },
@@ -323,10 +319,6 @@ router.get('/students/:id', async (req, res, next) => {
         preferredLanguage: true,
         expectedMonthlyAmount: true,
         expectedMonthlyCurrency: true,
-        // Notebook URL for the "Open notebook" button on the detail
-        // modal. Null until the sheikh creates it.
-        notebookSheetId: true,
-        notebookSheetUrl: true,
         adminNotes: {
           orderBy: { createdAt: 'desc' },
           select: {
@@ -546,124 +538,6 @@ router.get('/students/:id/notes', async (req, res, next) => {
     });
 
     res.json({ notes });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Lazy-create the per-student Google Sheets notebook. Returns the
-// existing notebookSheetUrl if one is already set; otherwise creates a
-// fresh Sheet in the sheikh's Drive (Daris Students folder), stores
-// the URL on the student row, and returns it.
-//
-// Pass ?recreate=true (or { recreate: true } in the body) to force a
-// fresh template even when a URL is already stored. Used when the
-// template structure has changed (e.g. v1 English headers → v2 Arabic
-// + auto-formula columns) and the sheikh wants the new layout. The
-// OLD sheet is NOT deleted from Drive — we just unlink it from the
-// student row, so the sheikh can manually copy any data over before
-// removing the old file. Old URL is breadcrumbed in the audit log.
-//
-// Sheet creation always uses the SHEIKH'S Google connection — even
-// when triggered by a teacher — because that's where the OAuth tokens
-// live. Looks up the active admin connection at request time.
-router.post('/students/:id/notebook', async (req, res, next) => {
-  try {
-    const lang = getLang(req);
-    await requireStudentAccess(req.user, req.params.id, prisma);
-
-    const recreate =
-      req.query.recreate === 'true' || req.body?.recreate === true;
-
-    const student = await prisma.user.findFirst({
-      where: { id: req.params.id },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        notebookSheetId: true,
-        notebookSheetUrl: true,
-      },
-    });
-    if (!student) {
-      return res.status(404).json({ error: t('student.notFound', lang) });
-    }
-
-    // Already created — short-circuit unless the caller explicitly
-    // asked for a fresh template.
-    if (student.notebookSheetUrl && !recreate) {
-      return res.json({
-        sheetId: student.notebookSheetId,
-        sheetUrl: student.notebookSheetUrl,
-        created: false,
-      });
-    }
-
-    // Find an active admin Google connection. Sheets always live in
-    // the sheikh's Drive since that's where the tokens point. If
-    // multiple admins exist, first-found wins (deterministic ordering
-    // by createdAt). If none, return a clear 400 with a hint.
-    const admin = await prisma.user.findFirst({
-      where: { role: 'admin', deletedAt: null },
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    });
-    const conn = admin
-      ? await prisma.googleCalendarConnection.findUnique({
-          where: { userId: admin.id },
-          select: { status: true },
-        })
-      : null;
-    if (!admin || !conn || conn.status !== 'active') {
-      return res.status(400).json({
-        error: 'Google Calendar must be connected before creating notebooks.',
-        reason: 'no_connection',
-      });
-    }
-
-    // Lazy import to avoid circular deps in module init.
-    const { createStudentNotebook } = await import('../services/googleSheets.js');
-    let result;
-    try {
-      result = await createStudentNotebook(admin.id, student);
-    } catch (err) {
-      if (err.code === 'needs_scope_upgrade') {
-        return res.status(400).json({
-          error: err.message,
-          reason: 'needs_scope_upgrade',
-        });
-      }
-      throw err;
-    }
-
-    const previousSheetId = student.notebookSheetId;
-    const previousSheetUrl = student.notebookSheetUrl;
-
-    await prisma.user.update({
-      where: { id: student.id },
-      data: {
-        notebookSheetId: result.sheetId,
-        notebookSheetUrl: result.sheetUrl,
-      },
-    });
-
-    if (recreate && previousSheetId) {
-      auditLog('NOTEBOOK_RECREATED', {
-        studentId: student.id,
-        previousSheetId,
-        newSheetId: result.sheetId,
-        adminId: admin.id,
-        triggeredBy: req.user.id,
-      });
-    }
-
-    res.json({
-      sheetId: result.sheetId,
-      sheetUrl: result.sheetUrl,
-      created: true,
-      replaced: Boolean(recreate && previousSheetUrl),
-      previousSheetUrl: recreate ? previousSheetUrl : undefined,
-    });
   } catch (error) {
     next(error);
   }
@@ -1906,6 +1780,106 @@ router.get('/audit-logs', requireAdmin, validate(paginationSchema, 'query'), asy
 // --- Class Logs (per-class per-student: what we covered, what's next) ---
 
 // List all class logs for a student, joined with the class they refer to.
+// --- Notebook ---
+
+// Aggregated payload for the on-site student notebook page: the
+// student's non-cancelled class sessions, each paired with its
+// ClassLog (or null if no note written yet), plus all payments and
+// per-currency totals. One read for the whole page; the page's writes
+// reuse the class-logs upsert + payments routes below.
+router.get('/students/:id/notebook', async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    // Scope guard — teacher on a non-assigned student gets 403 here,
+    // before any data is loaded. Sheikh bypasses.
+    await requireStudentAccess(req.user, req.params.id, prisma);
+
+    const [student, logs, payments] = await Promise.all([
+      prisma.user.findFirst({
+        where: { id: req.params.id, ...scopedStudentFilter(req.user) },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          preferredLanguage: true,
+          expectedMonthlyAmount: true,
+          expectedMonthlyCurrency: true,
+          classAssignments: {
+            where: { classSession: { cancelled: false } },
+            orderBy: { classSession: { startTime: 'desc' } },
+            select: {
+              classSession: {
+                select: {
+                  id: true,
+                  title: true,
+                  titleAr: true,
+                  subject: true,
+                  startTime: true,
+                  endTime: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.classLog.findMany({
+        where: { studentId: req.params.id },
+        select: {
+          classSessionId: true,
+          summary: true,
+          homework: true,
+          nextSteps: true,
+          adminNotes: true,
+          visibility: true,
+          updatedAt: true,
+        },
+      }),
+      prisma.payment.findMany({
+        where: { studentId: req.params.id },
+        orderBy: { paidAt: 'desc' },
+      }),
+    ]);
+
+    if (!student) {
+      return res.status(404).json({ error: t('student.notFound', lang) });
+    }
+
+    // Merge each class session with its log. The class's startTime is
+    // the authoritative entry date — a note written days late still
+    // shows the real lesson date.
+    const logByClass = new Map(logs.map((l) => [l.classSessionId, l]));
+    const entries = student.classAssignments
+      .filter((a) => a.classSession)
+      .map((a) => ({
+        classSessionId: a.classSession.id,
+        classSession: a.classSession,
+        log: logByClass.get(a.classSession.id) || null,
+      }));
+
+    // Running total by currency — can't sum across EGP + USD.
+    const paymentTotals = payments.reduce((acc, p) => {
+      acc[p.currency] = (acc[p.currency] || 0) + p.amount;
+      return acc;
+    }, {});
+
+    res.json({
+      student: {
+        id: student.id,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        preferredLanguage: student.preferredLanguage,
+        expectedMonthlyAmount: student.expectedMonthlyAmount,
+        expectedMonthlyCurrency: student.expectedMonthlyCurrency,
+      },
+      entries,
+      payments,
+      paymentTotals,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/students/:id/class-logs', async (req, res, next) => {
   try {
     await requireStudentAccess(req.user, req.params.id, prisma);

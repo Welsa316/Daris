@@ -158,22 +158,13 @@
           <p class="text-slate-400 text-sm">{{ $t('dashboard.noUpcoming') }}</p>
         </div>
 
-        <!-- Notebook (view-only). The sheikh keeps lesson notes and
-             paid-cycle status in a Google Sheet; the URL is shared
-             read-only so the student can review without editing.
-             When the sheikh hasn't set one up yet we still show the
-             card with a quiet placeholder so the student knows what
-             it's for — better than the card silently disappearing. -->
-        <a
-          v-if="dashboard?.notebookSheetUrl"
-          :href="dashboard.notebookSheetUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="block bg-white rounded-2xl shadow-card p-5 mb-6 hover:bg-cream-50 motion-safe:transition-colors group"
-        >
-          <div class="flex items-center gap-4">
+        <!-- Notebook (view-only). Lesson notes the teacher wrote, one
+             per class, newest first. Read-only — the student never
+             edits. Shows a quiet placeholder before any notes exist. -->
+        <div class="bg-white rounded-2xl shadow-card p-5 mb-6">
+          <div class="flex items-center gap-3 mb-3">
             <span class="text-2xl shrink-0" aria-hidden="true">📓</span>
-            <div class="min-w-0 flex-1">
+            <div class="min-w-0">
               <h3 class="text-sm font-semibold text-primary text-balance">
                 {{ $t('dashboard.notebookTitle') }}
               </h3>
@@ -181,28 +172,31 @@
                 {{ $t('dashboard.notebookHint') }}
               </p>
             </div>
-            <span
-              class="text-primary shrink-0 ms-auto motion-safe:transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5"
-              aria-hidden="true"
-            >→</span>
           </div>
-        </a>
-        <div
-          v-else
-          class="bg-white/70 border border-dashed border-slate-200 rounded-2xl p-5 mb-6"
-          role="note"
-        >
-          <div class="flex items-start gap-4">
-            <span class="text-2xl shrink-0 opacity-60" aria-hidden="true">📓</span>
-            <div class="min-w-0 flex-1">
-              <h3 class="text-sm font-semibold text-primary/80 text-balance">
-                {{ $t('dashboard.notebookTitle') }}
-              </h3>
-              <p class="text-xs text-slate-500 mt-1 text-pretty">
-                {{ $t('dashboard.notebookEmptyHint') }}
+          <p v-if="!notebookLogs.length" class="text-xs text-slate-400 italic py-2 text-pretty">
+            {{ $t('dashboard.notebookEmptyHint') }}
+          </p>
+          <ul v-else class="space-y-3">
+            <li
+              v-for="log in notebookLogs"
+              :key="log.classSessionId"
+              class="border border-slate-100 rounded-xl p-3.5"
+            >
+              <p class="text-xs text-slate-400 tabular-nums">
+                {{ formatNotebookDate(log.classSession.startTime) }}
               </p>
-            </div>
-          </div>
+              <p class="text-sm font-medium text-primary mt-0.5">
+                {{ isAr && log.classSession.titleAr ? log.classSession.titleAr : log.classSession.title }}
+              </p>
+              <p v-if="log.summary && log.summary.trim()" class="text-sm text-slate-700 whitespace-pre-wrap break-words mt-1.5">
+                {{ log.summary }}
+              </p>
+              <p v-if="log.nextSteps && log.nextSteps.trim()" class="text-sm text-slate-500 whitespace-pre-wrap break-words mt-1.5">
+                <span class="font-medium text-slate-400">{{ $t('dashboard.notebookNext') }}</span>
+                {{ log.nextSteps }}
+              </p>
+            </li>
+          </ul>
         </div>
 
         <!-- Past classes. collapsed, opt-in -->
@@ -313,6 +307,20 @@ function viewerTimezoneDiffers(cls) {
 
 // Primary time display: in the class's own timezone (that's the time the
 // sheikh teaches in, so it's the shared source of truth).
+// Notebook entries the teacher has shared (visibility='student').
+// Hide empty rows so a blank saved log doesn't show as a bare date.
+const notebookLogs = computed(() =>
+  (dashboard.value?.classLogs || []).filter(
+    (l) => (l.summary && l.summary.trim()) || (l.nextSteps && l.nextSteps.trim())
+  )
+);
+
+function formatNotebookDate(iso) {
+  return new Intl.DateTimeFormat(isAr.value ? 'ar-EG' : 'en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+  }).format(new Date(iso));
+}
+
 function formatClassTime(cls) {
   const tz = cls.timezone || 'Africa/Cairo';
   const localeTag = isAr.value ? 'ar-EG' : 'en-US';
