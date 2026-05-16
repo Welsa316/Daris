@@ -41,7 +41,9 @@
       </div>
 
       <template v-else>
-        <!-- Class entries -->
+        <!-- Lesson ledger: one row per class, newest first. Each row's
+             date is auto-filled; the teacher writes straight into the
+             notes cell, which auto-saves on blur. -->
         <section class="bg-white rounded-2xl shadow-card p-5 md:p-6 mb-6">
           <div v-if="entries.length === 0" class="text-center py-10 px-4">
             <p class="text-3xl mb-2" aria-hidden="true">📓</p>
@@ -49,48 +51,39 @@
           </div>
 
           <template v-else>
-            <!-- Upcoming -->
-            <template v-if="upcomingEntries.length">
-              <h2 class="text-[11px] font-semibold tracking-[0.2em] uppercase text-slate-400 pb-2">
-                {{ $t('admin.notebook.upcoming') }}
-                <span class="tabular-nums text-slate-300">· {{ upcomingEntries.length }}</span>
-              </h2>
-              <div class="space-y-2.5 mb-5">
-                <NotebookEntryCard
-                  v-for="entry in upcomingEntries"
-                  :key="entry.classSessionId"
-                  :entry="entry"
-                  :is-ar="isAr"
-                  :expanded="expandedEntryId === entry.classSessionId"
-                  :saving="savingNote"
-                  :draft="logDraft"
-                  @toggle="toggleNote(entry)"
-                  @save="saveNote(entry)"
-                  @cancel="expandedEntryId = null"
-                />
-              </div>
-            </template>
-
-            <!-- Past -->
+            <!-- Past lessons first — the class a teacher just taught is
+                 the row they want, so it sits at the top. -->
             <template v-if="pastEntries.length">
-              <h2 class="text-[11px] font-semibold tracking-[0.2em] uppercase text-slate-400 pb-2">
+              <h2 class="text-[11px] font-semibold tracking-[0.2em] uppercase text-slate-400 pb-1">
                 {{ $t('admin.notebook.past') }}
                 <span class="tabular-nums text-slate-300">· {{ pastEntries.length }}</span>
               </h2>
-              <div class="space-y-2.5">
-                <NotebookEntryCard
-                  v-for="entry in pastEntries"
-                  :key="entry.classSessionId"
-                  :entry="entry"
-                  :is-ar="isAr"
-                  :expanded="expandedEntryId === entry.classSessionId"
-                  :saving="savingNote"
-                  :draft="logDraft"
-                  @toggle="toggleNote(entry)"
-                  @save="saveNote(entry)"
-                  @cancel="expandedEntryId = null"
-                />
-              </div>
+              <NotebookEntryRow
+                v-for="entry in pastEntries"
+                :key="entry.classSessionId"
+                :entry="entry"
+                :student-id="studentId"
+                :is-ar="isAr"
+              />
+            </template>
+
+            <!-- Upcoming classes — rows exist so a teacher can prep, but
+                 they sit below the lessons that have actually happened. -->
+            <template v-if="upcomingEntries.length">
+              <h2
+                class="text-[11px] font-semibold tracking-[0.2em] uppercase text-slate-400 pb-1"
+                :class="pastEntries.length ? 'pt-6' : ''"
+              >
+                {{ $t('admin.notebook.upcoming') }}
+                <span class="tabular-nums text-slate-300">· {{ upcomingEntries.length }}</span>
+              </h2>
+              <NotebookEntryRow
+                v-for="entry in upcomingEntries"
+                :key="entry.classSessionId"
+                :entry="entry"
+                :student-id="studentId"
+                :is-ar="isAr"
+              />
             </template>
           </template>
         </section>
@@ -236,7 +229,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { api } from '@/config/api.js';
 import BalancePill from '@/components/dashboard/BalancePill.vue';
-import NotebookEntryCard from '@/components/dashboard/NotebookEntryCard.vue';
+import NotebookEntryRow from '@/components/dashboard/NotebookEntryRow.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -285,17 +278,17 @@ const balancePillStudent = computed(() => {
   return { ...(student.value || {}), paidThisMonth };
 });
 
-// Split entries into upcoming (soonest first) and past (most recent
-// first). The API returns them startTime-desc already.
+// Past lessons (most recent first) lead the ledger; upcoming classes
+// follow. The API returns entries startTime-desc already.
 const now = ref(Date.now());
+const pastEntries = computed(() =>
+  entries.value.filter((e) => new Date(e.classSession.startTime).getTime() <= now.value)
+);
 const upcomingEntries = computed(() =>
   entries.value
     .filter((e) => new Date(e.classSession.startTime).getTime() > now.value)
     .slice()
     .sort((a, b) => new Date(a.classSession.startTime) - new Date(b.classSession.startTime))
-);
-const pastEntries = computed(() =>
-  entries.value.filter((e) => new Date(e.classSession.startTime).getTime() <= now.value)
 );
 
 async function load() {
@@ -313,49 +306,6 @@ async function load() {
     loadError.value = true;
   } finally {
     loading.value = false;
-  }
-}
-
-// --- Lesson notes ---
-
-const expandedEntryId = ref(null);
-const savingNote = ref(false);
-const logDraft = reactive({ summary: '', nextSteps: '' });
-
-function toggleNote(entry) {
-  if (expandedEntryId.value === entry.classSessionId) {
-    expandedEntryId.value = null;
-    return;
-  }
-  logDraft.summary = entry.log?.summary || '';
-  logDraft.nextSteps = entry.log?.nextSteps || '';
-  expandedEntryId.value = entry.classSessionId;
-}
-
-async function saveNote(entry) {
-  if (savingNote.value) return;
-  savingNote.value = true;
-  try {
-    const data = await api.put(
-      `/api/admin/class-logs/${entry.classSessionId}/${studentId}`,
-      {
-        summary: logDraft.summary,
-        nextSteps: logDraft.nextSteps,
-        // Pass existing values through so a note edited here never
-        // wipes a homework / private note set elsewhere. Notebook
-        // notes are always student-visible.
-        homework: entry.log?.homework || '',
-        adminNotes: entry.log?.adminNotes || '',
-        visibility: 'student',
-      }
-    );
-    entry.log = data.log;
-    expandedEntryId.value = null;
-    flashToast(t('admin.notebook.noteSaved'));
-  } catch (e) {
-    flashToast(e?.data?.error || t('admin.actionFailed.saveClassLog'));
-  } finally {
-    savingNote.value = false;
   }
 }
 
