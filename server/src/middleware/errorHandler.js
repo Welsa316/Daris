@@ -28,7 +28,10 @@ export function errorHandler(err, req, res, _next) {
     return res.status(404).json({ error: t('error.notFound', lang) });
   }
 
-  const statusCode = err.statusCode || 500;
+  // Accept either `statusCode` or `status` — service-layer guards
+  // (e.g. requireStudentAccess) set `status`, so without this an
+  // intended 403/401 would fall through to a 500.
+  const statusCode = err.statusCode || err.status || 500;
   const response = {
     error: isProd ? t('error.generic', lang) : err.message,
   };
