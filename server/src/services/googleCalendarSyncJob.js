@@ -216,6 +216,52 @@ async function processOp(op) {
   throw new Error(`Unknown op type: ${op.op}`);
 }
 
+// SiteSetting key marking the attendee backfill as done. Bump the
+// version suffix if a future change needs the backfill to run again.
+const ATTENDEE_BACKFILL_FLAG = 'gcalAttendeeBackfillV1';
+
+/**
+ * One-time retrofit for the "teacher couldn't join the auto-generated
+ * link" bug. Calendar events created before attendees were wired in
+ * have a Meet link nobody can join without the sheikh knock-approving
+ * them. This enqueues an `update` op for every future, uncancelled,
+ * already-synced class so the next sync pass patches the guest list
+ * onto each event (updateEvent now always includes attendees).
+ *
+ * Guarded by a SiteSetting flag so it runs exactly once across all
+ * deploys — after the first sweep sets the flag, every later sweep
+ * short-circuits on a single indexed lookup.
+ */
+async function backfillAttendeesOnce() {
+  const done = await prisma.siteSetting.findUnique({
+    where: { key: ATTENDEE_BACKFILL_FLAG },
+  });
+  if (done) return;
+
+  const classes = await prisma.classSession.findMany({
+    where: {
+      cancelled: false,
+      startTime: { gte: new Date() },
+      googleEventId: { not: null },
+    },
+    select: { id: true },
+  });
+  for (const c of classes) {
+    await enqueueSyncOp(c.id, 'update');
+  }
+
+  await prisma.siteSetting.upsert({
+    where: { key: ATTENDEE_BACKFILL_FLAG },
+    update: { value: new Date().toISOString() },
+    create: { key: ATTENDEE_BACKFILL_FLAG, value: new Date().toISOString() },
+  });
+  if (classes.length > 0) {
+    logger.info('GCal: enqueued attendee backfill for existing events', {
+      classes: classes.length,
+    });
+  }
+}
+
 /**
  * Convergent sync sweep. Walks every active GoogleCalendarConnection
  * and looks for future, uncancelled, un-synced classes the admin owns.
@@ -237,6 +283,8 @@ async function processOp(op) {
 export async function runGCalSweep() {
   if (!isGoogleCalendarConfigured()) return;
   try {
+    await backfillAttendeesOnce();
+
     const connections = await prisma.googleCalendarConnection.findMany({
       where: { status: 'active' },
       select: { userId: true },

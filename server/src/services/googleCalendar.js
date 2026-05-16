@@ -477,9 +477,12 @@ const EVENT_DESCRIPTION = 'Scheduled via Daris. Manage at https://daris.educatio
 
 /**
  * Build the full event body for a Google Calendar create/patch call.
+ *
+ * `attendeeEmails` is the guest list — see collectAttendeeEmails for
+ * why it's load-bearing for Meet access.
  */
-function buildEventBody(classSession) {
-  return {
+function buildEventBody(classSession, attendeeEmails = []) {
+  const body = {
     summary: buildEventSummary(classSession),
     description: EVENT_DESCRIPTION,
     start: toGoogleDateTime(classSession.startTime, classSession.timezone),
@@ -491,6 +494,64 @@ function buildEventBody(classSession) {
     // Status of an event — left default 'confirmed'. Cancellations
     // delete the event rather than flipping status.
   };
+  if (attendeeEmails.length > 0) {
+    body.attendees = attendeeEmails.map((email) => ({ email }));
+    // Lock the event down. A student/teacher guest shouldn't be able to
+    // re-time the sheikh's calendar event or pull extra people into it.
+    // Hiding the guest list also stops one student seeing another's
+    // email address. None of this affects Meet join access — that's
+    // governed purely by guest-list membership above.
+    body.guestsCanInviteOthers = false;
+    body.guestsCanModify = false;
+    body.guestsCanSeeOtherGuests = false;
+  }
+  return body;
+}
+
+/**
+ * Email addresses to put on a class's calendar-event guest list: every
+ * enrolled student in the class, plus every teacher assigned to any of
+ * those students.
+ *
+ * This is the fix for "the teacher couldn't join the auto-generated
+ * link." A Google Meet link minted through the Calendar API belongs to
+ * the event's organizer — here the sheikh, since the event lives on
+ * HIS calendar. Anyone opening that link who is NOT on the event's
+ * guest list is treated as an outside guest: they land on a "waiting to
+ * be let in" screen and someone already in the call with host rights
+ * must admit them. A teacher running her own class has no host present
+ * (the sheikh isn't in it), so she's stuck knocking. Listing her as a
+ * guest makes Meet recognise her and let her straight through.
+ *
+ * `organizerEmail` (the sheikh's connected Google account) is dropped —
+ * the organizer is implicitly on their own event already.
+ */
+async function collectAttendeeEmails(classSessionId, organizerEmail) {
+  const assignments = await prisma.classAssignment.findMany({
+    where: { classSessionId, student: { deletedAt: null } },
+    select: { studentId: true, student: { select: { email: true } } },
+  });
+  const emails = new Set();
+  const studentIds = [];
+  for (const a of assignments) {
+    studentIds.push(a.studentId);
+    if (a.student?.email) emails.add(a.student.email);
+  }
+
+  if (studentIds.length > 0) {
+    const links = await prisma.teacherStudent.findMany({
+      where: { studentId: { in: studentIds } },
+      select: { teacher: { select: { email: true, deletedAt: true } } },
+    });
+    for (const link of links) {
+      if (link.teacher && !link.teacher.deletedAt && link.teacher.email) {
+        emails.add(link.teacher.email);
+      }
+    }
+  }
+
+  if (organizerEmail) emails.delete(organizerEmail);
+  return Array.from(emails);
 }
 
 /**
@@ -501,14 +562,18 @@ function buildEventBody(classSession) {
 export async function createEvent(userId, classSession) {
   const conn = await prisma.googleCalendarConnection.findUnique({
     where: { userId },
-    select: { googleCalendarId: true, status: true },
+    select: { googleCalendarId: true, googleAccountEmail: true, status: true },
   });
   if (!conn || conn.status !== 'active') {
     throw new Error('No active Google Calendar connection for this user');
   }
   const accessToken = await getValidAccessToken(userId);
+  const attendeeEmails = await collectAttendeeEmails(
+    classSession.id,
+    conn.googleAccountEmail
+  );
   const body = {
-    ...buildEventBody(classSession),
+    ...buildEventBody(classSession, attendeeEmails),
     // conferenceData.createRequest tells Google to allocate a new Meet
     // room for this event. requestId must be unique-ish per call so
     // retries don't collide.
@@ -520,9 +585,12 @@ export async function createEvent(userId, classSession) {
     },
   };
 
+  // sendUpdates=none: the guests are added to the event (so Meet admits
+  // them) but Google sends no invitation emails. Daris owns reminders;
+  // a parallel Google invite would just be noise.
   const url =
     `${GOOGLE_CALENDAR_API}/calendars/${encodeURIComponent(conn.googleCalendarId)}` +
-    `/events?conferenceDataVersion=1`;
+    `/events?conferenceDataVersion=1&sendUpdates=none`;
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -552,16 +620,23 @@ export async function updateEvent(userId, classSession) {
   }
   const conn = await prisma.googleCalendarConnection.findUnique({
     where: { userId },
-    select: { googleCalendarId: true, status: true },
+    select: { googleCalendarId: true, googleAccountEmail: true, status: true },
   });
   if (!conn || conn.status !== 'active') {
     throw new Error('No active Google Calendar connection for this user');
   }
   const accessToken = await getValidAccessToken(userId);
-  const body = buildEventBody(classSession);
+  // Recompute the guest list every patch so a reschedule or a teacher
+  // reassignment keeps the event's attendees (and therefore Meet
+  // access) current.
+  const attendeeEmails = await collectAttendeeEmails(
+    classSession.id,
+    conn.googleAccountEmail
+  );
+  const body = buildEventBody(classSession, attendeeEmails);
   const url =
     `${GOOGLE_CALENDAR_API}/calendars/${encodeURIComponent(conn.googleCalendarId)}` +
-    `/events/${encodeURIComponent(classSession.googleEventId)}`;
+    `/events/${encodeURIComponent(classSession.googleEventId)}?sendUpdates=none`;
   const res = await fetch(url, {
     method: 'PATCH',
     headers: {
