@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-cream pt-24 pb-12 px-4">
     <div class="max-w-3xl mx-auto">
 
-      <!-- Header: back, student name, balance pill, language switch -->
+      <!-- Header: back, student name, language switch -->
       <div class="flex items-center gap-3 mb-8">
         <button
           type="button"
@@ -12,14 +12,9 @@
         >
           <span aria-hidden="true">{{ isAr ? '→' : '←' }}</span>
         </button>
-        <div class="min-w-0 flex-1">
-          <h1 class="text-2xl font-display font-bold text-primary truncate">
-            {{ studentName || $t('admin.notebook.title') }}
-          </h1>
-          <p v-if="student && student.expectedMonthlyAmount" class="mt-1">
-            <BalancePill :student="balancePillStudent" />
-          </p>
-        </div>
+        <h1 class="text-2xl font-display font-bold text-primary truncate min-w-0 flex-1">
+          {{ studentName || $t('admin.notebook.title') }}
+        </h1>
         <LanguageSwitcher class="shrink-0" />
       </div>
 
@@ -41,184 +36,65 @@
         </button>
       </div>
 
-      <template v-else>
-        <!-- Lesson table: a real spreadsheet-style grid. One row per
-             class, date column auto-filled, notes cell written into
-             directly. Auto-saves on blur. -->
-        <section class="bg-white rounded-2xl shadow-card p-5 md:p-6 mb-6">
-          <div v-if="entries.length === 0" class="text-center py-10 px-4">
-            <p class="text-3xl mb-2" aria-hidden="true">📓</p>
-            <p class="text-sm text-slate-500 text-pretty">{{ $t('admin.notebook.noClasses') }}</p>
-          </div>
+      <!-- Lesson table — a spreadsheet-style grid. Classes are grouped
+           into cycles of four; each cycle carries one Paid checkbox. -->
+      <section v-else class="bg-white rounded-2xl shadow-card p-5 md:p-6">
+        <div v-if="entries.length === 0" class="text-center py-10 px-4">
+          <p class="text-3xl mb-2" aria-hidden="true">📓</p>
+          <p class="text-sm text-slate-500 text-pretty">{{ $t('admin.notebook.noClasses') }}</p>
+        </div>
 
-          <div v-else class="rounded-xl border border-slate-200 overflow-hidden">
-            <table class="w-full border-collapse">
-              <thead>
-                <tr class="bg-cream/70">
-                  <th class="px-3 py-2 text-start text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                    {{ $t('admin.notebook.dateCol') }}
-                  </th>
-                  <th class="px-3 py-2 text-start text-[11px] font-semibold uppercase tracking-wider text-slate-500 border-s border-slate-200">
-                    {{ $t('admin.notebook.notesCol') }}
-                  </th>
+        <div v-else class="rounded-xl border border-slate-200 overflow-hidden">
+          <table class="w-full border-collapse">
+            <thead>
+              <tr class="bg-cream/70">
+                <th class="px-3 py-2 text-start text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  {{ $t('admin.notebook.dateCol') }}
+                </th>
+                <th class="px-3 py-2 text-start text-[11px] font-semibold uppercase tracking-wider text-slate-500 border-s border-slate-200">
+                  {{ $t('admin.notebook.notesCol') }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="cycle in cycles" :key="cycle.cycleIndex">
+                <!-- Cycle header: label + the one Paid checkbox. The
+                     whole row goes green once the cycle is paid. -->
+                <tr :class="isPaid(cycle.cycleIndex) ? 'bg-emerald-50' : 'bg-cream/40'">
+                  <td colspan="2" class="px-3 py-2 border-t-2 border-slate-300">
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        {{ $t('admin.notebook.cycle', { n: cycle.cycleIndex + 1 }) }}
+                      </span>
+                      <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          class="w-5 h-5 accent-primary cursor-pointer"
+                          :checked="isPaid(cycle.cycleIndex)"
+                          @change="toggleCycle(cycle.cycleIndex, $event.target.checked)"
+                        />
+                        <span
+                          class="text-sm font-semibold"
+                          :class="isPaid(cycle.cycleIndex) ? 'text-emerald-700' : 'text-slate-600'"
+                        >
+                          {{ $t('admin.notebook.paid') }}
+                        </span>
+                      </label>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                <!-- Past lessons first — the class a teacher just taught
-                     is the row they want, so it sits at the top. -->
-                <template v-if="pastEntries.length">
-                  <tr class="bg-cream/30">
-                    <td colspan="2" class="px-3 py-1.5 border-t border-slate-200 text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-400">
-                      {{ $t('admin.notebook.past') }}
-                      <span class="tabular-nums text-slate-300">· {{ pastEntries.length }}</span>
-                    </td>
-                  </tr>
-                  <NotebookEntryRow
-                    v-for="entry in pastEntries"
-                    :key="entry.classSessionId"
-                    :entry="entry"
-                    :student-id="studentId"
-                    :is-ar="isAr"
-                  />
-                </template>
-
-                <!-- Upcoming classes — below the lessons that happened. -->
-                <template v-if="upcomingEntries.length">
-                  <tr class="bg-cream/30">
-                    <td colspan="2" class="px-3 py-1.5 border-t border-slate-200 text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-400">
-                      {{ $t('admin.notebook.upcoming') }}
-                      <span class="tabular-nums text-slate-300">· {{ upcomingEntries.length }}</span>
-                    </td>
-                  </tr>
-                  <NotebookEntryRow
-                    v-for="entry in upcomingEntries"
-                    :key="entry.classSessionId"
-                    :entry="entry"
-                    :student-id="studentId"
-                    :is-ar="isAr"
-                  />
-                </template>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- Payments -->
-        <section class="bg-white rounded-2xl shadow-card p-5 md:p-6">
-          <h2 class="text-sm font-display font-bold text-primary mb-3">
-            {{ $t('admin.notebook.paymentsTitle') }}
-          </h2>
-
-          <div v-if="Object.keys(paymentTotals).length" class="mb-4 bg-primary/5 rounded-lg p-3 text-sm">
-            <span class="text-slate-500">{{ $t('admin.payments.total') }}:</span>
-            <span v-for="(minor, cur) in paymentTotals" :key="cur" class="ms-2 font-medium text-primary">
-              {{ formatMoney(minor, cur) }}
-            </span>
-          </div>
-
-          <div v-if="!payments.length" class="text-slate-400 text-sm py-3">
-            {{ $t('admin.payments.none') }}
-          </div>
-          <div v-else class="space-y-2">
-            <div
-              v-for="p in payments"
-              :key="p.id"
-              class="border border-slate-100 rounded-lg p-3 text-sm"
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="font-medium text-primary">{{ formatMoney(p.amount, p.currency) }} · {{ p.period }}</p>
-                  <p class="text-xs text-slate-500 tabular-nums">{{ formatDate(p.paidAt) }}</p>
-                  <p v-if="p.notes" class="text-xs text-slate-400 mt-1">{{ p.notes }}</p>
-                </div>
-                <div class="flex items-center gap-2 shrink-0">
-                  <button type="button" @click="openPaymentForm(p)" class="text-xs text-primary hover:text-primary-800 underline">{{ $t('admin.edit') }}</button>
-                  <button type="button" @click="deletePayment(p)" class="text-xs text-red-500 hover:text-red-700 underline">{{ $t('admin.delete') }}</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-4">
-            <button
-              v-if="!showPaymentForm"
-              type="button"
-              @click="openPaymentForm(null)"
-              class="bg-primary text-cream px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-800 motion-safe:transition-colors"
-            >
-              + {{ $t('admin.payments.record') }}
-            </button>
-            <div v-else class="border border-slate-200 rounded-lg p-4 space-y-3 bg-slate-50">
-              <h3 class="font-medium text-primary">
-                {{ editingPaymentId ? $t('admin.payments.editTitle') : $t('admin.payments.recordTitle') }}
-              </h3>
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.payments.amount') }}</label>
-                  <input
-                    v-model="paymentForm.amount"
-                    type="number" step="0.01" min="0" dir="ltr"
-                    class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white"
-                  />
-                </div>
-                <div>
-                  <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.payments.currency') }}</label>
-                  <select
-                    v-model="paymentForm.currency"
-                    class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white"
-                  >
-                    <option>EGP</option>
-                    <option>USD</option>
-                    <option>EUR</option>
-                    <option>SAR</option>
-                    <option>AED</option>
-                    <option>GBP</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.payments.period') }}</label>
-                <input
-                  v-model="paymentForm.period"
-                  type="text"
-                  :placeholder="$t('admin.payments.periodPh')"
-                  class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white"
+                <NotebookEntryRow
+                  v-for="entry in cycle.entries"
+                  :key="entry.classSessionId"
+                  :entry="entry"
+                  :student-id="studentId"
+                  :is-ar="isAr"
                 />
-              </div>
-              <div>
-                <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.payments.paidAt') }}</label>
-                <input
-                  v-model="paymentForm.paidAt"
-                  type="date" dir="ltr"
-                  class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white"
-                />
-              </div>
-              <div>
-                <label class="block text-xs text-slate-500 mb-1">{{ $t('admin.payments.notes') }}</label>
-                <textarea
-                  v-model="paymentForm.notes"
-                  rows="2"
-                  :placeholder="$t('admin.payments.notesPh')"
-                  class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary outline-none bg-white"
-                ></textarea>
-              </div>
-              <div class="flex justify-end gap-2">
-                <button type="button" @click="showPaymentForm = false" class="px-3 py-1.5 text-sm text-slate-500 hover:text-slate-700">
-                  {{ $t('admin.cancel') }}
-                </button>
-                <button
-                  type="button"
-                  @click="savePayment"
-                  :disabled="savingPayment"
-                  class="bg-primary text-cream px-4 py-1.5 rounded-full text-sm font-medium hover:bg-primary-800 motion-safe:transition-colors disabled:opacity-50"
-                >
-                  {{ savingPayment ? $t('admin.saving') : $t('admin.payments.save') }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </template>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
 
     <!-- Toast -->
@@ -239,11 +115,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { api } from '@/config/api.js';
-import BalancePill from '@/components/dashboard/BalancePill.vue';
 import NotebookEntryRow from '@/components/dashboard/NotebookEntryRow.vue';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 
@@ -258,8 +133,7 @@ const loading = ref(true);
 const loadError = ref(false);
 const student = ref(null);
 const entries = ref([]);
-const payments = ref([]);
-const paymentTotals = ref({});
+const paidCycles = ref(new Set());
 const toast = ref('');
 
 function flashToast(msg) {
@@ -279,33 +153,22 @@ const studentName = computed(() => {
   return `${student.value.firstName || ''} ${student.value.lastName || ''}`.trim();
 });
 
-// BalancePill shape: expectedMonthly* from the student + paidThisMonth
-// recomputed from this month's payments.
-const balancePillStudent = computed(() => {
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
-  const paidThisMonth = {};
-  for (const p of payments.value) {
-    if (new Date(p.paidAt) >= monthStart) {
-      paidThisMonth[p.currency] = (paidThisMonth[p.currency] || 0) + p.amount;
-    }
+// Group the (chronological) entries by their cycleIndex into ordered
+// cycle blocks — cycle 0 first.
+const cycles = computed(() => {
+  const groups = new Map();
+  for (const e of entries.value) {
+    if (!groups.has(e.cycleIndex)) groups.set(e.cycleIndex, []);
+    groups.get(e.cycleIndex).push(e);
   }
-  return { ...(student.value || {}), paidThisMonth };
+  return [...groups.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([cycleIndex, items]) => ({ cycleIndex, entries: items }));
 });
 
-// Past lessons (most recent first) lead the ledger; upcoming classes
-// follow. The API returns entries startTime-desc already.
-const now = ref(Date.now());
-const pastEntries = computed(() =>
-  entries.value.filter((e) => new Date(e.classSession.startTime).getTime() <= now.value)
-);
-const upcomingEntries = computed(() =>
-  entries.value
-    .filter((e) => new Date(e.classSession.startTime).getTime() > now.value)
-    .slice()
-    .sort((a, b) => new Date(a.classSession.startTime) - new Date(b.classSession.startTime))
-);
+function isPaid(cycleIndex) {
+  return paidCycles.value.has(cycleIndex);
+}
 
 async function load() {
   loading.value = true;
@@ -314,8 +177,7 @@ async function load() {
     const data = await api.get(`/api/admin/students/${studentId}/notebook`);
     student.value = data.student;
     entries.value = data.entries || [];
-    payments.value = data.payments || [];
-    paymentTotals.value = data.paymentTotals || {};
+    paidCycles.value = new Set(data.paidCycles || []);
   } catch {
     // 403 (not your student) / 404 — show the friendly state, don't
     // leak whether the student exists.
@@ -325,86 +187,20 @@ async function load() {
   }
 }
 
-// --- Payments ---
-
-const showPaymentForm = ref(false);
-const editingPaymentId = ref(null);
-const savingPayment = ref(false);
-const paymentForm = reactive({ amount: '', currency: 'EGP', period: '', paidAt: '', notes: '' });
-
-function openPaymentForm(payment) {
-  if (payment) {
-    editingPaymentId.value = payment.id;
-    paymentForm.amount = (payment.amount / 100).toFixed(2);
-    paymentForm.currency = payment.currency;
-    paymentForm.period = payment.period;
-    paymentForm.paidAt = new Date(payment.paidAt).toISOString().slice(0, 10);
-    paymentForm.notes = payment.notes || '';
-  } else {
-    editingPaymentId.value = null;
-    paymentForm.amount = '';
-    paymentForm.currency = 'EGP';
-    paymentForm.period = '';
-    paymentForm.paidAt = new Date().toISOString().slice(0, 10);
-    paymentForm.notes = '';
-  }
-  showPaymentForm.value = true;
-}
-
-async function refreshPayments() {
-  const data = await api.get(`/api/admin/students/${studentId}/payments`);
-  payments.value = data.payments || [];
-  paymentTotals.value = data.totals || {};
-}
-
-async function savePayment() {
-  if (savingPayment.value) return;
-  const amountMinor = Math.round(parseFloat(paymentForm.amount) * 100);
-  if (!amountMinor || amountMinor <= 0 || !paymentForm.period.trim()) {
-    flashToast(t('admin.payments.missingFields'));
-    return;
-  }
-  savingPayment.value = true;
+// Tick / untick a cycle's Paid checkbox. Optimistic: flip the local
+// set immediately, revert if the request fails.
+async function toggleCycle(cycleIndex, paid) {
+  const prev = new Set(paidCycles.value);
+  const next = new Set(paidCycles.value);
+  if (paid) next.add(cycleIndex);
+  else next.delete(cycleIndex);
+  paidCycles.value = next;
   try {
-    const body = {
-      amount: amountMinor,
-      currency: paymentForm.currency,
-      period: paymentForm.period.trim(),
-      paidAt: new Date(paymentForm.paidAt).toISOString(),
-      notes: paymentForm.notes?.trim() || null,
-    };
-    if (editingPaymentId.value) {
-      await api.put(`/api/admin/payments/${editingPaymentId.value}`, body);
-    } else {
-      await api.post(`/api/admin/students/${studentId}/payments`, body);
-    }
-    showPaymentForm.value = false;
-    await refreshPayments();
+    await api.put(`/api/admin/students/${studentId}/cycles/${cycleIndex}`, { paid });
   } catch (e) {
-    flashToast(e?.data?.error || t('admin.actionFailed.savePayment'));
-  } finally {
-    savingPayment.value = false;
+    paidCycles.value = prev;
+    flashToast(e?.data?.error || t('admin.notebook.saveFailed'));
   }
-}
-
-async function deletePayment(payment) {
-  try {
-    await api.delete(`/api/admin/payments/${payment.id}`);
-    await refreshPayments();
-  } catch (e) {
-    flashToast(e?.data?.error || t('admin.actionFailed.deletePayment'));
-  }
-}
-
-// --- Formatting ---
-
-function formatMoney(minor, currency) {
-  return `${(minor / 100).toFixed(2)} ${currency}`;
-}
-function formatDate(iso) {
-  return new Intl.DateTimeFormat(isAr.value ? 'ar-EG' : 'en-GB', {
-    year: 'numeric', month: 'short', day: 'numeric',
-  }).format(new Date(iso));
 }
 
 onMounted(load);

@@ -91,6 +91,11 @@ model User {
   studentConversation      Conversation?             @relation("ConversationStudent")
   authoredMessages         Message[]                 @relation("MessageAuthor")
   conversationReads        ConversationRead[]        @relation("ConversationReadUser")
+  // Notebook: paid-cycle checkboxes. paidCycles = this user's (as a
+  // student) cycles marked paid; markedPaidCycles = cycles this user
+  // (as staff) ticked.
+  paidCycles               PaidCycle[]               @relation("PaidCycleStudent")
+  markedPaidCycles         PaidCycle[]               @relation("PaidCycleMarker")
 
   @@index([role])
   @@index([isTeacher])
@@ -350,6 +355,27 @@ model Payment {
 
   @@index([studentId, paidAt])
   @@map("payments")
+}
+
+// Notebook paid-cycle checkbox. A cycle is a run of 4 of a student's
+// classes in chronological order; cycleIndex is its 0-based position
+// (0 = the student's first four classes). One row here = that cycle is
+// marked paid. There's no amount — the sheikh charges a different
+// price per student, so this is a plain paid / not-paid flag, ticked
+// straight from the notebook. Absence of a row = not paid.
+model PaidCycle {
+  id         String   @id @default(uuid()) @db.Uuid
+  studentId  String   @map("student_id") @db.Uuid
+  cycleIndex Int      @map("cycle_index")
+  markedById String?  @map("marked_by_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  student  User  @relation("PaidCycleStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  markedBy User? @relation("PaidCycleMarker", fields: [markedById], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, cycleIndex])
+  @@index([studentId])
+  @@map("paid_cycles")
 }
 
 model Announcement {

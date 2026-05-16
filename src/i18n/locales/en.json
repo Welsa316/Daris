@@ -880,8 +880,6 @@
       "back": "Back",
       "loadError": "Couldn't open this notebook. Please try again.",
       "notFound": "This notebook isn't available.",
-      "upcoming": "Upcoming classes",
-      "past": "Past lessons",
       "noClasses": "No classes scheduled yet. Lesson notes will appear here once classes are on the schedule.",
       "dateCol": "Date",
       "notesCol": "Lesson notes",
@@ -889,7 +887,8 @@
       "saving": "Saving…",
       "saved": "Saved",
       "saveFailed": "Couldn't save — try again",
-      "paymentsTitle": "Payments",
+      "cycle": "Cycle {n}",
+      "paid": "Paid",
       "legacyData": "More records"
     },
     "notebookPicker": {

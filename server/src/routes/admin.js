@@ -1782,11 +1782,16 @@ router.get('/audit-logs', requireAdmin, validate(paginationSchema, 'query'), asy
 // List all class logs for a student, joined with the class they refer to.
 // --- Notebook ---
 
+// A "cycle" is a run of this many of a student's classes, in
+// chronological order. The notebook groups classes into cycles and
+// the sheikh ticks one Paid checkbox per cycle.
+const NOTEBOOK_CYCLE_SIZE = 4;
+
 // Aggregated payload for the on-site student notebook page: the
-// student's non-cancelled class sessions, each paired with its
-// ClassLog (or null if no note written yet), plus all payments and
-// per-currency totals. One read for the whole page; the page's writes
-// reuse the class-logs upsert + payments routes below.
+// student's non-cancelled class sessions (each paired with its
+// ClassLog and tagged with its cycle), plus the set of cycles already
+// marked paid. One read for the whole page; the page's writes reuse
+// the class-logs upsert route and the cycle-toggle route below.
 router.get('/students/:id/notebook', async (req, res, next) => {
   try {
     const lang = getLang(req);
@@ -1794,7 +1799,7 @@ router.get('/students/:id/notebook', async (req, res, next) => {
     // before any data is loaded. Sheikh bypasses.
     await requireStudentAccess(req.user, req.params.id, prisma);
 
-    const [student, logs, payments] = await Promise.all([
+    const [student, logs, paidCycles] = await Promise.all([
       prisma.user.findFirst({
         where: { id: req.params.id, ...scopedStudentFilter(req.user) },
         select: {
@@ -1802,11 +1807,10 @@ router.get('/students/:id/notebook', async (req, res, next) => {
           firstName: true,
           lastName: true,
           preferredLanguage: true,
-          expectedMonthlyAmount: true,
-          expectedMonthlyCurrency: true,
           classAssignments: {
             where: { classSession: { cancelled: false } },
-            orderBy: { classSession: { startTime: 'desc' } },
+            // Ascending so cycle 0 = the student's first four classes.
+            orderBy: { classSession: { startTime: 'asc' } },
             select: {
               classSession: {
                 select: {
@@ -1834,9 +1838,9 @@ router.get('/students/:id/notebook', async (req, res, next) => {
           updatedAt: true,
         },
       }),
-      prisma.payment.findMany({
+      prisma.paidCycle.findMany({
         where: { studentId: req.params.id },
-        orderBy: { paidAt: 'desc' },
+        select: { cycleIndex: true },
       }),
     ]);
 
@@ -1844,23 +1848,19 @@ router.get('/students/:id/notebook', async (req, res, next) => {
       return res.status(404).json({ error: t('student.notFound', lang) });
     }
 
-    // Merge each class session with its log. The class's startTime is
-    // the authoritative entry date — a note written days late still
-    // shows the real lesson date.
+    // Merge each class with its log and tag it with its cycle. Classes
+    // are chronological, so cycleIndex = floor(position / size): the
+    // first four classes are cycle 0, the next four cycle 1, etc. The
+    // class's startTime stays the authoritative entry date.
     const logByClass = new Map(logs.map((l) => [l.classSessionId, l]));
     const entries = student.classAssignments
       .filter((a) => a.classSession)
-      .map((a) => ({
+      .map((a, i) => ({
         classSessionId: a.classSession.id,
         classSession: a.classSession,
         log: logByClass.get(a.classSession.id) || null,
+        cycleIndex: Math.floor(i / NOTEBOOK_CYCLE_SIZE),
       }));
-
-    // Running total by currency — can't sum across EGP + USD.
-    const paymentTotals = payments.reduce((acc, p) => {
-      acc[p.currency] = (acc[p.currency] || 0) + p.amount;
-      return acc;
-    }, {});
 
     res.json({
       student: {
@@ -1868,13 +1868,48 @@ router.get('/students/:id/notebook', async (req, res, next) => {
         firstName: student.firstName,
         lastName: student.lastName,
         preferredLanguage: student.preferredLanguage,
-        expectedMonthlyAmount: student.expectedMonthlyAmount,
-        expectedMonthlyCurrency: student.expectedMonthlyCurrency,
       },
       entries,
-      payments,
-      paymentTotals,
+      paidCycles: paidCycles.map((c) => c.cycleIndex),
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Toggle a cycle's Paid checkbox. A row in paid_cycles = paid; absence
+// = not paid. Idempotent: PUT { paid:true } upserts, { paid:false }
+// deletes. cycleIndex is the cycle's 0-based chronological position.
+router.put('/students/:id/cycles/:cycleIndex', async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    await requireStudentAccess(req.user, req.params.id, prisma);
+
+    const cycleIndex = Number.parseInt(req.params.cycleIndex, 10);
+    if (!Number.isInteger(cycleIndex) || cycleIndex < 0) {
+      return res.status(400).json({ error: t('error.generic', lang) });
+    }
+    const paid = req.body?.paid === true;
+
+    if (paid) {
+      await prisma.paidCycle.upsert({
+        where: { studentId_cycleIndex: { studentId: req.params.id, cycleIndex } },
+        update: { markedById: req.user.id },
+        create: { studentId: req.params.id, cycleIndex, markedById: req.user.id },
+      });
+    } else {
+      await prisma.paidCycle.deleteMany({
+        where: { studentId: req.params.id, cycleIndex },
+      });
+    }
+
+    auditLog('CYCLE_PAID_TOGGLED', {
+      studentId: req.params.id,
+      cycleIndex,
+      paid,
+      adminId: req.user.id,
+    });
+    res.json({ cycleIndex, paid });
   } catch (error) {
     next(error);
   }
