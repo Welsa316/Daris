@@ -883,6 +883,8 @@
       "upcoming": "Upcoming classes",
       "past": "Past lessons",
       "noClasses": "No classes scheduled yet. Lesson notes will appear here once classes are on the schedule.",
+      "dateCol": "Date",
+      "notesCol": "Lesson notes",
       "coveredPlaceholder": "Write what you covered today…",
       "saving": "Saving…",
       "saved": "Saved",

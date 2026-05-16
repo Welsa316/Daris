@@ -41,51 +41,65 @@
       </div>
 
       <template v-else>
-        <!-- Lesson ledger: one row per class, newest first. Each row's
-             date is auto-filled; the teacher writes straight into the
-             notes cell, which auto-saves on blur. -->
+        <!-- Lesson table: a real spreadsheet-style grid. One row per
+             class, date column auto-filled, notes cell written into
+             directly. Auto-saves on blur. -->
         <section class="bg-white rounded-2xl shadow-card p-5 md:p-6 mb-6">
           <div v-if="entries.length === 0" class="text-center py-10 px-4">
             <p class="text-3xl mb-2" aria-hidden="true">📓</p>
             <p class="text-sm text-slate-500 text-pretty">{{ $t('admin.notebook.noClasses') }}</p>
           </div>
 
-          <template v-else>
-            <!-- Past lessons first — the class a teacher just taught is
-                 the row they want, so it sits at the top. -->
-            <template v-if="pastEntries.length">
-              <h2 class="text-[11px] font-semibold tracking-[0.2em] uppercase text-slate-400 pb-1">
-                {{ $t('admin.notebook.past') }}
-                <span class="tabular-nums text-slate-300">· {{ pastEntries.length }}</span>
-              </h2>
-              <NotebookEntryRow
-                v-for="entry in pastEntries"
-                :key="entry.classSessionId"
-                :entry="entry"
-                :student-id="studentId"
-                :is-ar="isAr"
-              />
-            </template>
+          <div v-else class="rounded-xl border border-slate-200 overflow-hidden">
+            <table class="w-full border-collapse">
+              <thead>
+                <tr class="bg-cream/70">
+                  <th class="px-3 py-2 text-start text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    {{ $t('admin.notebook.dateCol') }}
+                  </th>
+                  <th class="px-3 py-2 text-start text-[11px] font-semibold uppercase tracking-wider text-slate-500 border-s border-slate-200">
+                    {{ $t('admin.notebook.notesCol') }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Past lessons first — the class a teacher just taught
+                     is the row they want, so it sits at the top. -->
+                <template v-if="pastEntries.length">
+                  <tr class="bg-cream/30">
+                    <td colspan="2" class="px-3 py-1.5 border-t border-slate-200 text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-400">
+                      {{ $t('admin.notebook.past') }}
+                      <span class="tabular-nums text-slate-300">· {{ pastEntries.length }}</span>
+                    </td>
+                  </tr>
+                  <NotebookEntryRow
+                    v-for="entry in pastEntries"
+                    :key="entry.classSessionId"
+                    :entry="entry"
+                    :student-id="studentId"
+                    :is-ar="isAr"
+                  />
+                </template>
 
-            <!-- Upcoming classes — rows exist so a teacher can prep, but
-                 they sit below the lessons that have actually happened. -->
-            <template v-if="upcomingEntries.length">
-              <h2
-                class="text-[11px] font-semibold tracking-[0.2em] uppercase text-slate-400 pb-1"
-                :class="pastEntries.length ? 'pt-6' : ''"
-              >
-                {{ $t('admin.notebook.upcoming') }}
-                <span class="tabular-nums text-slate-300">· {{ upcomingEntries.length }}</span>
-              </h2>
-              <NotebookEntryRow
-                v-for="entry in upcomingEntries"
-                :key="entry.classSessionId"
-                :entry="entry"
-                :student-id="studentId"
-                :is-ar="isAr"
-              />
-            </template>
-          </template>
+                <!-- Upcoming classes — below the lessons that happened. -->
+                <template v-if="upcomingEntries.length">
+                  <tr class="bg-cream/30">
+                    <td colspan="2" class="px-3 py-1.5 border-t border-slate-200 text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-400">
+                      {{ $t('admin.notebook.upcoming') }}
+                      <span class="tabular-nums text-slate-300">· {{ upcomingEntries.length }}</span>
+                    </td>
+                  </tr>
+                  <NotebookEntryRow
+                    v-for="entry in upcomingEntries"
+                    :key="entry.classSessionId"
+                    :entry="entry"
+                    :student-id="studentId"
+                    :is-ar="isAr"
+                  />
+                </template>
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <!-- Payments -->
