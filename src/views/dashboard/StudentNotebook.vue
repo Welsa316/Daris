@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-cream pt-24 pb-12 px-4">
     <div class="max-w-3xl mx-auto">
 
-      <!-- Header: back, student name, balance pill -->
+      <!-- Header: back, student name, balance pill, language switch -->
       <div class="flex items-center gap-3 mb-8">
         <button
           type="button"
@@ -20,6 +20,7 @@
             <BalancePill :student="balancePillStudent" />
           </p>
         </div>
+        <LanguageSwitcher class="shrink-0" />
       </div>
 
       <!-- Loading -->
@@ -244,6 +245,7 @@ import { useI18n } from 'vue-i18n';
 import { api } from '@/config/api.js';
 import BalancePill from '@/components/dashboard/BalancePill.vue';
 import NotebookEntryRow from '@/components/dashboard/NotebookEntryRow.vue';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 
 const route = useRoute();
 const router = useRouter();

@@ -10,7 +10,7 @@ class ApiError extends Error {
 }
 
 async function request(url, options = {}) {
-  const lang = localStorage.getItem('daris-locale') || 'en';
+  const lang = localStorage.getItem('daris-locale') || 'ar';
 
   const config = {
     credentials: 'include',

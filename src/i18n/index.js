@@ -20,11 +20,13 @@ function detectInitialLocale() {
   const saved = localStorage.getItem('daris-locale');
   if (saved === 'en' || saved === 'ar') return saved;
 
-  // 3. Browser preference
-  const nav = (navigator.language || navigator.userLanguage || '').toLowerCase();
-  const detected = nav.startsWith('ar') ? 'ar' : 'en';
-  localStorage.setItem('daris-locale', detected);
-  return detected;
+  // 3. Default to Arabic — Daris's working language. The internal app
+  // (login, dashboard, notebook) has no locale-prefixed URL, so Arabic
+  // is its default here until the user picks English via the switcher.
+  // Marketing routes never reach this branch; their locale comes from
+  // the /en or /ar URL prefix in step 1.
+  localStorage.setItem('daris-locale', 'ar');
+  return 'ar';
 }
 
 export const i18n = createI18n({
