@@ -13,7 +13,7 @@
          the row entirely. -->
     <td class="align-top w-32 md:w-44 px-3 py-2 border-t border-slate-200">
       <p class="text-sm font-semibold text-primary tabular-nums leading-snug">{{ dateLabel }}</p>
-      <p class="text-xs text-slate-400 truncate leading-snug mt-0.5">{{ title }}</p>
+      <p v-if="subjectText" class="text-xs text-slate-400 truncate leading-snug mt-0.5">{{ subjectText }}</p>
     </td>
 
     <!-- Notes cell — the whole cell is the editable surface. -->
@@ -23,7 +23,7 @@
         v-model="noteText"
         rows="2"
         :placeholder="$t('admin.notebook.coveredPlaceholder')"
-        :aria-label="title + ' — ' + dateLabel"
+        :aria-label="(subjectText ? subjectText + ' — ' : '') + dateLabel"
         @input="autosize"
         @blur="save"
         class="block w-full px-3 py-2 text-sm text-slate-700 leading-relaxed bg-transparent border-0 outline-none resize-none overflow-hidden focus:bg-cream/40 motion-safe:transition-colors"
@@ -43,14 +43,17 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { api } from '@/config/api.js';
 
 const props = defineProps({
-  // { classSessionId, classSession: {id,title,titleAr,subject,startTime,endTime}, log: ClassLog|null }
+  // { classSessionId, classSession: {id,subject,subjectSecondary,startTime,endTime}, log: ClassLog|null }
   entry: { type: Object, required: true },
   studentId: { type: String, required: true },
   isAr: { type: Boolean, default: false },
 });
+
+const { t } = useI18n();
 
 const taRef = ref(null);
 const noteText = ref(props.entry.log?.summary || '');
@@ -60,9 +63,15 @@ let savedText = props.entry.log?.summary || '';
 const saveState = ref('idle'); // idle | saving | saved | error
 let savedTimer = null;
 
-const title = computed(() => {
+// The class's subject(s) — shown under the date. A merged class shows
+// both ("Quran + Fiqh"). Empty for legacy classes with no subject.
+const subjectText = computed(() => {
   const cs = props.entry.classSession;
-  return (props.isAr && cs.titleAr ? cs.titleAr : cs.title) || '';
+  if (!cs.subject) return '';
+  const primary = t('admin.subject_' + cs.subject);
+  return cs.subjectSecondary
+    ? `${primary} + ${t('admin.subject_' + cs.subjectSecondary)}`
+    : primary;
 });
 
 const dateLabel = computed(() =>

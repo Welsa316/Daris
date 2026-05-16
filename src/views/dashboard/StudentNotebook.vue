@@ -36,10 +36,12 @@
         </button>
       </div>
 
-      <!-- Lesson table — a spreadsheet-style grid. Classes are grouped
-           into cycles of four; each cycle carries one Paid checkbox. -->
+      <!-- Lesson table — a spreadsheet-style grid. Classes group into
+           cycles of four; each cycle carries a Paid checkbox per
+           subject the student studies. Cycles before the current one
+           are hidden. -->
       <section v-else class="bg-white rounded-2xl shadow-card p-5 md:p-6">
-        <div v-if="entries.length === 0" class="text-center py-10 px-4">
+        <div v-if="cycles.length === 0" class="text-center py-10 px-4">
           <p class="text-3xl mb-2" aria-hidden="true">📓</p>
           <p class="text-sm text-slate-500 text-pretty">{{ $t('admin.notebook.noClasses') }}</p>
         </div>
@@ -57,29 +59,37 @@
               </tr>
             </thead>
             <tbody>
-              <template v-for="cycle in cycles" :key="cycle.cycleIndex">
-                <!-- Cycle header: label + the one Paid checkbox. The
-                     whole row goes green once the cycle is paid. -->
-                <tr :class="isPaid(cycle.cycleIndex) ? 'bg-emerald-50' : 'bg-cream/40'">
+              <template v-for="(cycle, ci) in cycles" :key="cycle.cycleIndex">
+                <!-- Cycle header: label + one Paid checkbox per
+                     subject. Single-subject students get one unlabelled
+                     checkbox; the row turns green once every subject in
+                     the cycle is paid. -->
+                <tr :class="cycleAllPaid(cycle) ? 'bg-emerald-50' : 'bg-cream/40'">
                   <td colspan="2" class="px-3 py-2 border-t-2 border-slate-300">
-                    <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center justify-between gap-3 flex-wrap">
                       <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        {{ $t('admin.notebook.cycle', { n: cycle.cycleIndex + 1 }) }}
+                        {{ $t('admin.notebook.cycle', { n: ci + 1 }) }}
                       </span>
-                      <label class="inline-flex items-center gap-2 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          class="w-5 h-5 accent-primary cursor-pointer"
-                          :checked="isPaid(cycle.cycleIndex)"
-                          @change="toggleCycle(cycle.cycleIndex, $event.target.checked)"
-                        />
-                        <span
-                          class="text-sm font-semibold"
-                          :class="isPaid(cycle.cycleIndex) ? 'text-emerald-700' : 'text-slate-600'"
+                      <div class="flex items-center gap-4 flex-wrap">
+                        <label
+                          v-for="subj in subjects"
+                          :key="subj"
+                          class="inline-flex items-center gap-1.5 cursor-pointer select-none"
                         >
-                          {{ $t('admin.notebook.paid') }}
-                        </span>
-                      </label>
+                          <input
+                            type="checkbox"
+                            class="w-5 h-5 accent-primary cursor-pointer"
+                            :checked="isPaid(subj, cycle.cycleIndex)"
+                            @change="toggleCycle(subj, cycle.cycleIndex, $event.target.checked)"
+                          />
+                          <span
+                            class="text-sm font-semibold"
+                            :class="isPaid(subj, cycle.cycleIndex) ? 'text-emerald-700' : 'text-slate-600'"
+                          >
+                            {{ subjects.length === 1 ? $t('admin.notebook.paid') : subjectLabel(subj) }}
+                          </span>
+                        </label>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -133,7 +143,9 @@ const loading = ref(true);
 const loadError = ref(false);
 const student = ref(null);
 const entries = ref([]);
-const paidCycles = ref(new Set());
+const subjects = ref([]);
+// Set of "subject|cycleIndex" keys that are marked paid.
+const paidSet = ref(new Set());
 const toast = ref('');
 
 function flashToast(msg) {
@@ -153,11 +165,27 @@ const studentName = computed(() => {
   return `${student.value.firstName || ''} ${student.value.lastName || ''}`.trim();
 });
 
-// Group the (chronological) entries by their cycleIndex into ordered
-// cycle blocks — cycle 0 first.
+function subjectLabel(key) {
+  return key ? t('admin.subject_' + key) : '';
+}
+
+// The cycle the student is currently in — the cycle of the most recent
+// class that has already started. Cycles before it are hidden so the
+// notebook always opens on the current cycle.
+const currentCycleIndex = computed(() => {
+  const now = Date.now();
+  let idx = 0;
+  for (const e of entries.value) {
+    if (new Date(e.classSession.startTime).getTime() <= now) idx = e.cycleIndex;
+  }
+  return idx;
+});
+
+// Entries grouped into cycle blocks, current cycle onward, in order.
 const cycles = computed(() => {
   const groups = new Map();
   for (const e of entries.value) {
+    if (e.cycleIndex < currentCycleIndex.value) continue;
     if (!groups.has(e.cycleIndex)) groups.set(e.cycleIndex, []);
     groups.get(e.cycleIndex).push(e);
   }
@@ -166,8 +194,14 @@ const cycles = computed(() => {
     .map(([cycleIndex, items]) => ({ cycleIndex, entries: items }));
 });
 
-function isPaid(cycleIndex) {
-  return paidCycles.value.has(cycleIndex);
+function isPaid(subject, cycleIndex) {
+  return paidSet.value.has(`${subject}|${cycleIndex}`);
+}
+
+// A cycle reads "fully paid" (green) only when every subject is ticked.
+function cycleAllPaid(cycle) {
+  return subjects.value.length > 0 &&
+    subjects.value.every((s) => isPaid(s, cycle.cycleIndex));
 }
 
 async function load() {
@@ -177,7 +211,10 @@ async function load() {
     const data = await api.get(`/api/admin/students/${studentId}/notebook`);
     student.value = data.student;
     entries.value = data.entries || [];
-    paidCycles.value = new Set(data.paidCycles || []);
+    subjects.value = data.subjects || [''];
+    paidSet.value = new Set(
+      (data.paidCycles || []).map((p) => `${p.subject}|${p.cycleIndex}`)
+    );
   } catch {
     // 403 (not your student) / 404 — show the friendly state, don't
     // leak whether the student exists.
@@ -187,18 +224,19 @@ async function load() {
   }
 }
 
-// Tick / untick a cycle's Paid checkbox. Optimistic: flip the local
-// set immediately, revert if the request fails.
-async function toggleCycle(cycleIndex, paid) {
-  const prev = new Set(paidCycles.value);
-  const next = new Set(paidCycles.value);
-  if (paid) next.add(cycleIndex);
-  else next.delete(cycleIndex);
-  paidCycles.value = next;
+// Tick / untick one subject's Paid checkbox for a cycle. Optimistic:
+// flip the local set immediately, revert if the request fails.
+async function toggleCycle(subject, cycleIndex, paid) {
+  const key = `${subject}|${cycleIndex}`;
+  const prev = new Set(paidSet.value);
+  const next = new Set(paidSet.value);
+  if (paid) next.add(key);
+  else next.delete(key);
+  paidSet.value = next;
   try {
-    await api.put(`/api/admin/students/${studentId}/cycles/${cycleIndex}`, { paid });
+    await api.put(`/api/admin/students/${studentId}/cycles/${cycleIndex}`, { subject, paid });
   } catch (e) {
-    paidCycles.value = prev;
+    paidSet.value = prev;
     flashToast(e?.data?.error || t('admin.notebook.saveFailed'));
   }
 }

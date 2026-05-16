@@ -1784,14 +1784,29 @@ router.get('/audit-logs', requireAdmin, validate(paginationSchema, 'query'), asy
 
 // A "cycle" is a run of this many of a student's classes, in
 // chronological order. The notebook groups classes into cycles and
-// the sheikh ticks one Paid checkbox per cycle.
+// the sheikh ticks a Paid checkbox per subject per cycle.
 const NOTEBOOK_CYCLE_SIZE = 4;
+
+// Canonical subject order so the per-subject checkboxes always render
+// in the same sequence. Subjects not in this list sort after, A–Z.
+const SUBJECT_ORDER = ['quran', 'fiqh', 'arabic', 'tarbiya'];
+function sortSubjects(set) {
+  return [...set].sort((a, b) => {
+    const ia = SUBJECT_ORDER.indexOf(a);
+    const ib = SUBJECT_ORDER.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b);
+  });
+}
 
 // Aggregated payload for the on-site student notebook page: the
 // student's non-cancelled class sessions (each paired with its
-// ClassLog and tagged with its cycle), plus the set of cycles already
-// marked paid. One read for the whole page; the page's writes reuse
-// the class-logs upsert route and the cycle-toggle route below.
+// ClassLog and tagged with its cycle), the subjects they study, and
+// the (subject, cycle) pairs already marked paid. One read for the
+// whole page; writes reuse the class-logs upsert route and the
+// cycle-toggle route below.
 router.get('/students/:id/notebook', async (req, res, next) => {
   try {
     const lang = getLang(req);
@@ -1815,9 +1830,8 @@ router.get('/students/:id/notebook', async (req, res, next) => {
               classSession: {
                 select: {
                   id: true,
-                  title: true,
-                  titleAr: true,
                   subject: true,
+                  subjectSecondary: true,
                   startTime: true,
                   endTime: true,
                 },
@@ -1840,7 +1854,7 @@ router.get('/students/:id/notebook', async (req, res, next) => {
       }),
       prisma.paidCycle.findMany({
         where: { studentId: req.params.id },
-        select: { cycleIndex: true },
+        select: { subject: true, cycleIndex: true },
       }),
     ]);
 
@@ -1862,6 +1876,17 @@ router.get('/students/:id/notebook', async (req, res, next) => {
         cycleIndex: Math.floor(i / NOTEBOOK_CYCLE_SIZE),
       }));
 
+    // The subjects this student studies — every distinct subject (and
+    // mixed-class secondary subject) across their classes. Drives the
+    // per-subject Paid checkboxes. Falls back to a single unnamed
+    // subject when classes carry none (legacy data).
+    const subjectSet = new Set();
+    for (const e of entries) {
+      if (e.classSession.subject) subjectSet.add(e.classSession.subject);
+      if (e.classSession.subjectSecondary) subjectSet.add(e.classSession.subjectSecondary);
+    }
+    const subjects = subjectSet.size > 0 ? sortSubjects(subjectSet) : [''];
+
     res.json({
       student: {
         id: student.id,
@@ -1870,16 +1895,19 @@ router.get('/students/:id/notebook', async (req, res, next) => {
         preferredLanguage: student.preferredLanguage,
       },
       entries,
-      paidCycles: paidCycles.map((c) => c.cycleIndex),
+      subjects,
+      paidCycles: paidCycles.map((c) => ({ subject: c.subject, cycleIndex: c.cycleIndex })),
     });
   } catch (error) {
     next(error);
   }
 });
 
-// Toggle a cycle's Paid checkbox. A row in paid_cycles = paid; absence
-// = not paid. Idempotent: PUT { paid:true } upserts, { paid:false }
-// deletes. cycleIndex is the cycle's 0-based chronological position.
+// Toggle a (subject, cycle) Paid checkbox. A row in paid_cycles = paid;
+// absence = not paid. Idempotent: PUT { subject, paid:true } upserts,
+// { subject, paid:false } deletes. cycleIndex is the cycle's 0-based
+// chronological position; subject is a subject key ('' for the
+// single-subject fallback).
 router.put('/students/:id/cycles/:cycleIndex', async (req, res, next) => {
   try {
     const lang = getLang(req);
@@ -1889,27 +1917,38 @@ router.put('/students/:id/cycles/:cycleIndex', async (req, res, next) => {
     if (!Number.isInteger(cycleIndex) || cycleIndex < 0) {
       return res.status(400).json({ error: t('error.generic', lang) });
     }
+    const subject = typeof req.body?.subject === 'string' ? req.body.subject : '';
+    if (subject.length > 50) {
+      return res.status(400).json({ error: t('error.generic', lang) });
+    }
     const paid = req.body?.paid === true;
 
     if (paid) {
       await prisma.paidCycle.upsert({
-        where: { studentId_cycleIndex: { studentId: req.params.id, cycleIndex } },
+        where: {
+          studentId_subject_cycleIndex: {
+            studentId: req.params.id,
+            subject,
+            cycleIndex,
+          },
+        },
         update: { markedById: req.user.id },
-        create: { studentId: req.params.id, cycleIndex, markedById: req.user.id },
+        create: { studentId: req.params.id, subject, cycleIndex, markedById: req.user.id },
       });
     } else {
       await prisma.paidCycle.deleteMany({
-        where: { studentId: req.params.id, cycleIndex },
+        where: { studentId: req.params.id, subject, cycleIndex },
       });
     }
 
     auditLog('CYCLE_PAID_TOGGLED', {
       studentId: req.params.id,
+      subject,
       cycleIndex,
       paid,
       adminId: req.user.id,
     });
-    res.json({ cycleIndex, paid });
+    res.json({ subject, cycleIndex, paid });
   } catch (error) {
     next(error);
   }
