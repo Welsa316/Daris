@@ -2424,7 +2424,9 @@ function cancelClass(id) {
     undoLabel: t('admin.undo'),
     action: async () => {
       try {
-        await api.post(`/api/admin/classes/${id}/cancel`);
+        // keepalive: this can be flushed as the page unloads (refresh
+        // mid undo-window) — the request must outlive the document.
+        await api.post(`/api/admin/classes/${id}/cancel`, undefined, { keepalive: true });
         loadClasses();
       } catch (e) {
         cls.cancelled = previousValue;
@@ -3046,7 +3048,8 @@ function deletePayment(paymentId, studentId) {
     undoLabel: t('admin.undo'),
     action: async () => {
       try {
-        await api.delete(`/api/admin/payments/${paymentId}`);
+        // keepalive: may be flushed as the page unloads — see cancelClass.
+        await api.delete(`/api/admin/payments/${paymentId}`, { keepalive: true });
         await loadStudentDetailData(studentId);
       } catch (e) {
         showToast(e, 'deletePayment');

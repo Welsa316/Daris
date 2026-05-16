@@ -63,11 +63,13 @@ async function request(url, options = {}) {
   return responseData;
 }
 
+// `opts` is merged into the fetch init. Its main use is `keepalive: true`
+// for a request that must survive the page unloading (see useUndoToast).
 export const api = {
   get: (url) => request(url, { method: 'GET' }),
-  post: (url, body) => request(url, { method: 'POST', body }),
+  post: (url, body, opts = {}) => request(url, { method: 'POST', body, ...opts }),
   put: (url, body) => request(url, { method: 'PUT', body }),
-  delete: (url) => request(url, { method: 'DELETE' }),
+  delete: (url, opts = {}) => request(url, { method: 'DELETE', ...opts }),
 };
 
 export { ApiError };
