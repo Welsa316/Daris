@@ -1,7 +1,7 @@
 <template>
-  <span v-if="!student.expectedMonthlyAmount" class="text-xs text-slate-300">, </span>
+  <!-- No expected monthly amount set -> render nothing. -->
   <span
-    v-else
+    v-if="student.expectedMonthlyAmount"
     class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full tabular-nums"
     :class="pillClass"
     :title="tooltip"

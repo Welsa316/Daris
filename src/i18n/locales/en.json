@@ -498,6 +498,8 @@
     "enrolled": "Enrolled",
     "actions": "Actions",
     "view": "View",
+    "studentName": "Name",
+    "retry": "Try again",
     "notes": "Private notes",
     "addNote": "Add a note about this student...",
     "saveNote": "Save note",
@@ -677,7 +679,7 @@
       "languageEn": "English"
     },
     "firstRun": {
-      "title": "Welcome. Let's get you set up",
+      "title": "Let's get you set up",
       "subtitle": "Three quick steps to start using Daris.",
       "step1": "Add your first student",
       "step1Hint": "Approve an enrollment request or wait for one to come in.",
@@ -796,6 +798,7 @@
       "subtitleTeacher": "Other teachers on the team. You can see names and student counts; rosters are private.",
       "tab": "Teachers",
       "empty": "No teachers yet.",
+      "loadError": "Couldn't load teachers. Please try again.",
       "emptyHint": "Teachers are added by the site owner.",
       "emptyHintSheikh": "Promote an enrolled student using the button above to add the first teacher.",
       "joinedOn": "Joined {date}",

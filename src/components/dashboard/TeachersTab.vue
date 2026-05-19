@@ -22,6 +22,19 @@
       <div class="h-20 bg-slate-100 rounded-xl animate-pulse"></div>
     </div>
 
+    <!-- Load failed: show the error and a retry, never the "no teachers"
+         empty state — that would assert there are none when we don't know. -->
+    <div v-else-if="loadError" class="text-center py-10">
+      <p class="text-slate-400 text-sm">{{ $t('admin.teachers.loadError') }}</p>
+      <button
+        type="button"
+        @click="loadTeachers"
+        class="mt-3 text-primary hover:text-primary-800 text-sm font-medium underline"
+      >
+        {{ $t('admin.retry') }}
+      </button>
+    </div>
+
     <div v-else-if="!teachers.length" class="text-center py-10">
       <p class="text-slate-400 text-sm">{{ $t('admin.teachers.empty') }}</p>
       <p v-if="isAdmin" class="text-xs text-slate-400 mt-1">{{ $t('admin.teachers.emptyHintSheikh') }}</p>
@@ -135,6 +148,7 @@ const { isAdmin } = useAuth();
 
 const teachers = ref([]);
 const loading = ref(true);
+const loadError = ref(false);
 const showPromoteModal = ref(false);
 const demotingId = ref(null);
 
@@ -145,6 +159,7 @@ const demotingId = ref(null);
 //             below so the teachers list stays just teachers.
 async function loadTeachers() {
   loading.value = true;
+  loadError.value = false;
   try {
     if (isAdmin.value) {
       const data = await api.get('/api/admin/teachers');
@@ -154,6 +169,7 @@ async function loadTeachers() {
       teachers.value = (data.teachers || []).filter((u) => u.role === 'teacher');
     }
   } catch (err) {
+    loadError.value = true;
     emit('toast', err, 'loadTeachers');
   } finally {
     loading.value = false;

@@ -28,23 +28,24 @@ async function request(url, options = {}) {
 
   let response = await fetch(`${BASE_URL}${url}`, config);
 
-  // If 401 with TOKEN_EXPIRED, try refreshing
+  // On any 401, try a one-shot token refresh and replay the request.
+  // An access token lapses two ways: still-present-but-stale (the server
+  // tags it TOKEN_EXPIRED) OR the cookie expires outright and is simply
+  // absent (a plain 401, no code). Both are recoverable while the
+  // refresh token holds, so the refresh isn't gated on the code —
+  // gating on it left the user with hard "must log in" errors once the
+  // access-token cookie aged out mid-session.
   if (response.status === 401) {
     const data = await response.json().catch(() => ({}));
-    if (data.code === 'TOKEN_EXPIRED') {
-      // Attempt token refresh
-      const refreshResponse = await fetch(`${BASE_URL}/api/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'Accept-Language': lang },
-      });
+    const refreshResponse = await fetch(`${BASE_URL}/api/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'Accept-Language': lang },
+    });
 
-      if (refreshResponse.ok) {
-        // Retry original request
-        response = await fetch(`${BASE_URL}${url}`, config);
-      } else {
-        throw new ApiError(data.error || 'Session expired', 401, data);
-      }
+    if (refreshResponse.ok) {
+      // Retry the original request once with the refreshed session.
+      response = await fetch(`${BASE_URL}${url}`, config);
     } else {
       throw new ApiError(data.error || 'Unauthorized', 401, data);
     }

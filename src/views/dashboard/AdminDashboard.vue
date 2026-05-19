@@ -64,8 +64,11 @@
               {{ $t('admin.homeBtnScheduleHint') }}
             </span>
           </button>
+          <!-- Review-pending button: a CTA only when there's actually
+               something to review. With zero pending it's hidden, not
+               shown as a dead button announcing "no pending requests". -->
           <button
-            v-if="isAdmin"
+            v-if="isAdmin && (stats?.totalPending ?? 0) > 0"
             type="button"
             @click="activeTab = 'enrollments'"
             class="bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-2xl p-5 text-start motion-safe:transition-colors flex flex-col gap-2 min-h-[140px]"
@@ -75,16 +78,11 @@
               {{ $t('admin.homeBtnReview') }}
             </span>
             <span class="text-xs text-amber-800 text-pretty tabular-nums">
-              <template v-if="(stats?.totalPending ?? 0) > 0">
-                {{ $t('admin.homeBtnReviewWaiting', { count: stats.totalPending }) }}
-              </template>
-              <template v-else>
-                {{ $t('admin.homeBtnReviewEmpty') }}
-              </template>
+              {{ $t('admin.homeBtnReviewWaiting', { count: stats.totalPending }) }}
             </span>
           </button>
           <button
-            v-else
+            v-else-if="!isAdmin"
             type="button"
             @click="activeTab = 'myClasses'"
             class="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-2xl p-5 text-start motion-safe:transition-colors flex flex-col gap-2 min-h-[140px]"
@@ -387,17 +385,16 @@
         </div>
         <!-- Students list. On mobile the table layout overflows; we
              collapse non-essential columns at < md (email, country,
-             enrolled date) so the row fits the viewport. Name and
-             balance stay visible at every breakpoint; the chevron
-             always sits at the end so the row reads as tappable. -->
+             enrolled date) so the row fits the viewport. The name stays
+             visible at every breakpoint; the chevron always sits at the
+             end so the row reads as tappable. -->
         <div v-else class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-slate-100">
-                <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('auth.firstName') }}</th>
+                <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('admin.studentName') }}</th>
                 <th class="text-start py-3 px-2 text-slate-500 font-medium hidden md:table-cell">{{ $t('auth.email') }}</th>
                 <th class="text-start py-3 px-2 text-slate-500 font-medium hidden md:table-cell">{{ $t('auth.country') }}</th>
-                <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('admin.balance.header') }}</th>
                 <th class="text-start py-3 px-2 text-slate-500 font-medium hidden lg:table-cell">{{ $t('admin.enrolled') }}</th>
                 <th class="text-start py-3 px-2 text-slate-500 font-medium">{{ $t('admin.actions') }}</th>
               </tr>
@@ -432,9 +429,6 @@
                 </td>
                 <td class="py-3 px-2 text-slate-500 truncate max-w-[16rem] hidden md:table-cell">{{ s.email }}</td>
                 <td class="py-3 px-2 text-slate-500 truncate max-w-[10rem] hidden md:table-cell">{{ s.country }}</td>
-                <td class="py-3 px-2">
-                  <BalancePill :student="s" />
-                </td>
                 <td class="py-3 px-2 text-slate-400 text-xs hidden lg:table-cell">{{ s.enrolledAt ? new Date(s.enrolledAt).toLocaleDateString() : '-' }}</td>
                 <td class="py-3 px-2 text-slate-300 text-end">
                   <span aria-hidden="true">›</span>
@@ -666,7 +660,7 @@
         <div v-else class="space-y-2">
           <div v-for="log in stats.recentActivity" :key="log.id" class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
             <div>
-              <span class="text-sm text-slate-600 font-medium">{{ log.action }}</span>
+              <span class="text-sm text-slate-600 font-medium">{{ formatAuditAction(log.action) }}</span>
               <span v-if="log.user" class="text-xs text-slate-400 ltr:ml-2 rtl:mr-2">{{ log.user.firstName }} {{ log.user.lastName }}</span>
             </div>
             <span class="text-xs text-slate-400">{{ new Date(log.createdAt).toLocaleString() }}</span>
@@ -1907,21 +1901,19 @@ const futureClasses = computed(() => {
     .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 });
 
-// Show the next week of classes by default. The 3-day window we used
-// to ship was too tight: a class scheduled 4 days out wouldn't surface
-// here even though it's the next thing on the calendar.
+// The next classes on the calendar, soonest first, capped at 10 so the
+// Home card stays compact. No time-window cap: an earlier 7-day window
+// hid the genuinely-next class and made the card claim "no upcoming
+// classes" while later ones sat on the schedule.
 const upcomingClasses = computed(() => {
   const nowMs = Date.now();
-  const sevenDays = nowMs + 7 * 24 * 60 * 60 * 1000;
   return classes.value
     .filter((cls) => {
       if (cls.cancelled) return false;
-      const start = new Date(cls.startTime).getTime();
       const end = new Date(cls.endTime).getTime();
       // Show classes that are upcoming OR currently in progress (so the
       // Join button stays visible during the class itself).
       if (end < nowMs) return false;
-      if (start > sevenDays) return false;
       // Drop classes whose only students have been removed. The backend
       // already strips soft-deleted assignments, so length === 0 means
       // nobody is left.
@@ -1931,6 +1923,16 @@ const upcomingClasses = computed(() => {
     .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
     .slice(0, 10);
 });
+
+// Audit action codes (e.g. CYCLE_PAID_TOGGLED) rendered readable for the
+// Activity tab — it would otherwise show raw constant names.
+function formatAuditAction(action) {
+  if (!action) return '';
+  return action
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/^./, (c) => c.toUpperCase());
+}
 
 // Format a class time in the VIEWER's timezone. The admin sees the class
 // at the hour it actually happens for them. not in the sheikh's time
@@ -2113,8 +2115,12 @@ const firstRunSteps = computed(() => {
 });
 
 const showFirstRunChecklist = computed(() => {
-  // Hide once all three steps are done. no need to keep nagging.
-  return firstRunSteps.value.some((s) => !s.done);
+  // First-run onboarding only. Once the sheikh has both a student and a
+  // class on the calendar they've clearly started — drop the "let's
+  // begin" checklist even if the optional meeting-link step is still
+  // unticked (that reminder also lives on the Schedule tab).
+  const done = (key) => firstRunSteps.value.find((s) => s.key === key)?.done;
+  return !(done('addStudent') && done('scheduleClass'));
 });
 
 // Tabs are role-aware. The sheikh sees enrollments (review pending) +
