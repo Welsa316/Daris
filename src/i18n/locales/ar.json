@@ -672,7 +672,7 @@
       "paid": "مدفوع هذا الشهر",
       "due": "متأخر {amount}",
       "tooltip": "دُفع {paid} من أصل {expected} هذا الشهر",
-      "settingsTitle": "الأجر الشهري واللغة",
+      "settingsTitle": "اللغة",
       "expectedAmount": "الأجر الشهري المتوقع",
       "preferredLanguage": "اللغة المفضلة",
       "languageAr": "العربية",

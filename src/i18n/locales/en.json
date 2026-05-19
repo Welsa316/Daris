@@ -672,7 +672,7 @@
       "paid": "Paid this month",
       "due": "{amount} due",
       "tooltip": "Paid {paid} of {expected} this month",
-      "settingsTitle": "Monthly tuition & language",
+      "settingsTitle": "Language",
       "expectedAmount": "Expected per month",
       "preferredLanguage": "Preferred language",
       "languageAr": "Arabic",
