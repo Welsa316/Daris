@@ -1852,10 +1852,14 @@ router.get('/students/:id/notebook', async (req, res, next) => {
           updatedAt: true,
         },
       }),
-      prisma.paidCycle.findMany({
-        where: { studentId: req.params.id },
-        select: { subject: true, cycleIndex: true },
-      }),
+      // Payment is sheikh-only — a teacher's notebook carries no
+      // paid-cycle data, not even read-only.
+      req.user.role === 'admin'
+        ? prisma.paidCycle.findMany({
+            where: { studentId: req.params.id },
+            select: { subject: true, cycleIndex: true },
+          })
+        : Promise.resolve([]),
     ]);
 
     if (!student) {
@@ -1907,8 +1911,9 @@ router.get('/students/:id/notebook', async (req, res, next) => {
 // absence = not paid. Idempotent: PUT { subject, paid:true } upserts,
 // { subject, paid:false } deletes. cycleIndex is the cycle's 0-based
 // chronological position; subject is a subject key ('' for the
-// single-subject fallback).
-router.put('/students/:id/cycles/:cycleIndex', async (req, res, next) => {
+// single-subject fallback). Sheikh-only via requireAdmin — marking a
+// cycle paid is not a teacher concern.
+router.put('/students/:id/cycles/:cycleIndex', requireAdmin, async (req, res, next) => {
   try {
     const lang = getLang(req);
     await requireStudentAccess(req.user, req.params.id, prisma);

@@ -61,16 +61,17 @@
             <tbody>
               <template v-for="(cycle, ci) in cycles" :key="cycle.cycleIndex">
                 <!-- Cycle header: label + one Paid checkbox per
-                     subject. Single-subject students get one unlabelled
-                     checkbox; the row turns green once every subject in
-                     the cycle is paid. -->
-                <tr :class="cycleAllPaid(cycle) ? 'bg-emerald-50' : 'bg-cream/40'">
+                     subject (sheikh only — teachers never see the
+                     checkboxes or the paid-green tint). Single-subject
+                     students get one unlabelled checkbox; the row turns
+                     green once every subject in the cycle is paid. -->
+                <tr :class="isAdmin && cycleAllPaid(cycle) ? 'bg-emerald-50' : 'bg-cream/40'">
                   <td colspan="2" class="px-3 py-2 border-t-2 border-slate-300">
                     <div class="flex items-center justify-between gap-3 flex-wrap">
                       <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">
                         {{ $t('admin.notebook.cycle', { n: ci + 1 }) }}
                       </span>
-                      <div class="flex items-center gap-4 flex-wrap">
+                      <div v-if="isAdmin" class="flex items-center gap-4 flex-wrap">
                         <label
                           v-for="subj in subjects"
                           :key="subj"
@@ -131,10 +132,12 @@ import { useI18n } from 'vue-i18n';
 import { api } from '@/config/api.js';
 import NotebookEntryRow from '@/components/dashboard/NotebookEntryRow.vue';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
+import { useAuth } from '@/composables/useAuth.js';
 
 const route = useRoute();
 const router = useRouter();
 const { locale, t } = useI18n();
+const { isAdmin } = useAuth();
 const isAr = computed(() => locale.value === 'ar');
 
 const studentId = route.params.studentId;
