@@ -20,6 +20,7 @@
 
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
+import multer from 'multer';
 import { z } from 'zod';
 import { authenticate, verifyTokenVersion } from '../middleware/auth.js';
 import { requireRole } from '../middleware/rbac.js';
@@ -52,9 +53,35 @@ const sendLimiter = rateLimit({
   },
 });
 
-const sendSchema = z.object({
-  body: z.string().min(1, 'Message cannot be empty').max(4000).trim(),
+// Image attachments are accepted as multipart/form-data. The bytes
+// land in the message_attachments table; we never write them to disk.
+// 5 MB caps a typical phone photo without re-encode, but stops a stray
+// gigabyte upload from filling the DB.
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_MIMETYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+]);
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_IMAGE_BYTES },
 });
+
+// Multer middleware wrapper: turns multer's file-too-big / parse
+// failures into translated 400s instead of leaking the raw error
+// through the default error handler as a 500.
+function uploadImage(req, res, next) {
+  upload.single('image')(req, res, (err) => {
+    if (!err) return next();
+    const lang = getLang(req);
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: t('messages.imageTooLarge', lang) });
+    }
+    return res.status(400).json({ error: t('messages.uploadFailed', lang) });
+  });
+}
 
 // Helpers ---------------------------------------------------------------
 
@@ -427,6 +454,9 @@ router.get('/conversations/:studentId', async (req, res, next) => {
           sender: {
             select: { id: true, firstName: true, lastName: true, role: true },
           },
+          attachment: {
+            select: { id: true, mimeType: true, sizeBytes: true },
+          },
         },
       }),
       participantsForStudent(studentId),
@@ -475,10 +505,52 @@ router.get('/conversations/:studentId', async (req, res, next) => {
             : 'teacher',
         createdAt: m.createdAt,
         fromSelf: m.senderId === req.user.id,
+        attachment: m.attachment
+          ? {
+              id: m.attachment.id,
+              mimeType: m.attachment.mimeType,
+              sizeBytes: m.attachment.sizeBytes,
+            }
+          : null,
       })),
     });
   } catch (error) {
     next(error);
+  }
+});
+
+// Image bytes for a message attachment. Auth-gated via the parent
+// conversation's read permission so a leaked URL can't be opened by a
+// logged-out viewer and a logged-in user only sees attachments from
+// conversations they're allowed to read.
+router.get('/attachments/:id', async (req, res, next) => {
+  try {
+    const att = await prisma.messageAttachment.findUnique({
+      where: { id: req.params.id },
+      select: {
+        mimeType: true,
+        sizeBytes: true,
+        bytes: true,
+        message: { select: { conversation: { select: { studentId: true } } } },
+      },
+    });
+    if (!att) {
+      return res.status(404).json({ error: t('messages.attachmentNotFound', getLang(req)) });
+    }
+    const studentId = att.message?.conversation?.studentId;
+    if (!studentId || !(await canReadStudentConversation(req.user, studentId))) {
+      return res.status(403).json({ error: t('auth.forbidden', getLang(req)) });
+    }
+    res.setHeader('Content-Type', att.mimeType);
+    res.setHeader('Content-Length', att.sizeBytes);
+    // `no-store` is deliberate: the URL is the same for everyone, so a
+    // long-lived browser cache would let a different user pull the
+    // image from disk without ever hitting our auth check. The per-
+    // request DB read is cheap; the security guarantee is not.
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.end(att.bytes);
+  } catch (err) {
+    next(err);
   }
 });
 
@@ -488,11 +560,27 @@ router.get('/conversations/:studentId', async (req, res, next) => {
 router.post(
   '/conversations/:studentId/messages',
   sendLimiter,
-  validate(sendSchema),
+  uploadImage,
   async (req, res, next) => {
     try {
       const lang = getLang(req);
       const { studentId } = req.params;
+
+      // Multipart parses text fields into req.body the same way
+      // express.json does for plain text-only sends; req.file is set
+      // only when an image was attached. Either is allowed; both is
+      // allowed; neither isn't.
+      const body = typeof req.body?.body === 'string' ? req.body.body.trim() : '';
+      const file = req.file;
+      if (body.length === 0 && !file) {
+        return res.status(400).json({ error: t('messages.emptyMessage', lang) });
+      }
+      if (body.length > 4000) {
+        return res.status(400).json({ error: t('messages.bodyTooLong', lang) });
+      }
+      if (file && !ALLOWED_IMAGE_MIMETYPES.has(file.mimetype)) {
+        return res.status(400).json({ error: t('messages.unsupportedImageType', lang) });
+      }
 
       // Write requires an explicit TeacherStudent row (or being the
       // student themselves). A sheikh observing the thread for
@@ -509,7 +597,16 @@ router.post(
           data: {
             conversationId: conv.id,
             senderId: req.user.id,
-            body: req.body.body,
+            body,
+            attachment: file
+              ? {
+                  create: {
+                    mimeType: file.mimetype,
+                    sizeBytes: file.size,
+                    bytes: file.buffer,
+                  },
+                }
+              : undefined,
           },
           select: {
             id: true,
@@ -518,6 +615,9 @@ router.post(
             createdAt: true,
             sender: {
               select: { id: true, firstName: true, lastName: true, role: true },
+            },
+            attachment: {
+              select: { id: true, mimeType: true, sizeBytes: true },
             },
           },
         }),
@@ -537,7 +637,8 @@ router.post(
         userId: req.user.id,
         conversationId: conv.id,
         studentId,
-        bytes: req.body.body.length,
+        bytes: body.length,
+        hasAttachment: !!file,
       });
 
       // Build the serialized message shape once — both the HTTP response,
@@ -559,6 +660,13 @@ router.post(
           : '',
         senderRole,
         createdAt: message.createdAt,
+        attachment: message.attachment
+          ? {
+              id: message.attachment.id,
+              mimeType: message.attachment.mimeType,
+              sizeBytes: message.attachment.sizeBytes,
+            }
+          : null,
       };
 
       // Live broadcast: everyone currently in the conversation room
@@ -597,7 +705,8 @@ router.post(
           firstName: message.sender?.firstName || '',
           lastName: message.sender?.lastName || '',
         },
-        body: req.body.body,
+        body,
+        hasAttachment: !!file,
       }).catch((err) =>
         logger.error('messages: notifyNewMessage dispatch failed', {
           conversationId: conv.id,

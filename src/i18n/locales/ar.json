@@ -454,7 +454,17 @@
     "widgetLabel": "الرسائل",
     "widgetBack": "العودة للقائمة",
     "widgetListTitle": "المحادثات",
-    "widgetStudentTitle": "معلّمك"
+    "widgetStudentTitle": "معلّمك",
+    "emptyMessage": "لا يمكن أن تكون الرسالة فارغة.",
+    "bodyTooLong": "الرسالة طويلة جداً.",
+    "unsupportedImageType": "نوع الصورة غير مدعوم. استخدم JPEG أو PNG أو GIF أو WebP.",
+    "imageTooLarge": "الصورة كبيرة جداً. الحد الأقصى ٥ ميغابايت.",
+    "uploadFailed": "تعذّر رفع الصورة. حاول مرة أخرى.",
+    "attachmentNotFound": "الصورة غير موجودة.",
+    "attachImage": "إرفاق صورة",
+    "removeImage": "إزالة",
+    "pendingImageAlt": "صورة للإرسال",
+    "imageAlt": "صورة مرسلة"
   },
   "admin": {
     "title": "لوحة الإدارة",

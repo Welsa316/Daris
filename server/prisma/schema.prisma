@@ -491,14 +491,35 @@ model Message {
   id             String   @id @default(uuid()) @db.Uuid
   conversationId String   @map("conversation_id") @db.Uuid
   senderId       String   @map("sender_id") @db.Uuid
+  // Empty string when the message is an image-only send. Kept non-null
+  // so existing reads don't need null guards everywhere.
   body           String   @db.Text
   createdAt      DateTime @default(now()) @map("created_at")
 
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User         @relation("MessageAuthor", fields: [senderId], references: [id], onDelete: Cascade)
+  conversation Conversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User               @relation("MessageAuthor", fields: [senderId], references: [id], onDelete: Cascade)
+  attachment   MessageAttachment?
 
   @@index([conversationId, createdAt])
   @@map("messages")
+}
+
+// Image attachment on a message. Stored in Postgres as bytea rather
+// than offloaded to a blob service — traffic is low (a small school),
+// no new infra to provision, and the bytes never load into the
+// conversation query (the client fetches each one lazily via the
+// /messages/attachments/:id endpoint).
+model MessageAttachment {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @unique @map("message_id") @db.Uuid
+  mimeType  String   @map("mime_type")
+  sizeBytes Int      @map("size_bytes")
+  bytes     Bytes
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("message_attachments")
 }
 
 // Per-user "last seen" pointer into a conversation. Used to compute the

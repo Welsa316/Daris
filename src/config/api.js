@@ -22,7 +22,12 @@ async function request(url, options = {}) {
     ...options,
   };
 
-  if (options.body && typeof options.body === 'object') {
+  if (options.body instanceof FormData) {
+    // Multipart upload — keep the FormData instance as-is and let the
+    // browser set Content-Type with the boundary parameter. Hand-setting
+    // application/json would break the multipart parse on the server.
+    delete config.headers['Content-Type'];
+  } else if (options.body && typeof options.body === 'object') {
     config.body = JSON.stringify(options.body);
   }
 

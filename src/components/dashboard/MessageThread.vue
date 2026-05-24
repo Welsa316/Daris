@@ -86,7 +86,14 @@
                   · {{ $t('messages.roleSheikh') }}
                 </span>
               </p>
-              <p>{{ m.body }}</p>
+              <img
+                v-if="m.attachment"
+                :src="`/api/messages/attachments/${m.attachment.id}`"
+                :alt="$t('messages.imageAlt')"
+                loading="lazy"
+                class="block max-w-full max-h-72 rounded-lg mb-1.5"
+              />
+              <p v-if="m.body">{{ m.body }}</p>
               <p
                 class="text-[10px] mt-1 tabular-nums"
                 :class="m.fromSelf ? 'text-cream/70 text-end' : 'text-slate-400'"
@@ -134,8 +141,42 @@
       @submit.prevent="onSend"
       class="px-4 py-3 border-t border-slate-100 bg-white shrink-0"
     >
+      <!-- Pending image preview chip — visible only between picking an
+           image and sending it. Click the × to drop the image without
+           sending. -->
+      <div v-if="pendingImagePreview" class="mb-2 flex items-center gap-2">
+        <img
+          :src="pendingImagePreview"
+          :alt="$t('messages.pendingImageAlt')"
+          class="h-14 w-14 rounded-lg object-cover border border-slate-200"
+        />
+        <button
+          type="button"
+          @click="clearPendingImage"
+          class="text-xs text-slate-500 hover:text-red-600 underline"
+        >
+          {{ $t('messages.removeImage') }}
+        </button>
+      </div>
       <div class="flex items-end gap-2">
         <label class="sr-only" :for="composerId">{{ $t('messages.composerLabel') }}</label>
+        <!-- Hidden file input + the visible 📎 trigger button. -->
+        <input
+          ref="imageInputRef"
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          class="hidden"
+          @change="onPickImage"
+        />
+        <button
+          type="button"
+          @click="imageInputRef?.click()"
+          :aria-label="$t('messages.attachImage')"
+          :title="$t('messages.attachImage')"
+          class="shrink-0 w-10 h-10 rounded-full text-slate-500 hover:text-primary hover:bg-slate-100 motion-safe:transition flex items-center justify-center text-lg"
+        >
+          📎
+        </button>
         <textarea
           :id="composerId"
           ref="composerRef"
@@ -218,6 +259,15 @@ const draft = ref('');
 const sending = ref(false);
 const error = ref('');
 
+// Image attachments: cap at 5 MB / standard image types. Match the
+// server-side cap exactly so we reject oversized files before paying
+// the upload round-trip.
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const pendingImage = ref(null);
+const pendingImagePreview = ref('');
+const imageInputRef = ref(null);
+
 // Read-only iff the server says we can't write OR the parent forced it.
 // Either flag locks the composer out so a sheikh on an unassigned
 // thread literally cannot type a reply.
@@ -227,7 +277,10 @@ const composerRef = ref(null);
 const composerId = `msg-composer-${Math.random().toString(36).slice(2, 8)}`;
 
 const canSend = computed(
-  () => !readOnly.value && !sending.value && draft.value.trim().length > 0
+  () =>
+    !readOnly.value &&
+    !sending.value &&
+    (draft.value.trim().length > 0 || pendingImage.value !== null)
 );
 
 // Live socket binding: real-time message delivery, typing indicators,
@@ -456,23 +509,66 @@ async function refresh() {
   await load();
 }
 
+// Picked an image from the file dialog. Validate locally first so a
+// rejected file (too big / unsupported type) doesn't burn an upload
+// round-trip — the server enforces the same rules as a backstop.
+function onPickImage(event) {
+  const file = event.target?.files?.[0];
+  if (!file) return;
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    error.value = t('messages.unsupportedImageType');
+    event.target.value = '';
+    return;
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    error.value = t('messages.imageTooLarge');
+    event.target.value = '';
+    return;
+  }
+  if (pendingImagePreview.value) URL.revokeObjectURL(pendingImagePreview.value);
+  pendingImage.value = file;
+  pendingImagePreview.value = URL.createObjectURL(file);
+  error.value = '';
+}
+
+function clearPendingImage() {
+  if (pendingImagePreview.value) URL.revokeObjectURL(pendingImagePreview.value);
+  pendingImagePreview.value = '';
+  pendingImage.value = null;
+  if (imageInputRef.value) imageInputRef.value.value = '';
+}
+
 async function onSend() {
   if (!canSend.value) return;
   const body = draft.value.trim();
-  if (!body) return;
+  const file = pendingImage.value;
+  if (!body && !file) return;
   sending.value = true;
   error.value = '';
   try {
-    const data = await api.post(
-      `/api/messages/conversations/${props.studentId}/messages`,
-      { body }
-    );
+    let data;
+    if (file) {
+      // Multipart for image-bearing sends — text body is optional.
+      const fd = new FormData();
+      if (body) fd.append('body', body);
+      fd.append('image', file);
+      data = await api.post(
+        `/api/messages/conversations/${props.studentId}/messages`,
+        fd
+      );
+    } else {
+      data = await api.post(
+        `/api/messages/conversations/${props.studentId}/messages`,
+        { body }
+      );
+    }
     // Skip the local append if the socket already delivered it (race
     // possible on a fast loopback connection). Dedupe by id.
     if (!messages.value.some((m) => m.id === data.message.id)) {
       messages.value.push(data.message);
     }
     draft.value = '';
+    clearPendingImage();
     await nextTick();
     autosize();
     await scrollToBottom();

@@ -454,7 +454,17 @@
     "widgetLabel": "Messages",
     "widgetBack": "Back to list",
     "widgetListTitle": "Conversations",
-    "widgetStudentTitle": "Your teacher"
+    "widgetStudentTitle": "Your teacher",
+    "emptyMessage": "Message cannot be empty.",
+    "bodyTooLong": "Message is too long.",
+    "unsupportedImageType": "Unsupported image type. Use JPEG, PNG, GIF, or WebP.",
+    "imageTooLarge": "Image is too large. Max 5 MB.",
+    "uploadFailed": "Couldn't upload the image. Please try again.",
+    "attachmentNotFound": "Image not found.",
+    "attachImage": "Attach an image",
+    "removeImage": "Remove",
+    "pendingImageAlt": "Image to be sent",
+    "imageAlt": "Sent image"
   },
   "admin": {
     "title": "Admin Dashboard",
