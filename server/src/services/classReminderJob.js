@@ -4,6 +4,7 @@ import { logger } from '../utils/logger.js';
 import {
   sendClassReminderStudent,
   sendClassReminderAdmin,
+  sendClassReminderTeacher,
 } from './emailService.js';
 
 // Match window for "24 hours before". The job tick runs every 5 min so a
@@ -111,6 +112,52 @@ async function sendWindow({ label, offsetMin, sentField, sendToAdmin }) {
           )
         )
       );
+
+      // Teacher reminders: each TeacherStudent-linked teacher for a
+      // student in this class gets one email, grouped by teacher so
+      // someone with two of their students in the same merged class
+      // gets one mail naming both. The sheikh-admin is excluded
+      // (covered by the admin reminder below).
+      const studentIds = cls.assignments.map((a) => a.studentId);
+      const teacherLinks = await prisma.teacherStudent.findMany({
+        where: {
+          studentId: { in: studentIds },
+          teacher: { deletedAt: null, role: { not: 'admin' } },
+        },
+        include: { teacher: true },
+      });
+      if (teacherLinks.length > 0) {
+        const studentById = new Map(
+          cls.assignments.map((a) => [a.studentId, a.student])
+        );
+        const byTeacher = new Map();
+        for (const link of teacherLinks) {
+          if (!byTeacher.has(link.teacherId)) {
+            byTeacher.set(link.teacherId, {
+              teacher: link.teacher,
+              studentIds: new Set(),
+            });
+          }
+          byTeacher.get(link.teacherId).studentIds.add(link.studentId);
+        }
+        await Promise.all(
+          [...byTeacher.values()].map(({ teacher, studentIds: sids }) => {
+            const names = [...sids]
+              .map((id) => {
+                const s = studentById.get(id);
+                return s ? `${s.firstName} ${s.lastName}`.trim() : '';
+              })
+              .filter(Boolean);
+            return sendClassReminderTeacher(teacher, cls, names).catch((err) =>
+              logger.error('classReminderJob: teacher email failed', {
+                classId: cls.id,
+                teacherId: teacher.id,
+                error: err.message,
+              })
+            );
+          })
+        );
+      }
 
       if (sendToAdmin && env.ADMIN_EMAIL) {
         const studentNames = cls.assignments.map(

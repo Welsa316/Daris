@@ -508,6 +508,60 @@ export async function sendClassReminderAdmin(classSession, studentNames) {
 }
 
 /**
+ * Class reminder to an assigned teacher 24 hours before the class starts.
+ * Lists the teacher's students in this class (a teacher with two of
+ * their students in the same merged class gets one email naming both).
+ * The teacher's `preferredLanguage` decides the language.
+ */
+export async function sendClassReminderTeacher(teacher, classSession, studentNames) {
+  if (!teacher.email) {
+    logger.error('teacher has no email; cannot send class reminder', {
+      classId: classSession.id,
+      teacherId: teacher.id,
+    });
+    return;
+  }
+
+  const lang = teacher.preferredLanguage === 'en' ? 'en' : 'ar';
+  const tz = classSession.timezone || 'UTC';
+  const when = formatClassDateTime(classSession.startTime, lang, tz);
+  const title = classSession.title || (lang === 'ar' ? 'حصة' : 'Class');
+  const firstName = teacher.firstName || (lang === 'ar' ? 'الأستاذ' : 'teacher');
+  const students = studentNames.length
+    ? studentNames.join(lang === 'ar' ? '، ' : ', ')
+    : (lang === 'ar' ? '(لا يوجد طلاب)' : '(no students)');
+
+  const subject = lang === 'ar'
+    ? `دارس. تذكير: حصة مع ${students} غداً`
+    : `Daris. Reminder: class with ${students} tomorrow`;
+  const heading = lang === 'ar' ? 'حصة غداً' : 'Class tomorrow';
+  const greeting = lang === 'ar' ? `السلام عليكم ${firstName}،` : `Assalamu alaikum, ${firstName}.`;
+  const studentsLabel = lang === 'ar' ? 'الطلاب:' : 'Students:';
+
+  const meetingLink = classSession.meetingLink || '';
+  const cta = meetingLink
+    ? `<a href="${meetingLink}" style="display: inline-block; background: #1F4D3A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+         ${lang === 'ar' ? 'فتح رابط الحصة' : 'Open the class link'}
+       </a>`
+    : '';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ${lang === 'ar' ? 'rtl' : 'ltr'};">
+      <h2 style="color: #1F4D3A;">${heading}</h2>
+      <p>${greeting}</p>
+      <p style="background: #f5f1e8; padding: 12px 16px; border-radius: 6px; border-left: 3px solid #C8A951;">
+        <strong>${escapeHtml(title)}</strong><br/>
+        ${escapeHtml(when)}<br/>
+        <span style="color: #666;">${studentsLabel}</span> ${escapeHtml(students)}
+      </p>
+      ${cta}
+    </div>
+  `;
+
+  await sendEmail({ to: teacher.email, subject, html });
+}
+
+/**
  * Consolidated email sent when the admin clears all of a student's upcoming
  * classes in one action (e.g., student changing their schedule permanently).
  */
