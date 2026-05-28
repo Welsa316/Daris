@@ -105,21 +105,37 @@
               </li>
             </ul>
           </div>
-          <!-- Sheikh-only demote button. Hidden on the Owner (admin) row
-               itself — there's no concept of "demoting the sheikh"
-               from the dashboard; that would require a CLI script
-               + rebuilding the school's admin chain. Confirmation
-               dialog warns about the assignment cascade for regular
-               teachers so the action isn't a surprise. -->
-          <button
-            v-if="isAdmin && !t.isOwner"
-            type="button"
-            @click="confirmDemote(t)"
-            :disabled="demotingId === t.id"
-            class="bg-amber-100 text-amber-700 px-4 py-2 rounded-full text-xs font-medium hover:bg-amber-200 motion-safe:transition-colors disabled:opacity-50 self-start sm:shrink-0"
-          >
-            {{ $t('admin.teachers.demote') }}
-          </button>
+          <!-- Sheikh-only side controls: per-teacher email language +
+               demote. The language picker is visible on every row
+               (incl. the owner) so the sheikh can fix wrong defaults —
+               reminder / notification emails render in whatever is
+               selected here. Demote is hidden on the Owner row itself;
+               that would require a CLI script + rebuilding the
+               school's admin chain. -->
+          <div v-if="isAdmin" class="flex flex-col items-end gap-2 self-start sm:shrink-0">
+            <label class="inline-flex items-center gap-1.5 text-xs">
+              <span class="text-slate-500">{{ $t('admin.teachers.languageLabel') }}</span>
+              <select
+                :value="t.preferredLanguage || 'ar'"
+                @change="onLanguageChange(t, $event.target.value)"
+                :disabled="savingLangFor === t.id"
+                :aria-label="$t('admin.teachers.languageLabel')"
+                class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs focus:border-primary outline-none disabled:opacity-50"
+              >
+                <option value="ar">{{ $t('admin.balance.languageAr') }}</option>
+                <option value="en">{{ $t('admin.balance.languageEn') }}</option>
+              </select>
+            </label>
+            <button
+              v-if="!t.isOwner"
+              type="button"
+              @click="confirmDemote(t)"
+              :disabled="demotingId === t.id"
+              class="bg-amber-100 text-amber-700 px-4 py-2 rounded-full text-xs font-medium hover:bg-amber-200 motion-safe:transition-colors disabled:opacity-50"
+            >
+              {{ $t('admin.teachers.demote') }}
+            </button>
+          </div>
         </div>
       </li>
     </ol>
@@ -151,6 +167,7 @@ const loading = ref(true);
 const loadError = ref(false);
 const showPromoteModal = ref(false);
 const demotingId = ref(null);
+const savingLangFor = ref(null);
 
 // Two endpoints depending on role:
 //   - sheikh: /api/admin/teachers (requireAdmin) -> full info + rosters
@@ -246,6 +263,28 @@ async function confirmDemote(teacher) {
     emit('toast', err, 'demoteTeachers');
   } finally {
     demotingId.value = null;
+  }
+}
+
+// Flip a teacher's email-language preference. Optimistic: mutate the
+// row immediately, revert on failure. This is the only knob between
+// "your reminder emails arrive in Arabic" and "in English"; the sheikh
+// wants the change to be visible and instant.
+async function onLanguageChange(teacher, newLang) {
+  const previous = teacher.preferredLanguage || 'ar';
+  if (newLang === previous) return;
+  savingLangFor.value = teacher.id;
+  teacher.preferredLanguage = newLang;
+  try {
+    await api.put(`/api/admin/teachers/${teacher.id}/preferred-language`, {
+      preferredLanguage: newLang,
+    });
+    emit('toast', t('admin.teachers.languageSaved'));
+  } catch (err) {
+    teacher.preferredLanguage = previous;
+    emit('toast', err, 'updateLanguage');
+  } finally {
+    savingLangFor.value = null;
   }
 }
 

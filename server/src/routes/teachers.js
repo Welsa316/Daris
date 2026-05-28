@@ -121,6 +121,7 @@ router.get('/', requireAdmin, async (req, res, next) => {
         isStudent: true,
         createdAt: true,
         lastLoginAt: true,
+        preferredLanguage: true,
         taughtStudents: {
           select: {
             id: true,
@@ -156,6 +157,61 @@ router.get('/', requireAdmin, async (req, res, next) => {
     next(error);
   }
 });
+
+// --- Sheikh-only writes: preferred email language ---
+
+const preferredLanguageSchema = z.object({
+  preferredLanguage: z.enum(['ar', 'en']),
+});
+
+// Update a teacher's (or sheikh's) preferred email language. The
+// student-side equivalent lives on the student profile route — this
+// is for the rows the Teachers tab shows. Without it, a teacher who
+// got the wrong default at signup had no way to change which language
+// their reminder / notification emails arrived in.
+router.put(
+  '/:id/preferred-language',
+  requireAdmin,
+  validate(preferredLanguageSchema),
+  async (req, res, next) => {
+    try {
+      const lang = getLang(req);
+      const { id } = req.params;
+      const { preferredLanguage } = req.body;
+
+      // Only allow editing rows that actually appear in the Teachers
+      // tab (teachers + the sheikh). Anything else and we'd be exposing
+      // a generic "edit any user" surface that doesn't belong here.
+      const target = await prisma.user.findFirst({
+        where: {
+          id,
+          deletedAt: null,
+          OR: [{ isTeacher: true }, { role: 'admin' }],
+        },
+        select: { id: true },
+      });
+      if (!target) {
+        return res.status(404).json({ error: t('error.notFound', lang) });
+      }
+
+      const user = await prisma.user.update({
+        where: { id },
+        data: { preferredLanguage },
+        select: { id: true, preferredLanguage: true },
+      });
+
+      auditLog('TEACHER_LANGUAGE_UPDATED', {
+        teacherId: id,
+        preferredLanguage,
+        adminId: req.user.id,
+      });
+
+      res.json({ user });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 // --- Sheikh-only writes: promote / demote ---
 

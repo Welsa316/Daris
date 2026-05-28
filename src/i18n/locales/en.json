@@ -809,6 +809,8 @@
       "tab": "Teachers",
       "empty": "No teachers yet.",
       "loadError": "Couldn't load teachers. Please try again.",
+      "languageLabel": "Language",
+      "languageSaved": "Language updated",
       "emptyHint": "Teachers are added by the site owner.",
       "emptyHintSheikh": "Promote an enrolled student using the button above to add the first teacher.",
       "joinedOn": "Joined {date}",

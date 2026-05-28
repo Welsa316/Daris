@@ -39,12 +39,15 @@ export async function registerUser({ firstName, lastName, email, password, count
   // Hash password
   const passwordHash = await hashPassword(password);
 
-  // Infer preferredLanguage from the registration context. The `lang` arg
-  // reflects which version of the site they were on when they submitted.
-  // Fall back to Arabic for Arab-world countries; English otherwise.
-  const preferredLanguage = lang === 'ar' || lang === 'en'
-    ? lang
-    : arabicSpeakingCountry(country) ? 'ar' : 'en';
+  // Infer preferredLanguage. Country is the primary signal — a teacher
+  // from Egypt on an English-default phone should still get Arabic
+  // emails by default; the browser locale isn't reliable. They can flip
+  // it from the dashboard if the inference is wrong.
+  const preferredLanguage = arabicSpeakingCountry(country)
+    ? 'ar'
+    : lang === 'ar' || lang === 'en'
+      ? lang
+      : 'en';
 
   // Create user
   const user = await prisma.user.create({
