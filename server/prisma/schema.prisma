@@ -175,6 +175,7 @@ model ClassSession {
   originalEndTime     DateTime? @map("original_end_time")
   reminder30SentAt    DateTime? @map("reminder_30_sent_at")
   reminder24SentAt    DateTime? @map("reminder_24_sent_at")
+  reminder1hSentAt    DateTime? @map("reminder_1h_sent_at")
   // Groups all ClassSession rows created together via /classes/batch so
   // admin actions can act on "this occurrence" vs "this and following".
   // Null for legacy or one-off classes.

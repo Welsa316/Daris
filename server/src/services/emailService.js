@@ -429,12 +429,16 @@ export async function sendClassReminderStudent(student, classSession, label) {
     '30min': lang === 'ar'
       ? 'دارس. تذكير: حصتك تبدأ خلال ٣٠ دقيقة'
       : 'Daris. Reminder: your class starts in 30 minutes',
+    '1hr': lang === 'ar'
+      ? 'دارس. تذكير: حصتك خلال ساعة'
+      : 'Daris. Reminder: your class starts in an hour',
     '24hr': lang === 'ar'
       ? 'دارس. تذكير: حصتك غداً'
       : 'Daris. Reminder: your class is tomorrow',
   };
   const headingMap = {
     '30min': lang === 'ar' ? 'حصتك تبدأ خلال ٣٠ دقيقة' : 'Your class starts in 30 minutes',
+    '1hr': lang === 'ar' ? 'حصتك خلال ساعة' : 'Your class starts in an hour',
     '24hr': lang === 'ar' ? 'حصتك غداً' : 'Your class is tomorrow',
   };
 
@@ -463,10 +467,10 @@ export async function sendClassReminderStudent(student, classSession, label) {
 }
 
 /**
- * Class reminder to the admin 24 hours before the class starts.
- * Admin always gets Arabic (sheikh's preference).
+ * Class reminder to the admin, 24 hours and 1 hour before the class
+ * starts. Admin always gets Arabic (sheikh's preference).
  */
-export async function sendClassReminderAdmin(classSession, studentNames) {
+export async function sendClassReminderAdmin(classSession, studentNames, label = '24hr') {
   if (!env.ADMIN_EMAIL) {
     logger.error('ADMIN_EMAIL not configured. cannot send class reminder to admin', {
       classId: classSession.id,
@@ -481,6 +485,15 @@ export async function sendClassReminderAdmin(classSession, studentNames) {
     ? studentNames.join('، ')
     : '(لا يوجد طلاب مسجلون)';
 
+  const headingMap = {
+    '1hr': 'تذكير: حصتك خلال ساعة',
+    '24hr': 'تذكير: حصتك غداً',
+  };
+  const subjectMap = {
+    '1hr': `دارس. تذكير: حصة مع ${students} خلال ساعة`,
+    '24hr': `دارس. تذكير: حصة مع ${students} غداً`,
+  };
+
   const meetingLink = classSession.meetingLink || '';
   const cta = meetingLink
     ? `<a href="${meetingLink}" style="display: inline-block; background: #1F4D3A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
@@ -490,7 +503,7 @@ export async function sendClassReminderAdmin(classSession, studentNames) {
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl;">
-      <h2 style="color: #1F4D3A;">تذكير: حصتك غداً</h2>
+      <h2 style="color: #1F4D3A;">${headingMap[label]}</h2>
       <p style="background: #f5f1e8; padding: 12px 16px; border-radius: 6px; border-left: 3px solid #C8A951;">
         <strong>${escapeHtml(title)}</strong><br/>
         ${escapeHtml(when)}<br/>
@@ -502,18 +515,18 @@ export async function sendClassReminderAdmin(classSession, studentNames) {
 
   await sendEmail({
     to: env.ADMIN_EMAIL,
-    subject: `دارس. تذكير: حصة مع ${students} غداً`,
+    subject: subjectMap[label],
     html,
   });
 }
 
 /**
- * Class reminder to an assigned teacher 24 hours before the class starts.
- * Lists the teacher's students in this class (a teacher with two of
- * their students in the same merged class gets one email naming both).
- * The teacher's `preferredLanguage` decides the language.
+ * Class reminder to an assigned teacher, 24 hours and 1 hour before the
+ * class starts. Lists the teacher's students in this class (a teacher
+ * with two of their students in the same merged class gets one email
+ * naming both). The teacher's `preferredLanguage` decides the language.
  */
-export async function sendClassReminderTeacher(teacher, classSession, studentNames) {
+export async function sendClassReminderTeacher(teacher, classSession, studentNames, label = '24hr') {
   if (!teacher.email) {
     logger.error('teacher has no email; cannot send class reminder', {
       classId: classSession.id,
@@ -531,10 +544,20 @@ export async function sendClassReminderTeacher(teacher, classSession, studentNam
     ? studentNames.join(lang === 'ar' ? '، ' : ', ')
     : (lang === 'ar' ? '(لا يوجد طلاب)' : '(no students)');
 
-  const subject = lang === 'ar'
-    ? `دارس. تذكير: حصة مع ${students} غداً`
-    : `Daris. Reminder: class with ${students} tomorrow`;
-  const heading = lang === 'ar' ? 'حصة غداً' : 'Class tomorrow';
+  const subjectMap = {
+    '1hr': lang === 'ar'
+      ? `دارس. تذكير: حصة مع ${students} خلال ساعة`
+      : `Daris. Reminder: class with ${students} in an hour`,
+    '24hr': lang === 'ar'
+      ? `دارس. تذكير: حصة مع ${students} غداً`
+      : `Daris. Reminder: class with ${students} tomorrow`,
+  };
+  const headingMap = {
+    '1hr': lang === 'ar' ? 'حصة خلال ساعة' : 'Class in an hour',
+    '24hr': lang === 'ar' ? 'حصة غداً' : 'Class tomorrow',
+  };
+  const subject = subjectMap[label];
+  const heading = headingMap[label];
   const greeting = lang === 'ar' ? `السلام عليكم ${firstName}،` : `Assalamu alaikum, ${firstName}.`;
   const studentsLabel = lang === 'ar' ? 'الطلاب:' : 'Students:';
 

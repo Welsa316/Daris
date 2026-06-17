@@ -7,9 +7,10 @@ import {
   sendClassReminderTeacher,
 } from './emailService.js';
 
-// Match window for "24 hours before". The job tick runs every 5 min so a
-// 5-min window means every class gets exactly one reminder even if a
-// single tick is missed (e.g. during a Railway rolling deploy).
+// Half-width of the match window around each reminder target. The job
+// tick runs every 5 min, so a 5-min window means every class gets
+// exactly one reminder per kind even if a single tick is missed (e.g.
+// during a Railway rolling deploy).
 const WINDOW_MIN = 5;
 
 // Max concurrent email sends. Resend's docs suggest ~10 RPS on the free
@@ -19,23 +20,27 @@ const EMAIL_CONCURRENCY = 5;
 /**
  * Run one reminder pass. Safe to call from a setInterval loop; uses
  * per-class timestamp columns on class_sessions to guarantee each class
- * gets at most one reminder even across concurrent server instances.
+ * gets at most one reminder of each kind even across concurrent server
+ * instances.
  *
- * Only the 24-hour reminder fires now. The 30-min reminder used to also
- * go out but the sheikh asked to drop it (back-to-back notifications
- * felt nagging). reminder30SentAt is preserved on the schema so old
- * records keep resolving; the column is just no longer written.
+ * Two reminders fire from each tick: one 24 hours before the class and
+ * one 1 hour before. Each has its own sent-flag column and runs
+ * independently, so a failure in one window never suppresses the other.
+ * Each goes out in the recipient's dashboard-set language. (The 30-min
+ * reminder was retired; reminder30SentAt stays on the schema so old
+ * records keep resolving but the column is no longer written.)
  */
 export async function runClassReminderTick() {
-  try {
-    await sendWindow({
-      label: '24hr',
-      offsetMin: 24 * 60,
-      sentField: 'reminder24SentAt',
-      sendToAdmin: true,
-    });
-  } catch (err) {
-    logger.error('classReminderJob: tick failed', { error: err.message });
+  const windows = [
+    { label: '24hr', offsetMin: 24 * 60, sentField: 'reminder24SentAt', sendToAdmin: true },
+    { label: '1hr', offsetMin: 60, sentField: 'reminder1hSentAt', sendToAdmin: true },
+  ];
+  for (const w of windows) {
+    try {
+      await sendWindow(w);
+    } catch (err) {
+      logger.error('classReminderJob: tick failed', { label: w.label, error: err.message });
+    }
   }
 }
 
@@ -148,7 +153,7 @@ async function sendWindow({ label, offsetMin, sentField, sendToAdmin }) {
                 return s ? `${s.firstName} ${s.lastName}`.trim() : '';
               })
               .filter(Boolean);
-            return sendClassReminderTeacher(teacher, cls, names).catch((err) =>
+            return sendClassReminderTeacher(teacher, cls, names, label).catch((err) =>
               logger.error('classReminderJob: teacher email failed', {
                 classId: cls.id,
                 teacherId: teacher.id,
@@ -163,7 +168,7 @@ async function sendWindow({ label, offsetMin, sentField, sendToAdmin }) {
         const studentNames = cls.assignments.map(
           (a) => `${a.student.firstName} ${a.student.lastName}`.trim()
         );
-        await sendClassReminderAdmin(cls, studentNames).catch((err) =>
+        await sendClassReminderAdmin(cls, studentNames, label).catch((err) =>
           logger.error('classReminderJob: admin email failed', {
             classId: cls.id,
             error: err.message,
